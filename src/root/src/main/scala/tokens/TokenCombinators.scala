@@ -12,6 +12,7 @@ object TokenCombinators {
 
   val w = skipMany1(whitespace)
   val space = skipMany1(whitespace | char('\n'))
+  val newlineEnd = many(spaceChar) ~> char('\n')
   val let = string("let") ~> space
   val fun = string("fun") ~> space
   val id = many1(letter)
@@ -28,12 +29,12 @@ object TokenCombinators {
   val imp: Parser[Declaration] = (string("import") ~> w ~> id) map Import
   val letDecl: Parser[Declaration] = (let ~> id <~ `=`) ~ expression map LetDecl.tupled
   val funDecl: Parser[Declaration] = (fun ~> (id ~ many(w ~> id)) <~ `=`) ~ (expression || functionBody) map { case ((a, b), c) => FunDecl(a,b,c) }
-  val declaration: Parser[Declaration] = (letDecl | funDecl | imp) <~(`;` | (many(spaceChar) ~> char('\n')))
+  val declaration: Parser[Declaration] = (letDecl | funDecl | imp) <~ (`;` | newlineEnd)
   val comment = string("//") ~> text >| Ignore
   val redundantNl = many1(char('\n'))  >| Ignore
   val emptySpace = skipMany1(whitespace) >| Ignore
 
-  val functionBody = (many(declaration | emptySpace | redundantNl | comment) ~ expression) map FunctionBody.tupled
+  val functionBody = (many(declaration | emptySpace | redundantNl | comment) ~ (expression <~ newlineEnd)) map FunctionBody.tupled
   val body = many(declaration | emptySpace | redundantNl | comment)
 
   val parser: Parser[List[Declaration]] = token(body)
