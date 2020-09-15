@@ -10,11 +10,9 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use{ _ =>
     val program = {
       """
-        |import std;
-        | //as
-        |let a = 22
+        |type List a = Cons a (List a) | Nil
         |
-        |fun a b c = 22;
+        |fun add a b = a + b;
         |fun b =
         |  let c = 22
         |  42
