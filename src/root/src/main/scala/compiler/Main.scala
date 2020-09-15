@@ -4,18 +4,16 @@ import atto.Atto._
 import atto._
 import cats.effect.{Blocker, ExitCode, IO, IOApp}
 import cats.implicits._
-import tokens.TokenCombinators
+import ast.TokenCombinators
 
 object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use{ _ =>
     val program = {
       """
-        |type List a = Cons a (List a) | Nil
-        |
         |fun add a b = a + b;
-        |fun b =
-        |  let c = 22
-        |  42
+        |fun main =
+        |  let c = add 1 2;
+        |  c
         |""".stripMargin
     }
 
@@ -32,10 +30,9 @@ object Main extends IOApp {
         case x => IO(println(s"died at $x")).as(List.empty)
       }
       .flatMap(xs => fs2.Stream(xs: _*))
-      .evalTap(x => IO(println(x)))
+      //.evalTap(x => IO(println(x)))
       .compile
-      .drain
-      //.fold(List.empty[Token]){ case (a, b) => a ++ List(b) }
-    parsed *> IO(ExitCode.Success)
+      .fold(List.empty[ast.TokenTypes.Declaration]){ case (a, b) => a ++ List(b) }
+    parsed.map(x => println(emitter.CEmitter.emit(x))) *> IO(ExitCode.Success)
   }
 }

@@ -1,4 +1,4 @@
-package tokens
+package ast
 
 import atto._
 import Atto._
@@ -17,14 +17,15 @@ object TokenCombinators {
     }
   }
 
+  def spaces[A](p: Parser[A]): Parser[A] = many(spaceChar) ~> p <~ many(spaceChar)
   val w = skipMany1(whitespace)
   val space = skipMany1(whitespace | char('\n'))
   val endDecl = many(spaceChar) ~> (char('\n') | char(';'))
   val let = string("let") ~> many(spaceChar)
   val fun = string("fun") ~> many(spaceChar)
-  val id = many(spaceChar) ~> many1(letter) <~ many(spaceChar)
+  val id = spaces(many1(letter))
   val infixBuiltin = oneOf("+-*/")
-  val `=` = many(spaceChar) ~> char('=') <~ many(spaceChar)
+  val `=` = spaces(char('='))
   val `;` = many1(char(';'))
   val `type` = string("type") ~> many(spaceChar)
   val idParams = id ~ many(id)
@@ -35,14 +36,15 @@ object TokenCombinators {
 
   val number: Parser[Expression] = many1(digit) map ConstantInteger
   val str: Parser[Expression] = bracket(char('\''), excludeText('\''), char('\'')) map ConstantStr
-  val infixOp: Parser[Expression] = id ~ infixBuiltin ~ id map t3 map InfixBuiltin.tupled
-  val expression: Parser[Expression] = number | str | infixOp
+  val app: Parser[Expression] = id ~ many(expression) map Apply.tupled
+  val infixOp: Parser[Expression] = app ~ infixBuiltin ~ app map t3 map InfixBuiltin.tupled
+  val expression: Parser[Expression] = spaces(number | str | infixOp | app)
 
   val imp: Parser[ValueDeclaration] = (string("import") ~> w ~> id) <~ endDecl map Import
   val letDecl: Parser[ValueDeclaration] = (let ~> id <~ `=`) ~ expression <~ endDecl map LetDecl.tupled
   val funDecl: Parser[ValueDeclaration] =
     (fun ~> idParams <~ `=`) ~
-    ((expression <~ endDecl) || functionBody) map t3 map FunDecl.tupled
+    (functionBody || (expression <~ endDecl)) map t3 map FunDecl.tupled
   val declaration: Parser[ValueDeclaration] = letDecl | funDecl | imp
   val comment = string("//") ~> excludeText('\n') >| Ignore
   val redundantNl = many1(char('\n'))  >| Ignore

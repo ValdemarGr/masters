@@ -1,4 +1,4 @@
-package tokens
+package ast
 
 import cats.data.NonEmptyList
 
@@ -10,7 +10,7 @@ object TokenTypes {
   trait ValueDeclaration extends Declaration
   case class Import(imp: Identifier) extends ValueDeclaration
   case class LetDecl(varname: Identifier, value: Expression) extends ValueDeclaration
-  case class FunDecl(varname: Identifier, params: List[Identifier], body: Either[Expression, FunctionBody]) extends ValueDeclaration
+  case class FunDecl(varname: Identifier, params: List[Identifier], body: Either[FunctionBody, Expression]) extends ValueDeclaration
 
   trait TypelevelDeclaration extends Declaration
   case class TypeDeclaration(typename: Identifier, typeParams: List[Identifier], expr: TypelevelExpression) extends TypelevelDeclaration
@@ -24,10 +24,9 @@ object TokenTypes {
   case class TypeName(name: Identifier) extends TypeParam
 
   trait Expression extends Token
-  case class InfixBuiltin(lhs: Identifier, op: Char, rhs: Identifier) extends Expression
-  case class Reference(name: Identifier) extends Expression
+  case class InfixBuiltin(lhs: Expression, op: Char, rhs: Expression) extends Expression
   case class FunctionBody(children: List[ValueDeclaration], end: Expression) extends Expression
-  case class Invocation(vs: NonEmptyList[Expression]) extends Expression
+  case class Apply(name: Identifier, vs: List[Expression]) extends Expression
 
   trait Constant extends Expression
   case class ConstantInteger(v: Identifier) extends Constant
