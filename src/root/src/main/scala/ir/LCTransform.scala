@@ -48,10 +48,8 @@ object LCTransform {
   }
 
   def transformValueDecl(v: ValueDeclaration, binds: List[LCExp])(st: SymbolTable): LCExp = v match {
-    case FunDecl(n, params, body) => {
-      println(s"fnc ${n} ps ${params} bs ${binds}")
+    case FunDecl(_, params, body) => {
       val stP = params.zip(binds).map{ case (p, b) =>
-        println(s"making bind ${p.id.dn -> Right(b)}")
         p.id.dn -> Right(b)
       }.toMap
       transformFunBody(body)(st ++ stP)
@@ -65,8 +63,8 @@ object LCTransform {
         }
       }*/
     }
-    case FunctionParam(id) => LCName(id.dn.name)
     case LetDecl(_, value) => transformExpr(value)(st)
+    case FunctionParam(_) => ???
     case Import(_) => ???
     case TokenTypes.Ignore => ???
   }
