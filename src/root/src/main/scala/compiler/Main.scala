@@ -13,8 +13,11 @@ object Main extends IOApp {
       """
         |fun add a b = a + b;
         |
+        |fun d a = a;
+        |
         |fun main =
-        |  let c = add 1 2;
+        |  let g = (d 1)
+        |  let c = add (g) 2
         |  c
         |""".stripMargin
     }
@@ -35,8 +38,7 @@ object Main extends IOApp {
       .compile
       .fold(List.empty[TokenTypes.Declaration]){ case (a, b) => a ++ List(b) }
 
-    parsed.map(x => println(LCTransform.transformEntry(x))) *>
-    parsed.map(x => println(emitter.CEmitter.emit(x))) *>
+    parsed.map(x => println(emitter.LCEmitter.emit(LCTransform.transformEntry(x)))) *>
       IO(ExitCode.Success)
   }
 }

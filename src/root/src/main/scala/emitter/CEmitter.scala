@@ -18,12 +18,13 @@ object CEmitter {
     case Ignore => ""
     case FunDecl(id, params, body) => {
       val bodyStr = emitExpr(body.fold(identity, identity))
-      s"""int ${str(id)}(${params.map(p => s"int ${str(p)}").mkString(", ")}) {
+      s"""int ${str(id)}(${params.map(p => s"int ${str(p.id)}").mkString(", ")}) {
          | ${bodyStr}
          |}
          |""".stripMargin
     }
     case LetDecl(id, expr) => s"int ${str(id)} = ${emitExpr(expr)};"
+    case FunctionParam(_) => ???
     case _ => ???
   }
 

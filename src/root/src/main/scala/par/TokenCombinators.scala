@@ -41,13 +41,14 @@ object TokenCombinators {
   val str: Parser[Expression] = bracket(char('\''), excludeText('\''), char('\'')) map ConstantStr
   val app: Parser[Expression] = id ~ many(expression) map Apply.tupled
   val infixOp: Parser[Expression] = app ~ infixBuiltin ~ app map t3 map InfixBuiltin.tupled
-  val expression: Parser[Expression] = spaces(number | str | infixOp | app)
+  val expBody: Parser[Expression] = spaces(number | str | infixOp | app)
+  val expression = parens(expBody) | expBody
 
   val imp: Parser[ValueDeclaration] = (string("import") ~> w ~> id) <~ endDecl map Import
   val letDecl: Parser[ValueDeclaration] = (let ~> id <~ `=`) ~ expression <~ endDecl map LetDecl.tupled
   val funDecl: Parser[ValueDeclaration] =
-    (fun ~> idParams <~ `=`) ~
-    (functionBody || (expression <~ endDecl)) map t3 map FunDecl.tupled
+    (fun ~> (idParams) <~ `=`) ~
+    (functionBody || (expression <~ endDecl)) map t3 map { case (x1, x2, x3) => FunDecl(x1, x2 map FunctionParam, x3)}
   val declaration: Parser[ValueDeclaration] = letDecl | funDecl | imp
   val comment = string("//") ~> excludeText('\n') >| Ignore
   val redundantNl = many1(char('\n'))  >| Ignore

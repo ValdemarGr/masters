@@ -8,9 +8,10 @@ object TokenTypes {
 
   trait Declaration extends Token
   trait ValueDeclaration extends Declaration
+  case class FunctionParam(id: Identifier) extends ValueDeclaration
   case class Import(imp: Identifier) extends ValueDeclaration
   case class LetDecl(varname: Identifier, value: Expression) extends ValueDeclaration
-  case class FunDecl(varname: Identifier, params: List[Identifier], body: Either[FunctionBody, Expression]) extends ValueDeclaration
+  case class FunDecl(varname: Identifier, params: List[FunctionParam], body: Either[FunctionBody, Expression]) extends ValueDeclaration
 
   trait TypelevelDeclaration extends Declaration
   case class TypeDeclaration(typename: Identifier, typeParams: List[Identifier], expr: TypelevelExpression) extends TypelevelDeclaration

@@ -9,7 +9,7 @@ object LCTransform {
   case class DeclarationName(name: String)
 
   type K = DeclarationName
-  type V = ValueDeclaration
+  type V = Either[ValueDeclaration, LCExp]
   type Symbol = (K, V)
   type SymbolTable = Map[K, V]
 
@@ -24,9 +24,10 @@ object LCTransform {
   }
 
   def extractValueDeclName(vd: ValueDeclaration): Option[Symbol] = vd match {
-    case x@FunDecl(name, _, _) => Some(name.dn -> x)
-    case x@Import(imp) => Some(imp.dn -> x)
-    case x@LetDecl(name, _) => Some(name.dn -> x)
+    case x@FunDecl(name, _, _) => Some(name.dn -> Left(x))
+    case x@Import(imp) => Some(imp.dn -> Left(x))
+    case x@LetDecl(name, _) => Some(name.dn -> Left(x))
+    case x@FunctionParam(name) => Some(name.dn -> Left(x))
     case TokenTypes.Ignore => None
   }
 
@@ -46,27 +47,27 @@ object LCTransform {
     transformExpr(e)(fSt)
   }
 
-  def transformValueDecl(v: ValueDeclaration)(st: SymbolTable) = v match {
-    case FunDecl(_, params, body) => {
-      val b = transformFunBody(body)(st)
-      params.reverse match {
+  def transformValueDecl(v: ValueDeclaration, binds: List[LCExp])(st: SymbolTable): LCExp = v match {
+    case FunDecl(n, params, body) => {
+      println(s"fnc ${n} ps ${params} bs ${binds}")
+      val stP = params.zip(binds).map{ case (p, b) =>
+        println(s"making bind ${p.id.dn -> Right(b)}")
+        p.id.dn -> Right(b)
+      }.toMap
+      transformFunBody(body)(st ++ stP)
+      /*params.reverse match {
         case Nil => b
         case x :: xs => {
-          val inner = LCFunction(LCName(x.dn.name), b)
-          xs.foldLeft(inner){ case (accum, next) =>
-            LCFunction(LCName(next.dn.name), accum)
+          val inner = LCFunction(fname.dn.name, LCName(x.id.dn.name), b)
+          xs.zipWithIndex.foldLeft(inner){ case (accum, (next, i)) =>
+            LCFunction(fname.dn.name + s"-param-${i}", LCName(next.id.dn.name), accum)
           }
         }
-      }
+      }*/
     }
+    case FunctionParam(id) => LCName(id.dn.name)
     case LetDecl(_, value) => transformExpr(value)(st)
     case Import(_) => ???
-    case TokenTypes.Ignore => ???
-  }
-
-  def transformDecl(d: Declaration)(st: SymbolTable) = d match {
-    case decl: ValueDeclaration => transformValueDecl(decl)(st)
-    case _: TypelevelDeclaration => ???
     case TokenTypes.Ignore => ???
   }
 
@@ -74,19 +75,21 @@ object LCTransform {
     case InfixBuiltin(lhs, op, rhs) => {
       val fst = LCName("fst")
       val snd = LCName("snd")
-      val f = LCFunction(fst, LCFunction(snd, LCTerminalOperation(fst, op, snd)))
+      val f = LCFunction("infix1", fst, LCFunction("infix2", snd, LCTerminalOperation(fst, op, snd)))
       val lhEval = transformExpr(lhs)(st)
       val rhEval = transformExpr(rhs)(st)
       LCApplication(LCApplication(f, lhEval), rhEval)
     }
     case FunctionBody(children, end) => transformFun(children, end)(st)
     case Apply(f, e) => {
-      val fName = st.safeGet(f.dn)
-      val asD = transformValueDecl(fName)(st)
-      LCDebug(s"apply ${fName} to ${e.map(x => transformExpr(x)(st))}\n${asD}")
+      st.safeGet(f.dn) match {
+        case Right(v) => v
+        case Left(fName) =>
+          transformValueDecl(fName, e map (x => transformExpr(x)(st)))(st)
+      }
     }
-    case ConstantInteger(n) => LCDebug(s"number ${n}")
-    case ConstantStr(s) => LCDebug(s"str ${s}")
+    case ConstantInteger(n) => LCNumber(n.dn.name.toInt)
+    case ConstantStr(s) => LCString(s.mkString)
   }
 
   def transformFunBody(b: Either[FunctionBody, Expression])(st: SymbolTable) = b match {
@@ -97,9 +100,10 @@ object LCTransform {
   def transformEntry(toplevelBody: List[Declaration]): LCExp = {
     val symbolTable: SymbolTable = declListToSymbolTable(toplevelBody)
     val main: FunDecl = symbolTable.safeGet(DeclarationName("main")) match {
-      case x: FunDecl => x
-      case Import(_) => throw new Exception("main was an import")
-      case LetDecl(_, _) => throw new Exception("main was a let declaration")
+      case Left(x: FunDecl) => x
+      case Left(Import(_)) => throw new Exception("main was an import")
+      case Left(LetDecl(_, _)) => throw new Exception("main was a let declaration")
+      case x => throw new Exception(s"main was ${x}")
     }
     transformFunBody(main.body)(symbolTable)
   }
