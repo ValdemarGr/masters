@@ -3,7 +3,7 @@ package emitter
 import cats.data.NonEmptyList
 
 object CEmitter {
-  import ast.TokenTypes._
+  import par.TokenTypes._
   implicit def str(nel: NonEmptyList[Char]): String = (nel.head :: nel.tail).mkString
 
   def emitExpr(expr: Expression): String = expr match {

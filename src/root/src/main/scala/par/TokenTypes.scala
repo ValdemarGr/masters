@@ -1,4 +1,4 @@
-package ast
+package par
 
 import cats.data.NonEmptyList
 
@@ -23,8 +23,11 @@ object TokenTypes {
   case class ParensType(params: List[TypeParam]) extends TypeParam
   case class TypeName(name: Identifier) extends TypeParam
 
+  trait BuiltinOperator
+  case object Addition extends BuiltinOperator
+
   trait Expression extends Token
-  case class InfixBuiltin(lhs: Expression, op: Char, rhs: Expression) extends Expression
+  case class InfixBuiltin(lhs: Expression, op: BuiltinOperator, rhs: Expression) extends Expression
   case class FunctionBody(children: List[ValueDeclaration], end: Expression) extends Expression
   case class Apply(name: Identifier, vs: List[Expression]) extends Expression
 

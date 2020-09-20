@@ -1,4 +1,4 @@
-package ast
+package par
 
 import atto._
 import Atto._
@@ -24,13 +24,16 @@ object TokenCombinators {
   val let = string("let") ~> many(spaceChar)
   val fun = string("fun") ~> many(spaceChar)
   val id = spaces(many1(letter))
-  val infixBuiltin = oneOf("+-*/")
+  val infixBuiltin: Parser[BuiltinOperator] = {
+    val addition = char('+') >| Addition
+    addition
+  }
   val `=` = spaces(char('='))
   val `;` = many1(char(';'))
   val `type` = string("type") ~> many(spaceChar)
   val idParams = id ~ many(id)
 
-  def excludeText(exclude: Char) = many(anyChar.filter(_ != exclude))
+  def excludeText(exclude: Char) = many(elem(_ != exclude))
 
   def t3[A, B, C](t: ((A, B), C)): (A, B, C) = t match { case ((a, b), c) => (a, b, c) }
 
@@ -66,6 +69,7 @@ object TokenCombinators {
       | redundantNl
       | comment
   ) ~ (expression <~ endDecl)) map FunctionBody.tupled
+
   val body: Parser[List[Declaration]] = many(declaration | typelevelDecl | emptySpace | redundantNl | comment)
 
   val parser: Parser[List[Declaration]] = token(body)
