@@ -9,9 +9,11 @@ object LCTransform {
   case class DeclarationName(name: String)
 
   type K = DeclarationName
-  type V = Either[ValueDeclaration, LCExp]
+  type V = ValueDeclaration
   type Symbol = (K, V)
   type SymbolTable = Map[K, V]
+
+  type LCExpTable = Map[K, LCExp]
 
   implicit class NELDN(nel: NonEmptyList[Char]) {
     val dn = DeclarationName(nel.toList.mkString)
@@ -24,10 +26,10 @@ object LCTransform {
   }
 
   def extractValueDeclName(vd: ValueDeclaration): Option[Symbol] = vd match {
-    case x@FunDecl(name, _, _) => Some(name.dn -> Left(x))
-    case x@Import(imp) => Some(imp.dn -> Left(x))
-    case x@LetDecl(name, _) => Some(name.dn -> Left(x))
-    case x@FunctionParam(name) => Some(name.dn -> Left(x))
+    case x@FunDecl(name, _, _) => Some(name.dn -> x)
+    case x@Import(imp) => Some(imp.dn -> x)
+    case x@LetDecl(name, _) => Some(name.dn -> x)
+    case x@FunctionParam(name) => Some(name.dn -> x)
     case TokenTypes.Ignore => None
   }
 
@@ -42,67 +44,54 @@ object LCTransform {
       accum ++ extractDeclName(next).toMap
     }
 
-  def transformFun(b: List[Declaration], e: Expression)(st: SymbolTable): LCExp = {
+  def transformFun(b: List[Declaration], e: Expression)(st: SymbolTable, et: LCExpTable): LCExp = {
     val fSt = st ++ declListToSymbolTable(b)
-    transformExpr(e)(fSt)
+    transformExpr(e)(fSt, et)
   }
 
-  def transformValueDecl(v: ValueDeclaration, binds: List[LCExp])(st: SymbolTable): LCExp = v match {
+  def transformValueDecl(v: ValueDeclaration, binds: List[LCExp])(st: SymbolTable, et: LCExpTable): LCExp = v match {
     case FunDecl(_, params, body) => {
       val stP = params.zip(binds).map{ case (p, b) =>
-        p.id.dn -> Right(b)
+        p.id.dn -> b
       }.toMap
-      transformFunBody(body)(st ++ stP)
-      /*params.reverse match {
-        case Nil => b
-        case x :: xs => {
-          val inner = LCFunction(fname.dn.name, LCName(x.id.dn.name), b)
-          xs.zipWithIndex.foldLeft(inner){ case (accum, (next, i)) =>
-            LCFunction(fname.dn.name + s"-param-${i}", LCName(next.id.dn.name), accum)
-          }
-        }
-      }*/
+      val modEt = et ++ stP
+      transformFunBody(body)(st, modEt)
     }
-    case LetDecl(_, value) => transformExpr(value)(st)
+    case LetDecl(_, value) => transformExpr(value)(st, et)
     case FunctionParam(_) => ???
     case Import(_) => ???
     case TokenTypes.Ignore => ???
   }
 
-  def transformExpr(e: Expression)(st: SymbolTable): LCExp = e match {
+  def transformExpr(e: Expression)(st: SymbolTable, et: LCExpTable): LCExp = e match {
     case InfixBuiltin(lhs, op, rhs) => {
       val fst = LCName("fst")
       val snd = LCName("snd")
       val f = LCFunction("infix1", fst, LCFunction("infix2", snd, LCTerminalOperation(fst, op, snd)))
-      val lhEval = transformExpr(lhs)(st)
-      val rhEval = transformExpr(rhs)(st)
+      val lhEval = transformExpr(lhs)(st,et )
+      val rhEval = transformExpr(rhs)(st,et )
       LCApplication(LCApplication(f, lhEval), rhEval)
     }
-    case FunctionBody(children, end) => transformFun(children, end)(st)
-    case Apply(f, e) => {
-      st.safeGet(f.dn) match {
-        case Right(v) => v
-        case Left(fName) =>
-          transformValueDecl(fName, e map (x => transformExpr(x)(st)))(st)
-      }
-    }
+    case FunctionBody(children, end) => transformFun(children, end)(st, et)
+    case Apply(f, e) =>
+      et.getOrElse(f.dn, transformValueDecl(st.safeGet(f.dn), e map (x => transformExpr(x)(st, et)))(st, et))
     case ConstantInteger(n) => LCNumber(n.dn.name.toInt)
     case ConstantStr(s) => LCString(s.mkString)
   }
 
-  def transformFunBody(b: Either[FunctionBody, Expression])(st: SymbolTable) = b match {
-    case Left(value) => transformFun(value.children, value.`end`)(st)
-    case Right(value) => transformExpr(value)(st)
+  def transformFunBody(b: Either[FunctionBody, Expression])(st: SymbolTable, et: LCExpTable): LCExp = b match {
+    case Left(value) => transformFun(value.children, value.`end`)(st, et)
+    case Right(value) => transformExpr(value)(st, et)
   }
 
   def transformEntry(toplevelBody: List[Declaration]): LCExp = {
     val symbolTable: SymbolTable = declListToSymbolTable(toplevelBody)
     val main: FunDecl = symbolTable.safeGet(DeclarationName("main")) match {
-      case Left(x: FunDecl) => x
-      case Left(Import(_)) => throw new Exception("main was an import")
-      case Left(LetDecl(_, _)) => throw new Exception("main was a let declaration")
+      case x: FunDecl => x
+      case Import(_) => throw new Exception("main was an import")
+      case LetDecl(_, _) => throw new Exception("main was a let declaration")
       case x => throw new Exception(s"main was ${x}")
     }
-    transformFunBody(main.body)(symbolTable)
+    transformFunBody(main.body)(symbolTable, Map.empty)
   }
 }
