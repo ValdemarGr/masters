@@ -13,11 +13,15 @@ object Main extends IOApp {
       """
         |fun add a b = a + b;
         |
+        |fun rec f a = rec f a
+        |
         |fun d a = a;
         |
         |fun main =
         |  let g = (d 1)
+        |  //let c = add (add (add (add (add (add (add (add 20 (add 20 (add 10 (add 10 (add 20 (add 10 (add 42 (add (add (g) 2) 2)))))))) 10) 20) 40) 10) 30) 10) 10
         |  let c = add (g) 2
+        |  //let c = rec 1 2
         |  c
         |""".stripMargin
     }
