@@ -7,62 +7,81 @@
 % Packages
 \usepackage{amsmath}
 \usepackage{minted}
+\usepackage{hyperref}
+\usepackage{xpatch,letltxmacro}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+}
+\urlstyle{same}
+
+\LetLtxMacro{\cminted}{\minted}
+\let\endcminted\endminted
+\xpretocmd{\cminted}{\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}}{}{}
+
+\renewcommand{\figurename}{Listing}
 
 % Document
 \begin{document}
-    \section{Combinator backend}
-    \subsection{G-machine}
-    \begin{itemize}
-        \item Gofer language, implementation of haskell.
-        \item Originally compiler for ML-language.
-        \item Uses super combinators.
-        \item Close to Miranda.
-        \item S \& K, also others but can be expressed in S and K.
-    \end{itemize}
-    \subsubsection{Super combinator}
-    Either a constant or a combinator.
-    \begin{minted}{haskell}
-        data NArtiyLambda a where
-        End :: b -> a
-        Step :: b -> NArtiyLambda a
-        data SuperCombinator a where
-        Const :: a -> SuperCombinator a
-        Combinator :: NArtiyLambda a -> SuperCombinator a
-    \end{minted}
-    Any lambda calculus expr can be converted to SuperCombinator with \textit{lambda lifting}.
-    The technique is basically explicitly parameterizing it instead of closure.
+    \section{Emitting}
+    C++ code, C++ lambda recursion.\\
+    Inline all lambdas vs bind to value (untyped $\lambda$-calculus).
+    \section{IR as $\lambda$-calculus}
+    \href{http://caml.inria.fr/pub/papers/xleroy-zinc.pdf}{OCaml ZINC}
+    \subsection{ADT}
+    \textit{Mogensen–Scott encoding} Dana Scott.\\
+    \textit{Church encoding}\\
+    \textit{Boehm-Berarducci encoding}\\
+    Function as data (or rather parameters).
+    \begin{align}
+        D = \{ c_i \}^N_{i = 1}, c_i \text{ has arity } A_i\\
+    \end{align}
+    $x_k$ is the constructor value for field $k \in \{1 \dots A_i\}$.\\
+    $c_i$ is constructor $i \in N$, effectively.
+    \[
+        c_n: x_1 \rightarrow x_2 \dots \rightarrow x_{A_i} \rightarrow D
+    \]
+    Such that all constructors can be modelled as.
+    \[
+        \lambda x_1 \dots x_{A_i} . \lambda c_1 \dots c_N . c_i x_1 \dots x_{A_i}
+    \]
+    The "data" is extracted by: Given a set of functions $\{f_1 \dots f_N\}$ which each can handle union case $1 \dots N$.
+    \begin{figure}[htp]
+        \centering
+        \begin{cminted}{haskell}
+data Maybe a =
+        | Nothing
+        | Just a
+        \end{cminted}
+        \caption{Maybe in Haskell}
+        \label{lst:maybe_in_haskell}
+    \end{figure}\\
+    Since we use untyped lambda calculus, we can model every parameter as \textit{any} type.
+    Furthermore, the code in \autoref{lst:maybe_in_haskell} can be expressed in scott encoding.
+    \begin{figure}[htp]
+        \centering
+        \begin{cminted}{haskell}
+newtype MaybeAlgebra =
+    MaybeAlgebra{ unMaybe :: forall a b. ((a -> b) -> b -> b) }
 
-    \section{Bytecode backend}
-    \subsubsection{ZINC}
-    \begin{itemize}
-        \item OCaml backend.
-        \item http://caml.inria.fr/pub/papers/xleroy-zinc.pdf
-    \end{itemize}
-    \begin{itemize}
-        \item LLVM official guide for ocaml language implementation, pure ocaml.
-        \item Complete compiler.
-        \item https://llvm.org/docs/tutorial/OCamlLangImpl1.html
-    \end{itemize}
+just :: a -> MaybeAlgebra
+just a = \onjust onnothing -> onjust a
 
-    \section{Emit code}
-    \begin{itemize}
-        \item Emit C/C++ code.
-        \item Implementation easy.
-        \item Dont worry about bytecode level performance.
-    \end{itemize}
+nothing :: MaybeAlgebra
+nothing = \onjust onnothing -> onnothing
 
-    \section{Syntax}
-    \begin{minted}{ocaml}
-        import std;
-        import util -> u;
+...
+(just 5) (\x -> x) (12)
+        \end{cminted}
+        \caption{Maybe in Haskell as catamorphism}
+        \label{lst:maybe_as_scott}
+    \end{figure}
 
-        let main =
-        let a = 2;
 
-        let b = a + 4;
 
-        std.print a;
-        import std.*;
-        print b;
-    \end{minted}
+
+
 \end{document}
