@@ -7,7 +7,7 @@ object LCLanguage {
     def stringify: String
   }
 
-  case class LCBinding(name: String, rhs: LCExp) extends LCExp {
+  case class LCBinding(name: String, rhs: LCExp) {
     def stringify: String = s"\nlet ${name} = ${rhs}"
   }
   case class LCName(name: String) extends LCExp {

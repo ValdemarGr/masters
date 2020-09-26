@@ -12,6 +12,7 @@ object TokenTypes {
   case class Import(imp: Identifier) extends ValueDeclaration
   case class LetDecl(varname: Identifier, value: Expression) extends ValueDeclaration
   case class FunDecl(varname: Identifier, params: List[FunctionParam], body: Either[FunctionBody, Expression]) extends ValueDeclaration
+  case class FunctionBody(children: List[ValueDeclaration], end: Expression)
 
   trait TypelevelDeclaration extends Declaration
   case class TypeDeclaration(typename: Identifier, typeParams: List[Identifier], expr: TypelevelExpression) extends TypelevelDeclaration
@@ -29,7 +30,6 @@ object TokenTypes {
 
   trait Expression extends Token
   case class InfixBuiltin(lhs: Expression, op: BuiltinOperator, rhs: Expression) extends Expression
-  case class FunctionBody(children: List[ValueDeclaration], end: Expression) extends Expression
   case class Apply(name: Identifier, vs: List[Expression]) extends Expression
 
   trait Constant extends Expression
