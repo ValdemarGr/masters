@@ -159,7 +159,7 @@ object LCTransform {
   def extractValueDeclName(vd: ValueDeclaration)(ts: TransformerState): (List[LCBinding], TransformerState) = vd match {
     case x@FunDecl(name, _, _) =>
       val bs = makeFunctionSymbol(x)(ts)
-      
+
       bs.exp.bindings.toList -> TransformerState(func=Map(name.dn -> Symbol[FunDecl](ts.depth, x)))
     case x@LetDecl(name, _) =>
       List.empty -> TransformerState(let = Map(name.dn -> Symbol(ts.depth, x)))
