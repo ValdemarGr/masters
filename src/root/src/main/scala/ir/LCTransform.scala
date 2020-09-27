@@ -4,8 +4,7 @@ import cats.data.NonEmptyList
 import par.TokenTypes
 import par.TokenTypes._
 import LCLanguage._
-import cats.Monoid
-import cats.Eval
+import cats.{Eval, Id, Monoid}
 
 object LCTransform {
 
@@ -55,8 +54,20 @@ object LCTransform {
     val dn = DeclarationName(nel.toList.mkString)
   }
 
+  case class Closure(
+                    depth: Depth,
+                    symbolName: String
+                    )
+  case class LiftedLambda(
+                               exp: LCExp,
+                               closures: List[Closure]
+                               ) {
+    // withClosure
+    def wc(c: List[Closure]): LiftedLambda = copy(closures=closures ++ c)
+  }
+
   // Returns a list of required parameters to realize the funciton
-  def apply(f: Identifier, e: List[Expression])(ts: TransformerState): (LCExp, List[String]) = {
+  def apply(f: Identifier, e: List[Expression])(ts: TransformerState): LiftedLambda = {
     /*
     f' = (λf.λg.λa.λb.g a b)
     g' = (λg.λf.λa.λb.f a b)
@@ -68,20 +79,16 @@ object LCTransform {
     g a b
     */
     val id = f.dn
-    def free(d: Depth)(inline: => LCExp)(closure: => LCExp): (Depth, Eval[(LCExp, List[String])]) =
-      d -> Eval.later {
-        if (d > ts.depth) {
-          LCFunction("closure", LCName(id.name), closure) -> List(id.name)
-        } else {
-          inline -> List.empty
-        }
-      }
 
-    val letD: Option[(Depth, Eval[(LCExp, List[String])])] = ts.let.get(id)
-      .map(x => free(x.depth)(symbolizeExpression(x.t.value)(ts))(???))
-    val funcD: Option[(Depth, Eval[(LCExp, List[String])])] = ts.func.get(id).map(x => free(x.depth)(???)(???))
-    val expD: Option[(Depth, Eval[(LCExp, List[String])])] = ts.exp.get(id.name).map(x => free(x.depth)(???)(???))
-    val tpeD: Option[(Depth, Eval[(LCExp, List[String])])] = (ts.typeDecl.get(id).map(_ => ???): Option[Symbol[TypeV]]).map(x => free(x.depth, ???, ???))
+    def isClosure(depth: Depth, name: String): List[Closure] =
+      if (depth < ts.depth) List(Closure(depth, name)) else Nil
+
+    val letD: Option[(Depth, Eval[LiftedLambda])] = ts.let.get(id)
+        .map(x => x.depth -> Eval.later(symbolizeExpression(x.t.value)(ts) wc isClosure(x.depth, x.t.varname.dn.name)))
+    val funcD: Option[(Depth, Eval[LiftedLambda])] = ts.func.get(id)
+      .map(x => x.depth -> Eval.later(makeFunctionSymbol(x.t)(ts) wc isClosure(x.depth, x.t.varname.dn.name)))
+    val expD: Option[(Depth, Eval[LiftedLambda])] = ts.exp.get(id.name).map(x => ???)
+    val tpeD: Option[(Depth, Eval[LiftedLambda])] = ts.typeDecl.get(id).map(_ => ???)
 
     val o = List(funcD, letD, expD, tpeD)
       .flatten
@@ -91,35 +98,47 @@ object LCTransform {
     o.getOrElse(throw new Exception(s"Failed to find apply id for ${id.name}"))
   }
 
-  def symbolizeExpression(exp: Expression)(ts: TransformerState): LCExp = exp match {
+  def symbolizeExpression(exp: Expression)(ts: TransformerState): LiftedLambda = exp match {
     case InfixBuiltin(lhs, op, rhs) => {
       val fst = LCName("fst")
       val snd = LCName("snd")
       val f = LCFunction("infix1", fst, LCFunction("infix2", snd, LCTerminalOperation(fst, op, snd)))
       val lhEval = transformExpr(lhs)(ts)
       val rhEval = transformExpr(rhs)(ts)
-      LCApplication(LCApplication(f, lhEval), rhEval)
+      LiftedLambda(LCApplication(LCApplication(f, lhEval), rhEval), Nil)
     }
-    case ConstantInteger(n) => LCNumber(n.dn.name.toInt)
-    case ConstantStr(s) => LCString(s.mkString)
+    case ConstantInteger(n) => LiftedLambda(LCNumber(n.dn.name.toInt), Nil)
+    case ConstantStr(s) => LiftedLambda(LCString(s.mkString), Nil)
     case Apply(f, e) =>
       apply(f, e)(ts)
-      ???
   }
 
-  def symbolizeFunctionBody(children: List[Declaration], exp: Expression)(ts: TransformerState): LCExp = {
+  def symbolizeFunctionBody(children: List[Declaration], exp: Expression)(ts: TransformerState): LiftedLambda = {
     val modT = ts combine symbolizeDeclarations(children)(ts)
-    symbolizeExpression(exp)(modT)
+    val l = symbolizeExpression(exp)(modT)
+    ???
   }
 
-  def makeFunctionSymbol(d: FunDecl)(ts: TransformerState): FunctionSymbol = {
-    val x = d.body.fold(x => symbolizeFunctionBody(x.children, x.`end`)(ts), symbolizeFunctionBody(List.empty, _)(ts))
-    LCBinding(s"${d.varname.dn.name}_prime", )
+  def makeFunctionSymbol(d: FunDecl)(ts: TransformerState): LiftedLambda = {
+    val modT = ts.copy(depth = ts.depth + 1)
+    val x = d.body.fold(x => symbolizeFunctionBody(x.children, x.`end`)(modT), symbolizeFunctionBody(Nil, _)(modT))
+    // Variables applicable from current level
+    val (applicable, rest) = x.closures.partition(_.depth == ts.depth)
+    val curriedPrime = applicable.foldLeft(x.exp){ case (accum, next) =>
+      LCFunction(s"curry_${next.symbolName}", LCName(next.symbolName), accum)
+    }
+    val bindingName = LCName(s"${d.varname.dn.name}_prime")
+    val binding = LCBinding(bindingName, curriedPrime)
+    val applied = applicable.reverse.foldLeft((bindingName): LCExp){ case (accum, next) =>
+      LCApplication(accum, LCName(next.symbolName))
+    }
+    val body = LCBody(NonEmptyList.one(binding), applied)
+    LiftedLambda(body, rest)
   }
 
   def extractValueDeclName(vd: ValueDeclaration)(ts: TransformerState): TransformerState = vd match {
     case x@FunDecl(name, _, _) =>
-      TransformerState(func = Map(name.dn -> Symbol(ts.depth, makeFunctionSymbol(x)(ts.copy(depth = ts.depth + 1)))))
+      TransformerState(func = Map(name.dn -> Symbol(ts.depth, makeFunctionSymbol(x)(ts))))
     case x@LetDecl(name, _) => TransformerState(let = Map(name.dn -> Symbol(ts.depth, x)))
     case FunctionParam(_) => ???
     case Import(_) => ???

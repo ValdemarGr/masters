@@ -1,5 +1,6 @@
 package ir
 
+import cats.data.NonEmptyList
 import par.TokenTypes.BuiltinOperator
 
 object LCLanguage {
@@ -7,8 +8,13 @@ object LCLanguage {
     def stringify: String
   }
 
-  case class LCBinding(name: String, rhs: LCExp) {
-    def stringify: String = s"\nlet ${name} = ${rhs}"
+  case class LCBinding(name: LCName, rhs: LCExp)
+  case class LCBody(bindings: NonEmptyList[LCBinding], expr: LCExp) extends LCExp {
+    def stringify: String = bindings
+      .toList
+      .foldLeft("") { case (accum, next) =>
+        accum + s"\nlet ${next.name} = ${next.rhs.stringify}"
+      } + s"\n${expr.stringify}"
   }
   case class LCName(name: String) extends LCExp {
     def stringify: String = name
