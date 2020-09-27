@@ -10,11 +10,13 @@ object LCEmitter {
 
   def emit(e: LCExp): String = e match {
     case LCName(x) => x
-    case LCFunction(_, n, e) => s"[=](auto ${n.name}) { return ${emit(e)}; }"
+    case LCFunction(_, n, e) => s"[=](auto ${n.name}) {\n return ${emit(e)};\n }"
     case LCApplication(l: LCExp, r: LCExp) => s"(${emit(l)})(${emit(r)})"
     case LCTerminalOperation(l, op ,r) => s"(${l.name} ${emitOp(op)} ${r.name})"
     case LCString(s) => ("\"" + s + "\"")
     case LCNumber(n) => n.toString
+    case LCBody(bs, expr) =>
+      "{\n" + bs.map(x => s"auto ${x.name.name} = ${emit(x.rhs)};\n").toList.mkString + s"return ${emit(expr)};\n}"
     case LCDebug(_) => ???
   }
 }

@@ -1,9 +1,7 @@
 package emitter
 
-import cats.data.NonEmptyList
-
 object CEmitter {
-  import par.TokenTypes._
+  /*import par.TokenTypes._
   implicit def str(nel: NonEmptyList[Char]): String = (nel.head :: nel.tail).mkString
 
   def emitExpr(expr: Expression): String = expr match {
@@ -30,5 +28,5 @@ object CEmitter {
 
   def emit(body: List[Declaration]): String = body.foldLeft(""){ case (accum, next) =>
     accum + emitDecl(next)
-  }
+  }*/
 }
