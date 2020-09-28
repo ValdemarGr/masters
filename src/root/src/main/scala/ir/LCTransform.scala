@@ -112,12 +112,10 @@ object LCTransform {
 
   def symbolizeExpression(exp: Expression)(ts: TransformerState): LiftedLambda[LCExp] = exp match {
     case InfixBuiltin(lhs, op, rhs) => {
-      val fst = LCName("fst")
-      val snd = LCName("snd")
-      val f = LCFunction("infix1", fst, LCFunction("infix2", snd, LCTerminalOperation(fst, op, snd)))
       val lhEval = symbolizeExpression(lhs)(ts)
       val rhEval = symbolizeExpression(rhs)(ts)
-      LiftedLambda(LCApplication(LCApplication(f, lhEval.exp), rhEval.exp), lhEval.closures ++ rhEval.closures)
+
+      LiftedLambda(LCTerminalOperation(lhEval.exp, op, rhEval.exp), lhEval.closures ++ rhEval.closures)
     }
     case ConstantInteger(n) => LiftedLambda(LCNumber(n.dn.name.toInt), Nil)
     case ConstantStr(s) => LiftedLambda(LCString(s.mkString), Nil)
@@ -142,9 +140,13 @@ object LCTransform {
       accum combine TransformerState(param=Map(next.id.dn.name -> Symbol(accum.depth, ParameterSymbol(next.id.dn.name))))
     }
     val x = d.body.fold(x => symbolizeFunctionBody(x.children, x.`end`)(modT), symbolizeFunctionBody(Nil, _)(modT))
+    // Define actual parameters first
+    val parameterized = d.params.foldLeft(x.exp) { case (accum, next) =>
+      LCFunction(s"arg", LCName(next.id.dn.name), accum)
+    }
     // Variables applicable from current level
     val (applicable, rest) = x.closures.partition(_.depth == ts.depth)
-    val curriedPrime = applicable.foldLeft(x.exp){ case (accum, next) =>
+    val curriedPrime = applicable.foldLeft(parameterized){ case (accum, next) =>
       LCFunction(s"curry_${next.symbolName}", LCName(next.symbolName), accum)
     }
     val bindingName = LCName(s"${d.varname.dn.name}_prime")
@@ -152,7 +154,9 @@ object LCTransform {
     val applied = applicable.reverse.foldLeft((bindingName): LCExp){ case (accum, next) =>
       LCApplication(accum, LCName(next.symbolName))
     }
-    val body = LCBody(NonEmptyList.one(binding), applied)
+    val nonPrime = LCName(s"${d.varname.dn.name}")
+    val appliedNonPrime = LCBinding(nonPrime, applied)
+    val body = LCBody(NonEmptyList(binding, List(appliedNonPrime)), nonPrime)
     LiftedLambda(body, rest)
   }
 

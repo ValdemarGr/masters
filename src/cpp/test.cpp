@@ -3,17 +3,19 @@
 int main() {
 
     {
-        auto add_prime = (([=](auto fst) {
-            return [=](auto snd) {
-                return (fst + snd);
-            };
-        })(a))(b);
-
-        auto main_prime = [=](auto add) {
-            return ((add)(1))(2);
+    auto add_prime = [=](auto b) {
+        return [=](auto a) {
+            return ((a) + (b));
         };
+    };
+    auto add = add_prime;
 
-        return main;
+    auto main_prime = [=](auto add) {
+        return ((add)(1))(2);
+    };
+    auto main = (main_prime)(add);
+
+    return main;
     }
 
 

@@ -25,8 +25,8 @@ object LCLanguage {
   case class LCApplication(fst: LCExp, snd: LCExp) extends LCExp {
     def stringify: String = s"(${fst.stringify} ${snd.stringify})"
   }
-  case class LCTerminalOperation(lh: LCName, op: BuiltinOperator, rh: LCName) extends LCExp {
-    def stringify: String = s"${lh.name} ${op} ${rh.name}"
+  case class LCTerminalOperation(lh: LCExp, op: BuiltinOperator, rh: LCExp) extends LCExp {
+    def stringify: String = s"${lh.stringify} ${op} ${rh.stringify}"
   }
   case class LCString(v: String) extends LCExp {
     def stringify: String = s"'${v}'"
