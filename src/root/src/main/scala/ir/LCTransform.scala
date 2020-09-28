@@ -136,12 +136,13 @@ object LCTransform {
 
   def makeFunctionSymbol(d: FunDecl)(ts: TransformerState): LiftedLambda[LCBody] = {
     val depthOne = ts.copy(depth = ts.depth + 1)
-    val modT = d.params.foldLeft(depthOne) { case (accum, next) =>
+    val selfRef = depthOne combine TransformerState(func = Map(d.varname.dn -> Symbol[FunDecl](ts.depth, d)))
+    val modT = d.params.foldLeft(selfRef) { case (accum, next) =>
       accum combine TransformerState(param=Map(next.id.dn.name -> Symbol(accum.depth, ParameterSymbol(next.id.dn.name))))
     }
     val x = d.body.fold(x => symbolizeFunctionBody(x.children, x.`end`)(modT), symbolizeFunctionBody(Nil, _)(modT))
     // Define actual parameters first
-    val parameterized = d.params.foldLeft(x.exp) { case (accum, next) =>
+    val parameterized = d.params.reverse.foldLeft(x.exp) { case (accum, next) =>
       LCFunction(s"arg", LCName(next.id.dn.name), accum)
     }
     // Variables applicable from current level
@@ -149,10 +150,14 @@ object LCTransform {
     val curriedPrime = applicable.foldLeft(parameterized){ case (accum, next) =>
       LCFunction(s"curry_${next.symbolName}", LCName(next.symbolName), accum)
     }
-    val bindingName = LCName(s"${d.varname.dn.name}_prime")
+    val selfRefName = s"${d.varname.dn.name}_prime"
+    val bindingName = LCName(selfRefName)
     val binding = LCBinding(bindingName, curriedPrime)
     val applied = applicable.reverse.foldLeft((bindingName): LCExp){ case (accum, next) =>
-      LCApplication(accum, LCName(next.symbolName))
+      val suffix = if (selfRef.func.contains(DeclarationName(next.symbolName))) {
+        "_prime"
+      } else ""
+      LCApplication(accum, LCName(next.symbolName + suffix))
     }
     val nonPrime = LCName(s"${d.varname.dn.name}")
     val appliedNonPrime = LCBinding(nonPrime, applied)

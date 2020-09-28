@@ -11,10 +11,10 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use{ _ =>
     val program = {
       """
-        |fun add a b = a + b;
+        |fun fst a b = fst (a) b;
         |
         |fun main =
-        |  let c = add 1 2
+        |  let c = fst 1 2
         |  c
         |""".stripMargin
     }
@@ -27,7 +27,7 @@ object Main extends IOApp {
         case ParseResult.Done(rest, result) =>
           val hasOther: Boolean = rest.collectFirst{ case x if skip.contains(x) => x }.isDefined
           val o = IO.pure(result)
-          val log = if (hasOther) IO(println(s"Failed with rest ${rest}")) else IO.unit
+          val log = if (hasOther) IO.raiseError(new Exception(s"Failed with rest ${rest}")) else IO.unit
           log *> o
         case x => IO(println(s"died at $x")).as(List.empty)
       }
