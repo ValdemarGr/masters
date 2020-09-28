@@ -8,18 +8,17 @@ import par.TokenTypes
 import par.TokenTypes._
 object LCTransform {
 
-  // Returns a list of required parameters to realize the funciton
+  /*
+  f' = (λf.λg.λa.λb.g a b)
+  g' = (λg.λf.λa.λb.f a b)
+
+  f = f' f' g
+  g = g' g' f
+
+  f a b
+  g a b
+  */
   def apply(f: Identifier, es: List[Expression])(ts: SymbolState): LiftedLambda[LCExp] = {
-    /*
-    f' = (λf.λg.λa.λb.g a b)
-    g' = (λg.λf.λa.λb.f a b)
-
-    f = f' f' g
-    g = g' g' f
-
-    f a b
-    g a b
-    */
     val id = f.dn
 
     def isClosure(depth: Depth, name: String): List[Closure] =
