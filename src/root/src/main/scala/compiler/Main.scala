@@ -11,7 +11,10 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use{ _ =>
     val program = {
       """
-        |fun fst a b = fst (a) b;
+        |fun fst_impl f a b = f (a) b;
+        |
+        |fun fst a b = fst_impl (fst_impl) a b;
+        |
         |
         |fun main =
         |  let c = fst 1 2

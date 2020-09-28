@@ -88,8 +88,8 @@ fun y a = m a;
     \begin{gather}
         m' = \lambda y. \lambda a. y \,\, a \nonumber \\
         y' = \lambda m. \lambda a. m \,\, a \nonumber \\
-        y = y' \,\, m' \nonumber \\
-        m = m' \,\, y'
+        y = y' \,\, (m' \,\, y') \nonumber \\
+        m = m' \,\, (y' \,\, m')
     \end{gather}
     \begin{figure}[htp]
         \centering

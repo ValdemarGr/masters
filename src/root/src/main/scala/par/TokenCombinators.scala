@@ -23,7 +23,7 @@ object TokenCombinators {
   val endDecl = many(spaceChar) ~> (char('\n') | char(';'))
   val let = string("let") ~> many(spaceChar)
   val fun = string("fun") ~> many(spaceChar)
-  val id = spaces(many1(letter))
+  val id = spaces(many1(letter | char('_')))
   val infixBuiltin: Parser[BuiltinOperator] = {
     val addition = char('+') >| Addition
     addition
