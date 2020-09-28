@@ -1,0 +1,111 @@
+%! Author = valde
+%! Date = 9/13/20
+
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+\usepackage{minted}
+\usepackage{hyperref}
+\usepackage{xpatch,letltxmacro}
+
+\hypersetup{
+colorlinks=true,
+linkcolor=blue,
+filecolor=magenta,
+urlcolor=cyan,
+}
+\urlstyle{same}
+
+\LetLtxMacro{\cminted}{\minted}
+\let\endcminted\endminted
+\xpretocmd{\cminted}{\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}}{}{}
+
+\renewcommand{\figurename}{Listing}
+
+% Document
+\begin{document}
+\section{Lambda lifting}
+    \begin{figure}[htp]
+        \centering
+        \begin{cminted}{ocaml}
+let g = 22;
+fun add a = a + g;
+        \end{cminted}
+        \caption{Simple add in ML}
+        \label{lst:simple_add}
+    \end{figure}
+    \begin{gather}
+        add' = \lambda g. \lambda a. a + g \nonumber \\
+        add = add' g
+    \end{gather}
+    \begin{figure}[htp]
+        \centering
+        \begin{cminted}{ocaml}
+let g = 22;
+fun r a = r (a + g);
+        \end{cminted}
+        \caption{Recursive function in ML}
+        \label{lst:recursive_function}
+    \end{figure}
+    \begin{gather}
+        r' = \lambda r. \lambda g. \lambda a. r (g) (a + g) \nonumber \\
+        r = (r' r')(g)
+    \end{gather}
+    \begin{figure}[htp]
+        \centering
+        \begin{cminted}{ocaml}
+let g = 22;
+fun f a = y (a + g);
+fun y a = f (a + g);
+        \end{cminted}
+        \caption{Mutually recursive function in ML}
+        \label{lst:mutually_recursive}
+    \end{figure}
+    \begin{gather}
+        f' = \lambda f. \lambda y. \lambda g. \lambda a. y \,\, y \,\, f \,\, g \,\, (a + g) \nonumber \\
+        y' = \lambda y. \lambda f. \lambda g. \lambda a. f \,\, f \,\, y \,\, g \,\, (a + g) \nonumber \\
+        f = f' \,\, (f') \,\, (y') \nonumber \\
+        y = y' \,\, (y') \,\, (f') \nonumber \\
+        \text{or} \nonumber \\
+        f' = \lambda y. \lambda g. \lambda a. y \,\, g \,\, (a + g) \nonumber \\
+        y' = \lambda f. \lambda g. \lambda a. f \,\, g \,\, (a + g) \nonumber \\
+        f = f' \,\, (y' \,\, f') \nonumber \\
+        y = y' \,\, (f' \,\, y')
+    \end{gather}
+    \begin{figure}[htp]
+        \centering
+        \begin{cminted}{ocaml}
+fun m =
+    fun f a = y a;
+    f
+fun y a = m a;
+        \end{cminted}
+        \caption{Mutually recursive closure in ML}
+        \label{lst:mutually_recursive_curried}
+    \end{figure}
+    \begin{gather}
+        m' = \lambda y. \lambda a. y \,\, a \nonumber \\
+        y' = \lambda m. \lambda a. m \,\, a \nonumber \\
+        y = y' \,\, m' \nonumber \\
+        m = m' \,\, y'
+    \end{gather}
+    \begin{figure}[htp]
+        \centering
+        \begin{cminted}{ocaml}
+let q = 11;
+fun f a =
+    let x = 22;
+    fun g b = a + x + b + q;
+    g;
+        \end{cminted}
+        \caption{Closures in ML}
+        \label{lst:closures}
+    \end{figure}
+    \begin{gather}
+        g' = \lambda q \lambda a. \lambda x. \lambda b. a + b + x + q \nonumber \\
+        f' = \lambda q. \lambda a. g' \,\, q \,\, a \,\, 22 \nonumber \\
+        f = f' \,\, 11
+    \end{gather}
+\end{document}
