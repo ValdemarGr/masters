@@ -1,27 +1,35 @@
 #include <iostream>
 
 int main() {
+    auto v = ([=](auto main_prime) {
+                 return ([=](auto add_prime) {
+                     return ([=](auto main) {
+                         return ([=](auto add) {
+                             return main;
+                         })(((add_prime)(main_prime))(add_prime));
+                     })(((main_prime)(main_prime))(add_prime));
+                 })([=](auto main) {
+                     return [=](auto add) {
+                         return [=](auto a) {
+                             return [=](auto b) {
+                                 return ((a) + (b));
+                             };
+                         };
+                     };
+                 });
+             })([=](auto main) {
+                 return [=](auto add) {
+                     return ([=](auto c_prime) {
+                         return ([=](auto c) {
+                             return c;
+                         })((c_prime)(c_prime));
+                     })([=](auto c) {
+                         return ((add)(1))(2);
+                     });
+                 };
+             });
 
-    {
-        auto fst_prime = [=](auto fst) {
-            return [=](auto a) {
-                return [=](auto b) {
-                    if (a == 0) {
-                        return 0;
-                    }
-                    return ((fst)(fst)(a - 1))(b);
-                };
-            };
-        };
-        auto fst = (fst_prime)(fst_prime);
-        auto main2_prime = [=](auto fst) {
-            return ((fst)(1))(2);
-        };
-        auto main2 = (main2_prime)(fst);
-        return main2;
-        std::cout << main2 << std::endl;
-    }
-
+    std::cout << v(4)(5) << std::endl;
 
     return 0;
 }

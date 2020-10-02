@@ -15,8 +15,6 @@ object LCEmitter {
     case LCTerminalOperation(l, op ,r) => s"((${emit(l)}) ${emitOp(op)} (${emit(r)}))"
     case LCString(s) => ("\"" + s + "\"")
     case LCNumber(n) => n.toString
-    case LCBody(bs, expr) =>
-      "{\n" + bs.map(x => s"auto ${x.name.name} = ${emit(x.rhs)};\n").toList.mkString + s"return ${emit(expr)};\n}"
     case LCDebug(_) => ???
   }
 }

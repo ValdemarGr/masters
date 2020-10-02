@@ -2,23 +2,9 @@ package ir
 
 import cats.Monoid
 import cats.data.NonEmptyList
-import ir.LCLanguage._
 import par.TokenTypes._
 
 object IRSymbols {
-  case class Closure(
-                      depth: Depth,
-                      symbolName: String
-                    )
-
-  case class LiftedLambda[E <: LCExp](
-                                       exp: E,
-                                       closures: List[Closure]
-                                     ) {
-    // withClosure
-    def wc(c: List[Closure]): LiftedLambda[LCExp] = copy(closures=closures ++ c)
-  }
-
   case class DeclarationName(name: String)
   case class Symbol[T](
                         depth: Int,
@@ -36,7 +22,7 @@ object IRSymbols {
 
   case class UnappliedFunc(
                           source: FunDecl,
-                          applicable: List[Closure]
+                          applicable: List[String]
                           )
   type UnappliedFuncTable = Map[String, Symbol[UnappliedFunc]]
 
@@ -76,57 +62,4 @@ object IRSymbols {
     val dn = DeclarationName(nel.toList.mkString)
     val str = dn.name
   }
-
-  def orderlessSymbolValue(vd: ValueDeclaration)(ss: SymbolState): SymbolState = vd match {
-    case fd: FunDecl => SymbolState(func=Map(fd.varname.dn -> Symbol[FunDecl](ss.depth, fd)))
-    case _: LetDecl => SymbolState()
-    case Ignore => SymbolState()
-    case _: Import => SymbolState()
-  }
-
-  def orderlessSymbol(decl: Declaration)(ss: SymbolState): SymbolState = decl match {
-    case vd: ValueDeclaration => orderlessSymbolValue(vd)(ss)
-    case _: TypelevelDeclaration => ???
-    case Ignore => SymbolState()
-  }
-
-  def orderlessSymbols(decls: List[Declaration])(ss: SymbolState): SymbolState = decls.foldLeft(SymbolState()){ case (accum, next) =>
-    accum combine orderlessSymbol(next)(ss)
-  }
-
-  def unwrapVD[A](f: FunDecl => A)(vd: ValueDeclaration)(ss: SymbolState)(implicit M: Monoid[A]): A = vd match {
-    case fd: FunDecl => f(fd)
-    case _: LetDecl => M.empty
-    case Ignore => M.empty
-    case _: Import => M.empty
-  }
-
-  def unwrapDecl[A](f: FunDecl => A)(decl: Declaration)(ss: SymbolState)(implicit M: Monoid[A]): A = decl match {
-    case vd: ValueDeclaration => unwrapVD[A](f)(vd)(ss)
-    case _: TypelevelDeclaration => ???
-    case Ignore => M.empty
-  }
-
-  def unwrapDecls[A](decls: List[Declaration])(ss: SymbolState)(f: FunDecl => A)(implicit M: Monoid[A]): A = decls.foldLeft(M.empty){ case (accum, next) =>
-    M.combine(accum, unwrapDecl[A](f)(next)(ss))
-  }
-
-  def genPrimeValue(vd: ValueDeclaration)(ss: SymbolState): (List[LCBinding], SymbolState) = vd match {
-    case fd: FunDecl => Nil -> SymbolState(func=Map(fd.varname.dn -> Symbol[FunDecl](ss.depth, fd)))
-    case _: LetDecl => Nil -> SymbolState()
-    case Ignore => Nil -> SymbolState()
-    case _: Import => Nil -> SymbolState()
-  }
-
-  def genPrimeFunc(decl: Declaration)(ss: SymbolState): (List[LCBinding], SymbolState) =  decl match {
-    case vd: ValueDeclaration => genPrimeValue(vd)(ss)
-    case _: TypelevelDeclaration => ???
-    case Ignore => Nil -> SymbolState()
-  }
-
-  def genPrimeFuncs(decls: List[Declaration])(ss: SymbolState): (List[LCBinding], SymbolState) = decls
-    .foldLeft(List.empty[LCBinding] -> SymbolState()){ case ((accumLCs, ss), next) =>
-      val (bindings, s) = genPrimeFunc(next)(ss)
-      (accumLCs ++ bindings, ss combine s)
-    }
 }

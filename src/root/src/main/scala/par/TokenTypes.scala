@@ -12,7 +12,7 @@ object TokenTypes {
   case class Import(imp: Identifier) extends ValueDeclaration
   case class LetDecl(varname: Identifier, value: Expression) extends ValueDeclaration
   case class FunDecl(varname: Identifier, params: List[FunctionParam], body: Either[FunctionBody, Expression]) extends ValueDeclaration
-  case class FunctionBody(children: List[ValueDeclaration], end: Expression)
+  case class FunctionBody(children: List[Declaration], end: Expression)
 
   trait TypelevelDeclaration extends Declaration
   case class TypeDeclaration(typename: Identifier, typeParams: List[Identifier], expr: TypelevelExpression) extends TypelevelDeclaration

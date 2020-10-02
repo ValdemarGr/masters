@@ -15,14 +15,13 @@ object Main extends IOApp {
         |
         | //fun fst a b = fst_impl (fst_impl) a b;
         |
-        | fun fst a b =
-        |   fun fst_impl f a b = f a b;
-        |   fst_impl (fst_impl) a b
+        | //fun f a b = g (a) b;
+        | //fun g a b = f (a) b;
         |
-        | //fun fst a b = fst (a) b;
+        | fun add a b = a + b
         |
         |fun main =
-        |  let c = fst 1 2
+        |  let c = add 1 2
         |  c
         |""".stripMargin
     }
@@ -43,7 +42,7 @@ object Main extends IOApp {
       .compile
       .fold(List.empty[TokenTypes.Declaration]){ case (a, b) => a ++ List(b) }
 
-    parsed.map(x => println(emitter.LCEmitter.emit(LCTransform.transformEntry(x)))) *>
+    parsed.map(x => println(emitter.LCEmitter.emit(LCTransform.entrypoint(x)))) *>
       IO(ExitCode.Success)
   }
 }
