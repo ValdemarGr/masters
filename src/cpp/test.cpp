@@ -1,35 +1,44 @@
 #include <iostream>
 
 int main() {
-    auto v = ([=](auto main_prime) {
-                 return ([=](auto add_prime) {
-                     return ([=](auto main) {
-                         return ([=](auto add) {
-                             return main;
-                         })(((add_prime)(main_prime))(add_prime));
-                     })(((main_prime)(main_prime))(add_prime));
-                 })([=](auto main_prime) {
-                     return [=](auto add_prime) {
-                         return ([=](auto main) {
-                             return ([=](auto add) {
-                                 return [=](auto a) {
-                                     return [=](auto b) {
-                                         return ((a) + (b));
-                                     };
-                                 };
-                             })(((add_prime)(main_prime))(add_prime));
-                         })(((main_prime)(main_prime))(add_prime));
-                     };
-                 });
-             })([=](auto main_prime) {
-                 return [=](auto add_prime) {
-                     return ([=](auto main) {
-                         return ([=](auto add) {
-                             return ((add)(2))(4);
-                         })(((add_prime)(main_prime))(add_prime));
-                     })(((main_prime)(main_prime))(add_prime));
-                 };
-             });
+auto v =
+([=](auto main) {
+    return ([=](auto g) {
+        return ([=](auto f) {
+            return (((main)(main))(g))(f);
+        })([=](auto main) {
+            return [=](auto g) {
+                return [=](auto f) {
+                    return [=](auto a) {
+                        if (a == 0) {
+                            return 0;
+                        }
+                        std::cout << a << " f" << std::endl;
+                        return ((((g)(main))(g))(f))(a - 1);
+                    };
+                };
+            };
+        });
+    })([=](auto main) {
+        return [=](auto g) {
+            return [=](auto f) {
+                return [=](auto a) {
+                    if (a == 0) {
+                        return 0;
+                    }
+                    std::cout << a << " g" << std::endl;
+                    return ((((f)(main))(g))(f))(a - 1);
+                };
+            };
+        };
+    });
+})([=](auto main) {
+    return [=](auto g) {
+        return [=](auto f) {
+            return ((((f)(main))(g))(f))(5);
+        };
+    };
+});
 
     std::cout << v << std::endl;
 

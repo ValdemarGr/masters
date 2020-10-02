@@ -26,7 +26,8 @@ object TokenCombinators {
   val id = spaces(many1(letter | char('_')))
   val infixBuiltin: Parser[BuiltinOperator] = {
     val addition = char('+') >| Addition
-    addition
+    val subtraction = char('-') >| Subtraction
+    addition | subtraction
   }
   val `=` = spaces(char('='))
   val `;` = many1(char(';'))

@@ -5,6 +5,8 @@ import ir.IRSymbols._
 import ir.LCLanguage._
 import par.TokenTypes._
 
+import scala.collection.SortedSet
+
 /*
      (λf'.
        (λg'.
@@ -24,88 +26,92 @@ import par.TokenTypes._
        2) traverse functions_prime in above list and apply "this level's" curried values
 */
 object LCTransform {
-  def evalExpr(expr: Expression): LCExp = expr match {
+  type FunctionSet = SortedSet[String]
+  type FunctionMap = Map[String, FunctionSet]
+
+  def evalExpr(fm: FunctionMap)(expr: Expression): LCExp = expr match {
     case InfixBuiltin(lhs, op, rhs) => {
-      val lhEval = evalExpr(lhs)
-      val rhEval = evalExpr(rhs)
+      val lhEval = evalExpr(fm)(lhs)
+      val rhEval = evalExpr(fm)(rhs)
 
       LCTerminalOperation(lhEval, op, rhEval)
     }
     case ConstantInteger(n) => LCNumber(n.dn.name.toInt)
     case ConstantStr(s) => LCString(s.mkString)
     case Apply(f, e) =>
-      e.foldLeft[LCExp](LCName(f.str)){ case (accum, next) => LCApplication(accum, evalExpr(next)) }
+      val fName = LCName(f.str)
+      def makeE(inner: LCExp): LCExp = e.foldLeft[LCExp](inner){ case (accum, next) => LCApplication(accum, evalExpr(fm)(next)) }
+      fm.get(f.str) match {
+        case None => makeE(fName)
+        case Some(ps) => makeE(ps.toList.reverse.foldLeft[LCExp](fName){ case (accum, next) => LCApplication(accum, LCName(next)) })
+      }
   }
 
-  def buildFunBody(body: Either[FunctionBody, Expression]): LCExp = body match {
-    case Right(exp) => evalExpr(exp)
-    case Left(value) => buildDeclarations(value.children, evalExpr(value.`end`))
+  def buildFunBody(fm: FunctionMap)(body: Either[FunctionBody, Expression]): LCExp = body match {
+    case Right(exp) => evalExpr(fm)(exp)
+    case Left(value) => buildDeclarations(fm)(value.children, evalExpr(fm)(value.`end`))
   }
 
-  def buildValueDeclaration(vd: ValueDeclaration): Option[(String, LCExp)] = vd match {
+  def buildValueDeclaration(fm: FunctionMap)(vd: ValueDeclaration): Option[(String, LCExp)] = vd match {
     case FunDecl(name, params, body) =>
-      val built = buildFunBody(body)
+      val built = buildFunBody(fm)(body)
       val withParams = params.reverse.foldLeft(built){ case (accum, next) =>
         LCFunction(next.id.str, LCName(next.id.str), accum)
       }
       Some(name.str -> withParams)
     case LetDecl(name, expr) =>
-      Some(name.str -> evalExpr(expr))
+      Some(name.str -> evalExpr(fm)(expr))
     case Import(_) => ???
     case Ignore => None
   }
 
-  def buildDeclaration(decl: Declaration): Option[(String, LCExp)] = decl match {
-    case vd: ValueDeclaration => buildValueDeclaration(vd)
+  def buildDeclaration(fm: FunctionMap)(decl: Declaration): Option[(String, LCExp)] = decl match {
+    case vd: ValueDeclaration => buildValueDeclaration(fm)(vd)
     case _: TypelevelDeclaration => ???
     case Ignore => None
   }
 
-  def buildDeclarations(body: List[Declaration], expr: LCExp): LCExp = {
+  def buildDeclarations(fm: FunctionMap)(body: List[Declaration], expr: LCExp): LCExp = {
     val dis = declsInScope(body)
+    val modFm: FunctionMap = fm ++ dis
+      .map(x => x -> dis)
+      .toMap
 
-    val definedDeclarations = body.flatMap(buildDeclaration)
+    val definedDeclarations = body.flatMap(buildDeclaration(modFm))
 
-    val foldedApplications = definedDeclarations.foldLeft(expr) { case (innerExp, (name, _)) =>
-      val aps: LCExp = dis.reverse.foldLeft[LCExp](LCName(name + "_prime")) { case (accum, next) =>
-        LCApplication(accum, LCName(next + "_prime"))
+    definedDeclarations.foldLeft(expr) { case (innerExp, (name, functionBodyExp)) =>
+      val aps: LCExp = dis.toList.foldLeft[LCExp](functionBodyExp) { case (accum, next) =>
+        LCFunction(next, LCName(next), accum)
       }
       LCApplication(LCFunction(name, LCName(name), innerExp), aps)
     }
-
-    definedDeclarations.foldLeft(foldedApplications) { case (accum, (name, exp)) =>
-      val aps: LCExp = dis.foldLeft[LCExp](exp) { case (accum, name) =>
-        val e = dis.reverse.foldLeft[LCExp](LCName(name + "_prime")){ case (accum, next) =>
-          LCApplication(accum, LCName(next + "_prime"))
-        }
-        LCApplication(LCFunction(name, LCName(name), accum), e)
-      }
-      val apsPrime: LCExp = dis.foldLeft[LCExp](aps) { case (accum, next) =>
-        LCFunction(next + "_prime", LCName(next + "_prime"), accum)
-      }
-      LCApplication(LCFunction(name + "_prime", LCName(name + "_prime"), accum), apsPrime)
-    }
   }
 
-  def vdInScope(vd: ValueDeclaration): List[String] = vd match {
-    case FunDecl(name, _, _) => List(name.str)
-    case LetDecl(name, _) => List(name.str)
-    case Import(_) => List.empty
-    case Ignore => List.empty
+  def vdInScope(vd: ValueDeclaration): FunctionSet = vd match {
+    case FunDecl(name, _, _) => SortedSet(name.str)
+    case LetDecl(name, _) => SortedSet(name.str)
+    case Import(_) => SortedSet.empty
+    case Ignore => SortedSet.empty
   }
 
-  def declInScope(d: Declaration): List[String] = d match {
+  def declInScope(d: Declaration): FunctionSet = d match {
     case vd: ValueDeclaration => vdInScope(vd)
     case _: TypelevelDeclaration => ???
-    case Ignore => List.empty
+    case Ignore => SortedSet.empty
   }
 
-  def declsInScope(b: List[Declaration]): List[String] = b.foldLeft(List.empty[String]){ case (accum, next) =>
+  def declsInScope(b: List[Declaration]): FunctionSet = b.foldLeft(SortedSet.empty[String]){ case (accum, next) =>
     accum ++ declInScope(next)
   }
 
   def entrypoint(toplevelBody: List[Declaration]): LCExp = {
-    buildFunBody(Left(FunctionBody(toplevelBody, Apply(NonEmptyList('m', List('a', 'i', 'n')), List.empty))))
+    def toNel(s: String) = s.toList match {
+      case Nil => ???
+      case x :: xs => NonEmptyList(x, xs)
+    }
+    val xs = declsInScope(toplevelBody)
+    val main = NonEmptyList('m', List('a', 'i', 'n'))
+    buildFunBody(Map.empty)(Left(FunctionBody(toplevelBody, Apply(main, xs.toList.reverse.map(x => Apply(toNel(x), Nil))))))
   }
 
   /*def apply(f: Identifier, es: List[Expression])(ts: SymbolState): LiftedLambda[LCExp] = {

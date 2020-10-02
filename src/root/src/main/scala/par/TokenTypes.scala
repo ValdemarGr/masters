@@ -27,6 +27,7 @@ object TokenTypes {
 
   trait BuiltinOperator
   case object Addition extends BuiltinOperator
+  case object Subtraction extends BuiltinOperator
 
   trait Expression extends Token
   case class InfixBuiltin(lhs: Expression, op: BuiltinOperator, rhs: Expression) extends Expression

@@ -15,12 +15,12 @@ object Main extends IOApp {
         |
         | //fun fst a b = fst_impl (fst_impl) a b;
         |
-        | //fun f a b = g (a) b;
-        | //fun g a b = f (a) b;
+        |fun f a = g a - 1;
+        |fun g a = f a - 1;
         |
-        |fun add a b = a + b
+        |//fun add a b = a + b
         |
-        |fun main = add 2 4
+        |fun main = f 5
         |""".stripMargin
     }
 
