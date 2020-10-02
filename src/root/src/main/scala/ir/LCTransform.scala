@@ -74,10 +74,16 @@ object LCTransform {
     }
 
     definedDeclarations.foldLeft(foldedApplications) { case (accum, (name, exp)) =>
-      val aps: LCExp = dis.foldLeft[LCExp](exp) { case (accum, next) =>
-        LCFunction(next, LCName(next), accum)
+      val aps: LCExp = dis.foldLeft[LCExp](exp) { case (accum, name) =>
+        val e = dis.reverse.foldLeft[LCExp](LCName(name + "_prime")){ case (accum, next) =>
+          LCApplication(accum, LCName(next + "_prime"))
+        }
+        LCApplication(LCFunction(name, LCName(name), accum), e)
       }
-      LCApplication(LCFunction(name + "_prime", LCName(name + "_prime"), accum), aps)
+      val apsPrime: LCExp = dis.foldLeft[LCExp](aps) { case (accum, next) =>
+        LCFunction(next + "_prime", LCName(next + "_prime"), accum)
+      }
+      LCApplication(LCFunction(name + "_prime", LCName(name + "_prime"), accum), apsPrime)
     }
   }
 

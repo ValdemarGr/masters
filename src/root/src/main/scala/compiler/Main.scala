@@ -18,11 +18,9 @@ object Main extends IOApp {
         | //fun f a b = g (a) b;
         | //fun g a b = f (a) b;
         |
-        | fun add a b = a + b
+        |fun add a b = a + b
         |
-        |fun main =
-        |  let c = add 1 2
-        |  c
+        |fun main = add 2 4
         |""".stripMargin
     }
 
