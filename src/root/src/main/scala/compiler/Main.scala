@@ -15,9 +15,13 @@ object Main extends IOApp {
         |//fun f a = g a;
         |//fun g a = f a;
         |
-        |fun add a b = (a + b);
+        |//fun add a b = (a + b);
+        |//
+        |//fun add a b = ((a + a) + (b + a));
+        |//
+        |fun add a b = (a b + ((a + b) + (a + b)));
         |
-        |fun main = add 2 4;
+        |//fun main = add 2 4;
         |""".stripMargin
     }
 

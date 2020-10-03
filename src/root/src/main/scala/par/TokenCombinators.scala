@@ -42,12 +42,19 @@ object TokenCombinators {
   val expBody: Parser[Expression] = spaces(number | str.ptap("str") | infixOp | app)
   val expression = spaces(parens(expBody).ptap("expr parens") | expBody.ptap("expr no parens"))*/
 
+  //val number: Parser[Expression] = spaces(int.ptap("int")) map ConstantInteger
+  //val app: Parser[Expression] = spaces(id.ptap("app id")) ~ spaces(many(expression.ptap("app expr"))) map Apply.tupled
+  //val infixExpr: Parser[Expression] = spaces(number | parens(app) | parens(infix))
+  //val infix: Parser[Expression] = spaces(infixExpr.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(infixExpr.ptap("infix rhs")) map t3 map InfixBuiltin.tupled
+  //val expressionType: Parser[Expression] = spaces(infix | number | app).ptap("expr type")
+  //val expression: Parser[Expression] = spaces(parens(expressionType).ptap("parens") | expressionType.ptap("no parens"))
+
   val number: Parser[Expression] = spaces(int.ptap("int")) map ConstantInteger
-  val app: Parser[Expression] = spaces(id.ptap("app id")) ~ spaces(many(expression.ptap("app expr"))) map Apply.tupled
-  val infixExpr: Parser[Expression] = spaces(number | parens(app) | parens(infix))
-  val infix: Parser[Expression] = spaces(infixExpr.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(infixExpr.ptap("infix rhs")) map t3 map InfixBuiltin.tupled
-  val expressionType: Parser[Expression] = spaces(infix | number | app).ptap("expr type")
-  val expression: Parser[Expression] = spaces(parens(expressionType).ptap("parens") | expressionType.ptap("no parens"))
+  val app: Parser[Expression] =
+    spaces(id.ptap("app id")) ~ spaces(many(expression.ptap("app expr"))) map Apply.tupled
+  val infix: Parser[Expression] =
+    parens(spaces(expression.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(expression.ptap("infix rhs")) map t3 map InfixBuiltin.tupled)
+  val expression: Parser[Expression] = spaces((number | infix | parens(app) | app).ptap("parens"))
 
   val imp: Parser[ValueDeclaration] = (string("import") ~> spaces(id)) <~ endDecl map Import
   val letDecl: Parser[ValueDeclaration] = (let ~> id <~ `=`) ~ expression <~ endDecl map LetDecl.tupled
