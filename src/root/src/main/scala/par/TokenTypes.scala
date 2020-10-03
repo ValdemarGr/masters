@@ -11,7 +11,7 @@ object TokenTypes {
   case class FunctionParam(id: Identifier)
   case class Import(imp: Identifier) extends ValueDeclaration
   case class LetDecl(varname: Identifier, value: Expression) extends ValueDeclaration
-  case class FunDecl(varname: Identifier, params: List[FunctionParam], body: Either[FunctionBody, Expression]) extends ValueDeclaration
+  case class FunDecl(varname: Identifier, params: List[FunctionParam], body: FunctionBody) extends ValueDeclaration
   case class FunctionBody(children: List[Declaration], end: Expression)
 
   trait TypelevelDeclaration extends Declaration
@@ -34,7 +34,7 @@ object TokenTypes {
   case class Apply(name: Identifier, vs: List[Expression]) extends Expression
 
   trait Constant extends Expression
-  case class ConstantInteger(v: Identifier) extends Constant
+  case class ConstantInteger(v: Int) extends Constant
   case class ConstantStr(v: List[Char]) extends Constant
 
   case object Ignore extends Expression with Declaration with ValueDeclaration

@@ -11,20 +11,20 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use{ _ =>
     val program = {
       """
-        | //fun fst_impl f a b = f (a) b;
         |
-        | //fun fst a b = fst_impl (fst_impl) a b;
+        |//fun f a = g a;
+        |//fun g a = f a;
         |
-        |fun f a = g a - 1;
-        |fun g a = f a - 1;
+        |fun add a b = (a + b);
         |
-        |//fun add a b = a + b
-        |
-        |fun main = f 5
+        |fun main = add 2 4;
         |""".stripMargin
     }
 
     val skip = Set(' ', '\n')
+
+    val programStart = "#include <iostream>\n\nint main() {\nauto v ="
+    val programEnd = ";\n\n    std::cout << v << std::endl;\n\n    return 0;\n}"
 
     val parsed = fs2.Stream(program)
       .map(x => TokenCombinators.parser parseOnly x)
@@ -32,7 +32,11 @@ object Main extends IOApp {
         case ParseResult.Done(rest, result) =>
           val hasOther: Boolean = rest.collectFirst{ case x if skip.contains(x) => x }.isDefined
           val o = IO.pure(result)
-          val log = if (hasOther) IO.raiseError(new Exception(s"Failed with rest ${rest}")) else IO.unit
+          val log = if (hasOther) IO.raiseError {
+            val e = new Exception(s"Failed with rest ${rest}")
+            e.setStackTrace(Array.empty[StackTraceElement])
+            e
+          } else IO.unit
           log *> o
         case x => IO(println(s"died at $x")).as(List.empty)
       }
@@ -40,7 +44,7 @@ object Main extends IOApp {
       .compile
       .fold(List.empty[TokenTypes.Declaration]){ case (a, b) => a ++ List(b) }
 
-    parsed.map(x => println(emitter.LCEmitter.emit(LCTransform.entrypoint(x)))) *>
+    parsed.map(x => println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(x)) + programEnd)) *>
       IO(ExitCode.Success)
   }
 }

@@ -36,7 +36,7 @@ object LCTransform {
 
       LCTerminalOperation(lhEval, op, rhEval)
     }
-    case ConstantInteger(n) => LCNumber(n.dn.name.toInt)
+    case ConstantInteger(n) => LCNumber(n)
     case ConstantStr(s) => LCString(s.mkString)
     case Apply(f, e) =>
       val fName = LCName(f.str)
@@ -47,10 +47,8 @@ object LCTransform {
       }
   }
 
-  def buildFunBody(fm: FunctionMap)(body: Either[FunctionBody, Expression]): LCExp = body match {
-    case Right(exp) => evalExpr(fm)(exp)
-    case Left(value) => buildDeclarations(fm)(value.children, evalExpr(fm)(value.`end`))
-  }
+  def buildFunBody(fm: FunctionMap)(body: FunctionBody): LCExp =
+    buildDeclarations(fm)(body.children, evalExpr(fm)(body.`end`))
 
   def buildValueDeclaration(fm: FunctionMap)(vd: ValueDeclaration): Option[(String, LCExp)] = vd match {
     case FunDecl(name, params, body) =>
@@ -111,7 +109,7 @@ object LCTransform {
     }
     val xs = declsInScope(toplevelBody)
     val main = NonEmptyList('m', List('a', 'i', 'n'))
-    buildFunBody(Map.empty)(Left(FunctionBody(toplevelBody, Apply(main, xs.toList.reverse.map(x => Apply(toNel(x), Nil))))))
+    buildFunBody(Map.empty)(FunctionBody(toplevelBody, Apply(main, xs.toList.reverse.map(x => Apply(toNel(x), Nil)))))
   }
 
   /*def apply(f: Identifier, es: List[Expression])(ts: SymbolState): LiftedLambda[LCExp] = {

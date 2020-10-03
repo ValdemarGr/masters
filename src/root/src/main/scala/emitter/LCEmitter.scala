@@ -6,6 +6,7 @@ import par.TokenTypes._
 object LCEmitter {
   def emitOp(op: BuiltinOperator) = op match {
     case Addition => "+"
+    case Subtraction => "-"
   }
 
   def emit(e: LCExp): String = e match {
