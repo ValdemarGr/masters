@@ -26,10 +26,31 @@ import scala.collection.SortedSet
        2) traverse functions_prime in above list and apply "this level's" curried values
 */
 object LCTransform {
-  type FunctionSet = SortedSet[String]
-  type FunctionMap = Map[String, FunctionSet]
+  trait SymbolType { def ord: Int}
+  case object FunctionSym extends SymbolType { def ord: Int = 0}
+  case object TypeConstructorSym extends SymbolType { def ord: Int = 1}
 
-  def evalExpr(fm: FunctionMap)(expr: Expression): LCExp = expr match {
+  implicit object symTypeOrdering extends Ordering[SymbolType] {
+    override def compare(x: SymbolType, y: SymbolType): Int =
+      x.ord - y.ord
+  }
+
+  implicit object symOrdering extends Ordering[SymValue] {
+    override def compare(x: (String, SymbolType), y: (String, SymbolType)): Int =  {
+      val symOrd = implicitly[Ordering[SymbolType]].compare(x._2, y._2)
+      if (symOrd != 0) {
+        symOrd
+      } else {
+        implicitly[Ordering[String]].compare(x._1, y._1)
+      }
+    }
+  }
+
+  type SymValue = (String, SymbolType)
+  type SymbolSet = SortedSet[SymValue]
+  type SymbolMap = Map[String, SymbolSet]
+
+  def evalExpr(fm: SymbolMap)(expr: Expression): LCExp = expr match {
     case InfixBuiltin(lhs, op, rhs) => {
       val lhEval = evalExpr(fm)(lhs)
       val rhEval = evalExpr(fm)(rhs)
@@ -43,14 +64,18 @@ object LCTransform {
       def makeE(inner: LCExp): LCExp = e.foldLeft[LCExp](inner){ case (accum, next) => LCApplication(accum, evalExpr(fm)(next)) }
       fm.get(f.str) match {
         case None => makeE(fName)
-        case Some(ps) => makeE(ps.toList.reverse.foldLeft[LCExp](fName){ case (accum, next) => LCApplication(accum, LCName(next)) })
+        case Some(ps) => makeE(ps
+          .collect{ case (name, FunctionSym) => name }
+          .toList
+          .reverse
+          .foldLeft[LCExp](fName){ case (accum, next) => LCApplication(accum, LCName(next)) })
       }
   }
 
-  def buildFunBody(fm: FunctionMap)(body: FunctionBody): LCExp =
+  def buildFunBody(fm: SymbolMap)(body: FunctionBody): LCExp =
     buildDeclarations(fm)(body.children, evalExpr(fm)(body.`end`))
 
-  def buildValueDeclaration(fm: FunctionMap)(vd: ValueDeclaration): Option[(String, LCExp)] = vd match {
+  def buildValueDeclaration(fm: SymbolMap)(vd: ValueDeclaration): Option[(String, LCExp)] = vd match {
     case FunDecl(name, params, body) =>
       val built = buildFunBody(fm)(body)
       val withParams = params.reverse.foldLeft(built){ case (accum, next) =>
@@ -138,42 +163,49 @@ object LCTransform {
       expr.types.map(tt => buildTagType(expr.types)(tt))
   }
 
-  def buildDeclaration(fm: FunctionMap)(decl: Declaration): List[(String, LCExp)] = decl match {
-    case vd: ValueDeclaration => buildValueDeclaration(fm)(vd).toList
-    case td: TypelevelDeclaration => buildTypeDeclaration(td).toList
+  def buildDeclaration(fm: SymbolMap)(decl: Declaration): List[(SymbolType, (String, LCExp))] = decl match {
+    case vd: ValueDeclaration => buildValueDeclaration(fm)(vd).toList map (x => (FunctionSym, x))
+    case td: TypelevelDeclaration => buildTypeDeclaration(td).toList map (x => (TypeConstructorSym, x))
     case Ignore => Nil
   }
 
-  def buildDeclarations(fm: FunctionMap)(body: List[Declaration], expr: LCExp): LCExp = {
+  def buildDeclarations(fm: SymbolMap)(body: List[Declaration], expr: LCExp): LCExp = {
     val dis = declsInScope(body)
-    val modFm: FunctionMap = fm ++ dis
-      .map(x => x -> dis)
+    val modFm: SymbolMap = fm ++ dis
+      .map { case (x, _) => x -> dis }
       .toMap
 
     val definedDeclarations = body.flatMap(buildDeclaration(modFm))
 
-    definedDeclarations.foldLeft(expr) { case (innerExp, (name, functionBodyExp)) =>
-      val aps: LCExp = dis.toList.foldLeft[LCExp](functionBodyExp) { case (accum, next) =>
+    val typesDeclsFirst =  definedDeclarations.sortBy(_._1)
+      .collect{ case (_, v) => v }
+
+    typesDeclsFirst.foldLeft(expr) { case (innerExp, (name, functionBodyExp)) =>
+      val aps: LCExp = dis.collect{ case (x, FunctionSym) => x }.toList.foldLeft[LCExp](functionBodyExp) { case (accum, next) =>
         LCFunction(next, LCName(next), accum)
       }
       LCApplication(LCFunction(name, LCName(name), innerExp), aps)
     }
   }
 
-  def vdInScope(vd: ValueDeclaration): FunctionSet = vd match {
-    case FunDecl(name, _, _) => SortedSet(name.str)
-    case LetDecl(name, _) => SortedSet(name.str)
+  def vdInScope(vd: ValueDeclaration): SymbolSet = vd match {
+    case FunDecl(name, _, _) => SortedSet((name.str, FunctionSym))
+    case LetDecl(name, _) => SortedSet((name.str, FunctionSym))
     case Import(_) => SortedSet.empty
     case Ignore => SortedSet.empty
   }
 
-  def declInScope(d: Declaration): FunctionSet = d match {
+  def tdInScope(td: TypelevelDeclaration): SymbolSet = td match {
+    case TypeDeclaration(_, _, expr) => SortedSet(expr.types.map(tt => (tt.name.str, TypeConstructorSym)).toList: _*)
+  }
+
+  def declInScope(d: Declaration): SymbolSet = d match {
     case vd: ValueDeclaration => vdInScope(vd)
-    case _: TypelevelDeclaration => SortedSet.empty
+    case td: TypelevelDeclaration => tdInScope(td)
     case Ignore => SortedSet.empty
   }
 
-  def declsInScope(b: List[Declaration]): FunctionSet = b.foldLeft(SortedSet.empty[String]){ case (accum, next) =>
+  def declsInScope(b: List[Declaration]): SymbolSet = b.foldLeft(SortedSet.empty[(String, SymbolType)]){ case (accum, next) =>
     accum ++ declInScope(next)
   }
 
@@ -184,7 +216,12 @@ object LCTransform {
     }
     val xs = declsInScope(toplevelBody)
     val main = NonEmptyList('m', List('a', 'i', 'n'))
-    buildFunBody(Map.empty)(FunctionBody(toplevelBody, Apply(main, xs.toList.reverse.map(x => Apply(toNel(x), Nil)))))
+    buildFunBody(Map.empty)(FunctionBody(toplevelBody, Apply(main,
+      xs
+        .toList
+        .reverse
+        .collect{ case (x, FunctionSym) => Apply(toNel(x), Nil) }
+    )))
   }
 
   /*def apply(f: Identifier, es: List[Expression])(ts: SymbolState): LiftedLambda[LCExp] = {

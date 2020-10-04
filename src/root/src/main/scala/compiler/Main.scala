@@ -19,15 +19,22 @@ object Main extends IOApp {
         |
         |//fun add a b = (a b + ((a + b) + (a + b)));
         |
-        |//fun main = (2+2);
+        |let lst = Nil;
+        |
+        |let snd = Cons 2 Nil
+        |
+        |fun die x xs = 2
+        |
+        |fun ele x xs = x
+        |
+        |fun main = snd (ele) 4;
         |""".stripMargin
     }
 
     val skip = Set(' ', '\n')
 
-    val programStart = "#include <iostream>\n\nint main() {\nauto v ="
+    val programStart = "\n\n#include <iostream>\n\nint main() {\nauto v ="
     val programEnd = ";\n\n    std::cout << v << std::endl;\n\n    return 0;\n}"
-
     val parsed = fs2.Stream(program)
       .map(x => TokenCombinators.parser parseOnly x)
       .evalMap {

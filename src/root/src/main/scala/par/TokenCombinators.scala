@@ -13,7 +13,8 @@ object TokenCombinators {
     }
 
     def ptap(name: String): Parser[A] = tap{ value =>
-      println(s"in ${name} got value ${value}")
+      //println(s"in ${name} got value ${value}")
+      val _ = (name, value)
     }
   }
 
@@ -57,7 +58,7 @@ object TokenCombinators {
   val infix: Parser[Expression] =
     parens(spaces(expression.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(expression.ptap("infix rhs")) map t3 map InfixBuiltin.tupled)
   val conditional: Parser[Expression] = `if`.ptap("if") ~> (parens(expression) ~ functionBody <~ `else`) ~ functionBody map t3 map If.tupled
-  val expression: Parser[Expression] = spaces((conditional | number | infix | parens(app) | app).ptap("parens"))
+  val expression: Parser[Expression] = spaces((/*conditional | */number | infix | parens(app) | app).ptap("parens"))
 
   val imp: Parser[ValueDeclaration] = (string("import") ~> spaces(id)) <~ endDecl map Import
   val letDecl: Parser[ValueDeclaration] = (let ~> id <~ `=`) ~ expression <~ endDecl map LetDecl.tupled
