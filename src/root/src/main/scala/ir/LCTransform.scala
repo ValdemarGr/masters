@@ -63,10 +63,85 @@ object LCTransform {
     case Ignore => None
   }
 
-  def buildDeclaration(fm: FunctionMap)(decl: Declaration): Option[(String, LCExp)] = decl match {
-    case vd: ValueDeclaration => buildValueDeclaration(fm)(vd)
-    case _: TypelevelDeclaration => ???
-    case Ignore => None
+  /*
+    Maybe
+    data Maybe a = Just a | Nothing
+    maybe a: (a -> b) -> b -> b
+
+    just a = (onJust, onNothing) => onJust(a)
+    nothing = (onJust, onNothing) => onNothing()
+
+    just = λa.(λj.λn.j a)
+    nothing = (λj.λn.n)
+
+    test = just 4
+    test (λa.a + 5) (5) // 9
+
+    test = nothing
+    test (λa.a + 5) (5) // 5
+
+    List
+    data List a = Nil | Cons a (List a)
+
+    nil = (onNil, onCons) => onNil()
+    cons x xs = (onNil, onCons) => onCons(x, xs)
+
+    test = nil
+    test (5) (λx.λxs.x + 4) // 5
+
+    test = cons(4, nil)
+    test (5) (λx.λxs.x + 4) // 9
+
+    test = cons(4, cons(10, nil))
+    test (5) (λx.λxs.xs (5) (λx2.λxs2. x + x2)) // 10+4=14
+
+    test = cons(4, cons(10, const(2, nil)))
+    fr = (λf.λl. l (0) (λx.λxs.x + (f f xs)))
+    fl = (λf.λa.λl. l (0) (λx.λxs.f f (x + a) xs))
+    fr fr test // 16
+
+    to encode ADT's
+      1) run through all type declarations
+      2) encode the constructors as functions
+  */
+  //One constructor for each
+
+  def buildTagType(allTags: NonEmptyList[TagType])(tt: TagType): (String, LCExp) = {
+    val fName = tt.name.str
+    val params = tt.ids.zipWithIndex.map{ case (tp, i) =>
+      val parameterName = tp match {
+        case ParensType(params) => params.name.str
+        case TypeName(name) => name.str
+      }
+      parameterName + s"_${i}"
+    }
+
+    val fLCName = LCName(fName)
+
+    val patternHandler = params.reverse.foldLeft[LCExp](fLCName) { case (accum, next) =>
+      LCApplication(accum, LCName(next))
+    }
+
+    val parameterization = allTags.reverse.foldLeft(patternHandler) { case (accum, next) =>
+      LCFunction(next.name.str, LCName(next.name.str), accum)
+    }
+
+    val constructor = params.reverse.foldLeft(parameterization) { case (accum, next) =>
+      LCFunction(next, LCName(next), accum)
+    }
+
+    (fName, constructor)
+  }
+
+  def buildTypeDeclaration(td: TypelevelDeclaration): NonEmptyList[(String, LCExp)] = td match {
+    case TypeDeclaration(_, _, expr) =>
+      expr.types.map(tt => buildTagType(expr.types)(tt))
+  }
+
+  def buildDeclaration(fm: FunctionMap)(decl: Declaration): List[(String, LCExp)] = decl match {
+    case vd: ValueDeclaration => buildValueDeclaration(fm)(vd).toList
+    case td: TypelevelDeclaration => buildTypeDeclaration(td).toList
+    case Ignore => Nil
   }
 
   def buildDeclarations(fm: FunctionMap)(body: List[Declaration], expr: LCExp): LCExp = {
@@ -94,7 +169,7 @@ object LCTransform {
 
   def declInScope(d: Declaration): FunctionSet = d match {
     case vd: ValueDeclaration => vdInScope(vd)
-    case _: TypelevelDeclaration => ???
+    case _: TypelevelDeclaration => SortedSet.empty
     case Ignore => SortedSet.empty
   }
 

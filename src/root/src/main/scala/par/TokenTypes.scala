@@ -15,14 +15,14 @@ object TokenTypes {
   case class FunctionBody(children: List[Declaration], end: Expression)
 
   trait TypelevelDeclaration extends Declaration
-  case class TypeDeclaration(typename: Identifier, typeParams: List[Identifier], expr: TypelevelExpression) extends TypelevelDeclaration
+  case class TypeDeclaration(typename: Identifier, typeParams: List[Identifier], expr: DisjointUnion) extends TypelevelDeclaration
 
   trait TypelevelExpression extends Token
   case class DisjointUnion(types: NonEmptyList[TagType]) extends TypelevelExpression
   case class TagType(name: Identifier, ids: List[TypeParam])
 
   trait TypeParam
-  case class ParensType(params: List[TypeParam]) extends TypeParam
+  case class ParensType(inner: TagType) extends TypeParam
   case class TypeName(name: Identifier) extends TypeParam
 
   trait BuiltinOperator
@@ -32,6 +32,7 @@ object TokenTypes {
   trait Expression extends Token
   case class InfixBuiltin(lhs: Expression, op: BuiltinOperator, rhs: Expression) extends Expression
   case class Apply(name: Identifier, vs: List[Expression]) extends Expression
+  case class If(expr: Expression, fst: FunctionBody, snd: FunctionBody) extends Expression
 
   trait Constant extends Expression
   case class ConstantInteger(v: Int) extends Constant

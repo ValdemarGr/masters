@@ -15,13 +15,11 @@ object Main extends IOApp {
         |//fun f a = g a;
         |//fun g a = f a;
         |
-        |//fun add a b = (a + b);
-        |//
-        |//fun add a b = ((a + a) + (b + a));
-        |//
-        |fun add a b = (a b + ((a + b) + (a + b)));
+        |type List a = Cons a (List a) | Nil
         |
-        |//fun main = add 2 4;
+        |//fun add a b = (a b + ((a + b) + (a + b)));
+        |
+        |//fun main = (2+2);
         |""".stripMargin
     }
 
@@ -36,11 +34,9 @@ object Main extends IOApp {
         case ParseResult.Done(rest, result) =>
           val hasOther: Boolean = rest.collectFirst{ case x if skip.contains(x) => x }.isDefined
           val o = IO.pure(result)
-          val log = if (hasOther) IO.raiseError {
-            val e = new Exception(s"Failed with rest ${rest}")
-            e.setStackTrace(Array.empty[StackTraceElement])
-            e
-          } else IO.unit
+          val log =
+            if (hasOther) IO.raiseError(new Exception(s"Failed with rest ${rest}"))
+            else IO.unit
           log *> o
         case x => IO(println(s"died at $x")).as(List.empty)
       }
@@ -48,7 +44,12 @@ object Main extends IOApp {
       .compile
       .fold(List.empty[TokenTypes.Declaration]){ case (a, b) => a ++ List(b) }
 
-    parsed.map(x => println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(x)) + programEnd)) *>
+    parsed
+      .handleErrorWith{ e =>
+        e.setStackTrace(Array.empty[StackTraceElement])
+        IO.raiseError(e)
+      }
+      .map(x => println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(x)) + programEnd)) *>
       IO(ExitCode.Success)
   }
 }
