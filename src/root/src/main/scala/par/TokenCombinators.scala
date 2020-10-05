@@ -22,43 +22,37 @@ object TokenCombinators {
   val endDecl = spaces(char('\n').ptap("end nl") | char(';').ptap("end ;"))
   val let = string("let") ~> many(spaceChar)
   val fun = string("fun") ~> many(spaceChar)
-  val id = spaces(many1(letter | char('_')))
+  def genericId(fst: Parser[Char]) = spaces(fst ~ many(letter | char('_'))) map { case (first, rest) => NonEmptyList(first, rest) }
+  val id = genericId(lower).ptap("id")
+  val typeId = genericId(upper).ptap("typeid")
   val infixBuiltin: Parser[BuiltinOperator] = {
     val addition = char('+') >| Addition
     val subtraction = char('-') >| Subtraction
-    addition | subtraction
+    val eq = string("==") >| Equallity
+    val ineq = string("!=") >| Inequallity
+    addition | subtraction | eq | ineq
   }
   val `=` = spaces(char('='))
   val `type` = string("type") ~> many(spaceChar)
-  val `if` = spaces(string("if"))
-  val `else` = spaces(string("else"))
   val idParams = id ~ many(id)
 
   def excludeText(exclude: Char) = many(elem(_ != exclude))
 
   def t3[A, B, C](t: ((A, B), C)): (A, B, C) = t match { case ((a, b), c) => (a, b, c) }
 
-  //val number: Parser[Expression] = many1(digit).ptap("number") map ConstantInteger
-  //val str: Parser[Expression] = bracket(char('\''), excludeText('\''), char('\'')) map ConstantStr
-  //val app: Parser[Expression] = id.ptap("app id") ~ many(expression).ptap("exprs") map Apply.tupled
-  //val infixOp: Parser[Expression] = number.ptap("infix lhs") ~ infixBuiltin.ptap("infix op") ~ number.ptap("infix rhs") map t3 map InfixBuiltin.tupled
-  //val expBody: Parser[Expression] = spaces(number | str.ptap("str") | infixOp | app)
-  //val expression = spaces(parens(expBody).ptap("expr parens") | expBody.ptap("expr no parens"))
-
-  //val number: Parser[Expression] = spaces(int.ptap("int")) map ConstantInteger
-  //val app: Parser[Expression] = spaces(id.ptap("app id")) ~ spaces(many(expression.ptap("app expr"))) map Apply.tupled
-  //val infixExpr: Parser[Expression] = spaces(number | parens(app) | parens(infix))
-  //val infix: Parser[Expression] = spaces(infixExpr.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(infixExpr.ptap("infix rhs")) map t3 map InfixBuiltin.tupled
-  //val expressionType: Parser[Expression] = spaces(infix | number | app).ptap("expr type")
-  //val expression: Parser[Expression] = spaces(parens(expressionType).ptap("parens") | expressionType.ptap("no parens"))
-
   val number: Parser[Expression] = spaces(int.ptap("int")) map ConstantInteger
   val app: Parser[Expression] =
     spaces(id.ptap("app id")) ~ spaces(many(expression.ptap("app expr"))) map Apply.tupled
-  val infix: Parser[Expression] =
-    parens(spaces(expression.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(expression.ptap("infix rhs")) map t3 map InfixBuiltin.tupled)
-  val conditional: Parser[Expression] = `if`.ptap("if") ~> (parens(expression) ~ functionBody <~ `else`) ~ functionBody map t3 map If.tupled
-  val expression: Parser[Expression] = spaces((/*conditional | */number | infix | parens(app) | app).ptap("parens"))
+  def infixGeneric(p: Parser[Expression]): Parser[Expression] =
+    spaces(p.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(p.ptap("infix rhs")) map t3 map InfixBuiltin.tupled
+  def infix: Parser[Expression] = parens(infixGeneric(expression))
+  def conditional: Parser[Expression] =
+    (spaces(string("if")) ~> many(spaceChar | char('\n')) ~> spaces(expression) <~ many(spaceChar | char('\n'))) ~
+    ((functionBody | (expression map FunctionBody.curried(Nil))) <~ spaces(string("else")) <~ many(spaceChar | char('\n'))) ~
+    functionBody map t3 map If.tupled
+  val matchCase = (spaces(char('|')) ~> (typeId ~ many(id)) <~ spaces(string("->"))) ~ functionBody map t3 map MatchCase.tupled
+  def patternMatch: Parser[Expression] = (expression <~ spaces(string("where"))) ~ many1(char('\n') ~> matchCase) map PatternMatch.tupled
+  val expression: Parser[Expression] = spaces((number | infix | conditional | parens(app) | app).ptap("parens"))
 
   val imp: Parser[ValueDeclaration] = (string("import") ~> spaces(id)) <~ endDecl map Import
   val letDecl: Parser[ValueDeclaration] = (let ~> id <~ `=`) ~ expression <~ endDecl map LetDecl.tupled
@@ -72,11 +66,11 @@ object TokenCombinators {
   val typeName: Parser[TypeParam] = id map TypeName
   val parensType: Parser[TypeParam] = parens(tagType) map ParensType
   val typeParams: Parser[List[TypeParam]] = many(typeName | parensType)
-  val tagType = id ~ typeParams <~ many(spaceChar) map TagType.tupled
+  val tagType = typeId.ptap("tag name") ~ typeParams.ptap("tag params") <~ many(spaceChar) map TagType.tupled
   val disjointUnion =
     tagType ~ many(char('|') ~> tagType) map { case (x, xs) => DisjointUnion(NonEmptyList(x, xs)) }
   val typeDecl: Parser[TypeDeclaration] =
-    (`type` ~> idParams <~ `=`) ~ disjointUnion map t3 map TypeDeclaration.tupled
+    (`type` ~> (typeId ~ many(id)) <~ `=`) ~ disjointUnion map t3 map TypeDeclaration.tupled
   val typelevelDecl = typeDecl <~ endDecl
 
   val functionBody = (many(

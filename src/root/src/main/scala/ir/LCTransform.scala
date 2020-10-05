@@ -26,6 +26,8 @@ import scala.collection.SortedSet
        2) traverse functions_prime in above list and apply "this level's" curried values
 */
 object LCTransform {
+  val IF = "IF"
+
   trait SymbolType { def ord: Int}
   case object FunctionSym extends SymbolType { def ord: Int = 0}
   case object TypeConstructorSym extends SymbolType { def ord: Int = 1}
@@ -50,10 +52,10 @@ object LCTransform {
   type SymbolSet = SortedSet[SymValue]
   type SymbolMap = Map[String, SymbolSet]
 
-  def evalExpr(fm: SymbolMap)(expr: Expression): LCExp = expr match {
+  def evalExpr(sm: SymbolMap)(expr: Expression): LCExp = expr match {
     case InfixBuiltin(lhs, op, rhs) => {
-      val lhEval = evalExpr(fm)(lhs)
-      val rhEval = evalExpr(fm)(rhs)
+      val lhEval = evalExpr(sm)(lhs)
+      val rhEval = evalExpr(sm)(rhs)
 
       LCTerminalOperation(lhEval, op, rhEval)
     }
@@ -61,8 +63,8 @@ object LCTransform {
     case ConstantStr(s) => LCString(s.mkString)
     case Apply(f, e) =>
       val fName = LCName(f.str)
-      def makeE(inner: LCExp): LCExp = e.foldLeft[LCExp](inner){ case (accum, next) => LCApplication(accum, evalExpr(fm)(next)) }
-      fm.get(f.str) match {
+      def makeE(inner: LCExp): LCExp = e.foldLeft[LCExp](inner){ case (accum, next) => LCApplication(accum, evalExpr(sm)(next)) }
+      sm.get(f.str) match {
         case None => makeE(fName)
         case Some(ps) => makeE(ps
           .collect{ case (name, FunctionSym) => name }
@@ -70,6 +72,10 @@ object LCTransform {
           .reverse
           .foldLeft[LCExp](fName){ case (accum, next) => LCApplication(accum, LCName(next)) })
       }
+    case If(expr, fst, snd) =>
+      val cndApp = LCApplication(LCName(IF), evalExpr(sm)(expr))
+      val fstApp = LCApplication(cndApp, buildFunBody(sm)(fst))
+      LCApplication(fstApp, buildFunBody(sm)(snd))
   }
 
   def buildFunBody(fm: SymbolMap)(body: FunctionBody): LCExp =
@@ -209,6 +215,22 @@ object LCTransform {
     accum ++ declInScope(next)
   }
 
+  def applyStd(program: LCExp): LCExp = {
+    // If
+    val withIf = {
+      val expName = "exp"
+      val fstName = "fst"
+      val sndName = "snd"
+      val ifStatement = s"(${expName}) ? (${fstName}) : (${sndName})"
+      val sndLayer = LCFunction(sndName, LCName(sndName), LCRawCode(ifStatement))
+      val fstLayer = LCFunction(fstName, LCName(fstName), sndLayer)
+      val expLayer = LCFunction(expName, LCName(expName), fstLayer)
+      LCApplication(LCFunction(IF, LCName(IF), program), expLayer)
+    }
+
+    withIf
+  }
+
   def entrypoint(toplevelBody: List[Declaration]): LCExp = {
     def toNel(s: String) = s.toList match {
       case Nil => ???
@@ -216,12 +238,13 @@ object LCTransform {
     }
     val xs = declsInScope(toplevelBody)
     val main = NonEmptyList('m', List('a', 'i', 'n'))
-    buildFunBody(Map.empty)(FunctionBody(toplevelBody, Apply(main,
+    val out = buildFunBody(Map.empty)(FunctionBody(toplevelBody, Apply(main,
       xs
         .toList
         .reverse
         .collect{ case (x, FunctionSym) => Apply(toNel(x), Nil) }
     )))
+    applyStd(out)
   }
 
   /*def apply(f: Identifier, es: List[Expression])(ts: SymbolState): LiftedLambda[LCExp] = {

@@ -16,18 +16,22 @@ object Main extends IOApp {
         |//fun g a = f a;
         |
         |type List a = Cons a (List a) | Nil
+        |//
+        |//let lst = Nil;
+        |//
+        |//let snd = Cons 2 Nil
+        |//
+        |//fun die x xs = 2
+        |//
+        |//fun ele x xs = x
+        |//
+        |//fun main = snd (ele) 4;
         |
-        |//fun add a b = (a b + ((a + b) + (a + b)));
+        |fun add a b = (a + b);
         |
-        |let lst = Nil;
+        |fun main =
+        |  if (2 == 3) 4 else 2
         |
-        |let snd = Cons 2 Nil
-        |
-        |fun die x xs = 2
-        |
-        |fun ele x xs = x
-        |
-        |fun main = snd (ele) 4;
         |""".stripMargin
     }
 
