@@ -42,7 +42,7 @@ object TokenCombinators {
 
   val number: Parser[Expression] = spaces(int.ptap("int")) map ConstantInteger
   val app: Parser[Expression] =
-    spaces(id.ptap("app id")) ~ spaces(many(expression.ptap("app expr"))) map Apply.tupled
+    spaces((id | typeId).ptap("app id")) ~ spaces(many(expression.ptap("app expr"))) map Apply.tupled
   def infixGeneric(p: Parser[Expression]): Parser[Expression] =
     spaces(p.ptap("infix lhs")) ~ spaces(infixBuiltin.ptap("infix")) ~ spaces(p.ptap("infix rhs")) map t3 map InfixBuiltin.tupled
   def infix: Parser[Expression] = parens(infixGeneric(expression))
@@ -51,10 +51,8 @@ object TokenCombinators {
     ((functionBody | (expression map FunctionBody.curried(Nil))) <~ spaces(string("else")) <~ many(spaceChar | char('\n'))) ~
     functionBody map t3 map If.tupled
   def matchCase =
-    //(spaces(char('|')) ~> (typeId ~ many(id)) <~ spaces(string("->"))) ~ functionBody map t3 map
-    (spaces(char('|')) ~> (typeId ~> many(id)) <~ spaces(string("->"))) ~ functionBody map
-      (_ => MatchCase(NonEmptyList.one('t'), List.empty, FunctionBody(Nil, ConstantInteger(0))))
-  def patternMatch: Parser[Expression] = (spaces(string("match")) ~> expression) ~ (spaces(char('\n')) ~> many1(spaces(matchCase))) map (_ => ConstantInteger(0))//  map PatternMatch.tupled
+    (spaces(char('|')) ~> (typeId ~ many(id)) <~ spaces(string("->"))) ~ functionBody map t3 map MatchCase.tupled
+  def patternMatch: Parser[Expression] = (spaces(string("match")) ~> expression) ~ (spaces(char('\n')) ~> many1(spaces(matchCase))) map PatternMatch.tupled
   val expression: Parser[Expression] = spaces((number | infix | conditional | patternMatch | parens(app) | app).ptap("parens"))
 
   val imp: Parser[ValueDeclaration] = (string("import") ~> spaces(id)) <~ endDecl map Import

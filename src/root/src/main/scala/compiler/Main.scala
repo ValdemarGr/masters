@@ -17,7 +17,7 @@ object Main extends IOApp {
         |
         |type List a = Cons a (List a) | Nil
         |//
-        |//let lst = Nil;
+        |let lst = Nil;
         |//
         |//let snd = Cons 2 Nil
         |//
@@ -26,13 +26,16 @@ object Main extends IOApp {
         |//fun ele x xs = x
         |//
         |//fun main = snd (ele) 4;
+        |//
+        |//fun add a b = (a + b);
         |
-        |fun add a b = (a + b);
+        |fun sum a l =
+        |  match l
+        |    | Nil -> a
+        |    | Cons x xs -> sum (a + x) xs
         |
         |fun main =
-        |  match 2
-        |    | Nil -> 4
-        |    | Cons x -> x
+        |  sum 0 (Cons 2 (Cons 4 (Cons 9 Nil)))
         |
         |""".stripMargin
     }
