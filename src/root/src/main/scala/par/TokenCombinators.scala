@@ -50,9 +50,12 @@ object TokenCombinators {
     (spaces(string("if")) ~> many(spaceChar | char('\n')) ~> spaces(expression) <~ many(spaceChar | char('\n'))) ~
     ((functionBody | (expression map FunctionBody.curried(Nil))) <~ spaces(string("else")) <~ many(spaceChar | char('\n'))) ~
     functionBody map t3 map If.tupled
-  val matchCase = (spaces(char('|')) ~> (typeId ~ many(id)) <~ spaces(string("->"))) ~ functionBody map t3 map MatchCase.tupled
-  def patternMatch: Parser[Expression] = (expression <~ spaces(string("where"))) ~ many1(char('\n') ~> matchCase) map PatternMatch.tupled
-  val expression: Parser[Expression] = spaces((number | infix | conditional | parens(app) | app).ptap("parens"))
+  def matchCase =
+    //(spaces(char('|')) ~> (typeId ~ many(id)) <~ spaces(string("->"))) ~ functionBody map t3 map
+    (spaces(char('|')) ~> (typeId ~> many(id)) <~ spaces(string("->"))) ~ functionBody map
+      (_ => MatchCase(NonEmptyList.one('t'), List.empty, FunctionBody(Nil, ConstantInteger(0))))
+  def patternMatch: Parser[Expression] = (spaces(string("match")) ~> expression) ~ (spaces(char('\n')) ~> many1(spaces(matchCase))) map (_ => ConstantInteger(0))//  map PatternMatch.tupled
+  val expression: Parser[Expression] = spaces((number | infix | conditional | patternMatch | parens(app) | app).ptap("parens"))
 
   val imp: Parser[ValueDeclaration] = (string("import") ~> spaces(id)) <~ endDecl map Import
   val letDecl: Parser[ValueDeclaration] = (let ~> id <~ `=`) ~ expression <~ endDecl map LetDecl.tupled
@@ -73,7 +76,7 @@ object TokenCombinators {
     (`type` ~> (typeId ~ many(id)) <~ `=`) ~ disjointUnion map t3 map TypeDeclaration.tupled
   val typelevelDecl = typeDecl <~ endDecl
 
-  val functionBody = (many(
+  def functionBody = (many(
         declaration.ptap("decl")
       | redundantNl.ptap("redundant nl")
       | (spaceChar >| Ignore).ptap("space")

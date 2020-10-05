@@ -30,7 +30,9 @@ object Main extends IOApp {
         |fun add a b = (a + b);
         |
         |fun main =
-        |  if (2 == 3) 4 else 2
+        |  match 2
+        |    | Nil -> 4
+        |    | Cons x -> x
         |
         |""".stripMargin
     }
