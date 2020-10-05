@@ -16,26 +16,18 @@ object Main extends IOApp {
         |//fun g a = f a;
         |
         |type List a = Cons a (List a) | Nil
-        |//
-        |let lst = Nil;
-        |//
-        |//let snd = Cons 2 Nil
-        |//
-        |//fun die x xs = 2
-        |//
-        |//fun ele x xs = x
-        |//
-        |//fun main = snd (ele) 4;
-        |//
-        |//fun add a b = (a + b);
         |
-        |fun sum a l =
+        |//type Maybe a = Just a | Nothing
+        |
+        |fun add a b = (a + b);
+        |
+        |fun foldl f a l =
         |  match l
         |    | Nil -> a
-        |    | Cons x xs -> sum (a + x) xs
+        |    | Cons x xs -> foldl (f) (f (a) (x)) xs
         |
         |fun main =
-        |  sum 0 (Cons 2 (Cons 4 (Cons 9 Nil)))
+        |  foldl (add) 0 (Cons 2 (Cons 4 (Cons 9 Nil)))
         |
         |""".stripMargin
     }

@@ -1,5 +1,3 @@
-
-
 #include <iostream>
 
 int main() {
@@ -7,41 +5,47 @@ auto v =([=](auto IF) {
  return ([=](auto Nil) {
  return ([=](auto Cons) {
  return ([=](auto main) {
- return ([=](auto sum) {
- return ([=](auto lst) {
- return (((main)(sum))(main))(lst);
- })([=](auto sum) {
- return [=](auto main) {
- return [=](auto lst) {
- return (((Nil)(sum))(main))(lst);
+ return ([=](auto foldl) {
+ return ([=](auto add) {
+ return (((main)(main))(foldl))(add);
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
+ return [=](auto a) {
+ return [=](auto b) {
+ return ((a) + (b));
+ };
+ };
  };
  };
  });
- })([=](auto sum) {
- return [=](auto main) {
- return [=](auto lst) {
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
+ return [=](auto f) {
  return [=](auto a) {
  return [=](auto l) {
  return ((l)([=](auto xs) {
  return [=](auto x) {
- return (((((sum)(sum))(main))(lst))(((a) + (x))))(xs);
+ return ((((((foldl)(main))(foldl))(add))(f))(((f)(a))(x)))(xs);
  };
  }))(a);
  };
  };
  };
  };
+ };
  });
- })([=](auto sum) {
- return [=](auto main) {
- return [=](auto lst) {
- return (((((sum)(sum))(main))(lst))(0))((((((Cons)(sum))(main))(lst))(2))((((((Cons)(sum))(main))(lst))(4))((((((Cons)(sum))(main))(lst))(9))((((Nil)(sum))(main))(lst)))));
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
+ return ((((((foldl)(main))(foldl))(add))((((add)(main))(foldl))(add)))(0))((((((Cons)(main))(foldl))(add))(2))((((((Cons)(main))(foldl))(add))(4))((((((Cons)(main))(foldl))(add))(9))((((Nil)(main))(foldl))(add)))));
  };
  };
  });
- })([=](auto sum) {
- return [=](auto main) {
- return [=](auto lst) {
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
  return [=](auto a_0) {
  return [=](auto List_1) {
  return [=](auto Cons) {
@@ -54,9 +58,9 @@ auto v =([=](auto IF) {
  };
  };
  });
- })([=](auto sum) {
- return [=](auto main) {
- return [=](auto lst) {
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
  return [=](auto Cons) {
  return [=](auto Nil) {
  return Nil;
