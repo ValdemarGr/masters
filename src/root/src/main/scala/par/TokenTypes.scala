@@ -28,11 +28,16 @@ object TokenTypes {
   trait BuiltinOperator
   case object Addition extends BuiltinOperator
   case object Subtraction extends BuiltinOperator
+  case object Equallity extends BuiltinOperator
+  case object Inequallity extends BuiltinOperator
 
   trait Expression extends Token
   case class InfixBuiltin(lhs: Expression, op: BuiltinOperator, rhs: Expression) extends Expression
   case class Apply(name: Identifier, vs: List[Expression]) extends Expression
   case class If(expr: Expression, fst: FunctionBody, snd: FunctionBody) extends Expression
+
+  case class PatternMatch(expr: Expression, cases: NonEmptyList[MatchCase]) extends Expression
+  case class MatchCase(typeConstructor: Identifier, bindings: List[Identifier], body: FunctionBody)
 
   trait Constant extends Expression
   case class ConstantInteger(v: Int) extends Constant

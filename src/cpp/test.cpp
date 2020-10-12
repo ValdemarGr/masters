@@ -1,84 +1,51 @@
-
-
 #include <iostream>
 
 int main() {
-auto v =([=](auto Nil) {
+auto v =([=](auto IF) {
+ return ([=](auto Nil) {
  return ([=](auto Cons) {
  return ([=](auto main) {
- return ([=](auto ele) {
- return ([=](auto die) {
- return ([=](auto snd) {
- return ([=](auto lst) {
- return (((((main)(snd))(main))(lst))(ele))(die);
- })([=](auto snd) {
- return [=](auto main) {
- return [=](auto lst) {
- return [=](auto ele) {
- return [=](auto die) {
- return (((((Nil)(snd))(main))(lst))(ele))(die);
+ return ([=](auto foldl) {
+ return ([=](auto add) {
+ return (((main)(main))(foldl))(add);
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
+ return [=](auto a) {
+ return [=](auto b) {
+ return ((a) + (b));
  };
  };
  };
  };
  });
- })([=](auto snd) {
- return [=](auto main) {
- return [=](auto lst) {
- return [=](auto ele) {
- return [=](auto die) {
- return (((((((Cons)(snd))(main))(lst))(ele))(die))(2))((((((Nil)(snd))(main))(lst))(ele))(die));
- };
- };
- };
- };
- });
- })([=](auto snd) {
- return [=](auto main) {
- return [=](auto lst) {
- return [=](auto ele) {
- return [=](auto die) {
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
+ return [=](auto f) {
+ return [=](auto a) {
+ return [=](auto l) {
+ return ((l)([=](auto xs) {
  return [=](auto x) {
- return [=](auto xs) {
- return 2;
+ return ((((((foldl)(main))(foldl))(add))(f))(((f)(a))(x)))(xs);
  };
- };
- };
- };
- };
- };
- });
- })([=](auto snd) {
- return [=](auto main) {
- return [=](auto lst) {
- return [=](auto ele) {
- return [=](auto die) {
- return [=](auto x) {
- return [=](auto xs) {
- return x;
- };
+ }))(a);
  };
  };
  };
  };
  };
  });
- })([=](auto snd) {
- return [=](auto main) {
- return [=](auto lst) {
- return [=](auto ele) {
- return [=](auto die) {
- return (((((((snd)(snd))(main))(lst))(ele))(die))((((((ele)(snd))(main))(lst))(ele))(die)))(4);
- };
- };
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
+ return ((((((foldl)(main))(foldl))(add))((((add)(main))(foldl))(add)))(0))((((((Cons)(main))(foldl))(add))(2))((((((Cons)(main))(foldl))(add))(4))((((((Cons)(main))(foldl))(add))(9))((((Nil)(main))(foldl))(add)))));
  };
  };
  });
- })([=](auto snd) {
- return [=](auto main) {
- return [=](auto lst) {
- return [=](auto ele) {
- return [=](auto die) {
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
  return [=](auto a_0) {
  return [=](auto List_1) {
  return [=](auto Cons) {
@@ -90,14 +57,10 @@ auto v =([=](auto Nil) {
  };
  };
  };
- };
- };
  });
- })([=](auto snd) {
- return [=](auto main) {
- return [=](auto lst) {
- return [=](auto ele) {
- return [=](auto die) {
+ })([=](auto main) {
+ return [=](auto foldl) {
+ return [=](auto add) {
  return [=](auto Cons) {
  return [=](auto Nil) {
  return Nil;
@@ -105,6 +68,11 @@ auto v =([=](auto Nil) {
  };
  };
  };
+ });
+ })([=](auto exp) {
+ return [=](auto fst) {
+ return [=](auto snd) {
+ return (exp) ? (fst) : (snd);
  };
  };
  });

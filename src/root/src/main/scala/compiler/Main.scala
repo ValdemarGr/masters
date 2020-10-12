@@ -17,17 +17,18 @@ object Main extends IOApp {
         |
         |type List a = Cons a (List a) | Nil
         |
-        |//fun add a b = (a b + ((a + b) + (a + b)));
+        |//type Maybe a = Just a | Nothing
         |
-        |let lst = Nil;
+        |fun add a b = (a + b);
         |
-        |let snd = Cons 2 Nil
+        |fun foldl f a l =
+        |  match l
+        |    | Nil -> a
+        |    | Cons x xs -> foldl (f) (f (a) (x)) xs
         |
-        |fun die x xs = 2
+        |fun main =
+        |  foldl (add) 0 (Cons 2 (Cons 4 (Cons 9 Nil)))
         |
-        |fun ele x xs = x
-        |
-        |fun main = snd (ele) 4;
         |""".stripMargin
     }
 

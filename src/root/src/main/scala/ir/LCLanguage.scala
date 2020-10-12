@@ -88,8 +88,8 @@ object LCLanguage {
   case class LCNumber(v: Int) extends LCExp {
     def stringify: String = s"${v}"
   }
-  case class LCDebug(s: String) extends LCExp {
-    def stringify: String = s"debug ${s}"
+  case class LCRawCode(s: String) extends LCExp {
+    def stringify: String = s"code ${s}"
   }
 }
 
