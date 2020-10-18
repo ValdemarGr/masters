@@ -4,7 +4,7 @@ import par.TokenTypes._
 
 object LCLanguage {
   trait LCExp {
-    def stringify: String
+    def stringify(implicit indentation: Indentation): String
   }
 
   /*
@@ -68,28 +68,40 @@ object LCLanguage {
          ) (f' f' g')
        ) (λg.λf.(λa.f f g a))
      ) (λf.λg.(λa.g g f a))
-  */
+   */
+
+  case class Indentation(n: Int) {
+    def indent: String = (0 to n).toList.map(_ => "  ").mkString
+    def inc: Indentation = copy(n = n + 1)
+  }
 
   case class LCName(name: String) extends LCExp {
-    def stringify: String = name
+    def stringify(implicit indentation: Indentation) = indentation.indent + name
   }
   case class LCFunction(metaName: String, name: LCName, exp: LCExp) extends LCExp {
-    def stringify: String = s"(λ ${name.stringify}.${exp.stringify})"
+    def stringify(implicit indentation: Indentation) = {
+      val fname = indentation.indent + s"(λ ${name.name}."
+      val body = "\n" + s"${exp.stringify(indentation.inc)}" + "\n" + indentation.indent + s") // ${name.name} end"
+      fname + body
+    }
   }
   case class LCApplication(fst: LCExp, snd: LCExp) extends LCExp {
-    def stringify: String = s"(${fst.stringify} ${snd.stringify})"
+    def stringify(implicit indentation: Indentation) =
+      indentation.indent + "(\n" +
+        s"${fst.stringify(indentation.inc)} " + "\n" + s"${snd.stringify(indentation.inc)}" +
+"\n" + indentation.indent + ")"
   }
   case class LCTerminalOperation(lh: LCExp, op: BuiltinOperator, rh: LCExp) extends LCExp {
-    def stringify: String = s"${lh.stringify} ${op} ${rh.stringify}"
+    def stringify(implicit indentation: Indentation) =
+      indentation.indent + s"(\n${lh.stringify(indentation.inc)}\n${indentation.inc.indent}${op}\n${rh.stringify(indentation.inc)})"
   }
   case class LCString(v: String) extends LCExp {
-    def stringify: String = s"'${v}'"
+    def stringify(implicit indentation: Indentation) = indentation.indent + s"'${v}'"
   }
   case class LCNumber(v: Int) extends LCExp {
-    def stringify: String = s"${v}"
+    def stringify(implicit indentation: Indentation) = indentation.indent + s"${v}"
   }
   case class LCRawCode(s: String) extends LCExp {
-    def stringify: String = s"code ${s}"
+    def stringify(implicit indentation: Indentation) = indentation.indent + s"code ${s}"
   }
 }
-

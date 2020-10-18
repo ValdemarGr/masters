@@ -5,19 +5,29 @@ import par.TokenTypes._
 
 object LCEmitter {
   def emitOp(op: BuiltinOperator) = op match {
-    case Addition => "+"
+    case Addition    => "+"
     case Subtraction => "-"
-    case Equallity => "=="
+    case Equallity   => "=="
     case Inequallity => "!="
   }
 
   def emit(e: LCExp): String = e match {
-    case LCName(x) => x
-    case LCFunction(_, n, e) => s"[=](auto ${n.name}) {\n return ${emit(e)};\n }"
+    case LCName(x)                         => x
+    case LCFunction(_, n, e)               => s"[=](auto ${n.name}) {\n return ${emit(e)};\n }"
     case LCApplication(l: LCExp, r: LCExp) => s"(${emit(l)})(${emit(r)})"
-    case LCTerminalOperation(l, op ,r) => s"((${emit(l)}) ${emitOp(op)} (${emit(r)}))"
-    case LCString(s) => ("\"" + s + "\"")
-    case LCNumber(n) => n.toString
-    case LCRawCode(code) => code
+    case LCTerminalOperation(l, op, r)     => s"((${emit(l)}) ${emitOp(op)} (${emit(r)}))"
+    case LCString(s)                       => ("\"" + s + "\"")
+    case LCNumber(n)                       => n.toString
+    case LCRawCode(code)                   => code
+  }
+
+  def emitClojure(e: LCExp): String = e match {
+    case LCName(x)                         => x
+    case LCFunction(_, n, e)               => s"(defn ${n.name} (${emitClojure(e)}))"
+    case LCApplication(l: LCExp, r: LCExp) => s"(${emitClojure(l)})(${emitClojure(r)})"
+    case LCTerminalOperation(l, op, r)     => s"( ${emitOp(op)} (${emitClojure(l)})(${emitClojure(r)}))"
+    case LCString(s)                       => ("\"" + s + "\"")
+    case LCNumber(n)                       => n.toString
+    case LCRawCode(_)                      => ""
   }
 }
