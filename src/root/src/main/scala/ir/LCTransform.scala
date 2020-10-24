@@ -70,29 +70,29 @@ object LCTransform {
     import pm.{cases, expr}
 
     val du = sm
-      .getOrElse(cases.head.typeConstructor.str,
+      .getOrElse(cases.head.typeConstructor,
                  throw new Exception(
-                   s"failed to find type constructor for ${cases.head.typeConstructor.str} with cases ${sm.keys}"
+                   s"failed to find type constructor for ${cases.head.typeConstructor} with cases ${sm.keys}"
                  ))
       .toList
       .collect { case (tcName, itemInScope: TypeConstructorSym) => tcName -> itemInScope }
       .toMap
       .getOrElse(
-        cases.head.typeConstructor.str,
+        cases.head.typeConstructor,
         throw new Exception(
-          s"did not find any type constructors for ${cases.head.typeConstructor.str} with cases ${sm.keys}"
+          s"did not find any type constructors for ${cases.head.typeConstructor} with cases ${sm.keys}"
         )
       )
 
     val dj = du.dj
 
-    val caseMap = cases.toList.map(x => (x.typeConstructor.str, x)).toMap
+    val caseMap = cases.toList.map(x => (x.typeConstructor, x)).toMap
 
     val asLC = evalExpr(sm)(expr)
 
     dj.types.foldLeft(asLC) {
       case (accum, next) =>
-        val name = next.name.str
+        val name = next.name
         val item = caseMap
           .get(name)
           .orElse(caseMap.get("_"))
@@ -100,7 +100,7 @@ object LCTransform {
 
         val params = item.bindings.foldLeft(buildFunBody(sm)(item.body)) {
           case (accum, next) =>
-            LCFunction(next.str, LCName(next.str), accum)
+            LCFunction(next, LCName(next), accum)
         }
 
         LCApplication(accum, params)
@@ -117,13 +117,13 @@ object LCTransform {
     case ConstantInteger(n) => suspend(LCNumber(n))
     case ConstantStr(s)     => LCString(s.mkString)
     case Apply(f, e) =>
-      val fName = LCName(f.str)
+      val fName = LCName(f)
 
       def makeE(inner: LCExp): LCExp = e.foldLeft[LCExp](inner) {
         case (accum, next) => LCApplication(accum, evalExpr(sm)(next))
       }
 
-      sm.get(f.str) match {
+      sm.get(f) match {
         case None => makeE(fName)
         case Some(ps) =>
           makeE(
@@ -148,11 +148,11 @@ object LCTransform {
       val built = buildFunBody(fm)(body)
       val withParams = params.reverse.foldLeft(built) {
         case (accum, next) =>
-          LCFunction(next.id.str, LCName(next.id.str), accum)
+          LCFunction(next.id, LCName(next.id), accum)
       }
-      Some(name.str -> withParams)
+      Some(name -> withParams)
     case LetDecl(name, expr) =>
-      Some(name.str -> evalExpr(fm)(expr))
+      Some(name -> evalExpr(fm)(expr))
     case Import(_) => ???
     case Ignore    => None
   }
@@ -201,12 +201,12 @@ object LCTransform {
   //One constructor for each
 
   def buildTagType(allTags: NonEmptyList[TagType])(tt: TagType): (String, LCExp) = {
-    val fName = tt.name.str
+    val fName = tt.name
     val params = tt.ids.zipWithIndex.map {
       case (tp, i) =>
         val parameterName = tp match {
-          case ParensType(params) => params.name.str
-          case TypeName(name)     => name.str
+          case ParensType(params) => params.name
+          case TypeName(name)     => name
         }
         parameterName + s"_${i}"
     }
@@ -220,7 +220,7 @@ object LCTransform {
 
     val parameterization = allTags.reverse.foldLeft(patternHandler) {
       case (accum, next) =>
-        LCFunction(next.name.str, LCName(next.name.str), accum)
+        LCFunction(next.name, LCName(next.name), accum)
     }
 
     val constructor = params.reverse.foldLeft(parameterization) {
@@ -265,15 +265,15 @@ object LCTransform {
   }
 
   def vdInScope(vd: ValueDeclaration): SymbolSet = vd match {
-    case FunDecl(name, _, _) => SortedSet((name.str, FunctionSym))
-    case LetDecl(name, _)    => SortedSet((name.str, FunctionSym))
+    case FunDecl(name, _, _) => SortedSet((name, FunctionSym))
+    case LetDecl(name, _)    => SortedSet((name, FunctionSym))
     case Import(_)           => SortedSet.empty
     case Ignore              => SortedSet.empty
   }
 
   def tdInScope(td: TypelevelDeclaration): SymbolSet = td match {
     case TypeDeclaration(_, _, expr) =>
-      SortedSet(expr.types.map(tt => (tt.name.str, TypeConstructorSym(expr))).toList: _*)
+      SortedSet(expr.types.map(tt => (tt.name, TypeConstructorSym(expr))).toList: _*)
   }
 
   def declInScope(d: Declaration): SymbolSet = d match {
@@ -310,12 +310,12 @@ object LCTransform {
     }
 
     val xs = declsInScope(toplevelBody)
-    val main = NonEmptyList('m', List('a', 'i', 'n'))
+    val main = "main"
     val out = buildFunBody(Map.empty)(
       FunctionBody(toplevelBody,
                    Apply(main,
                          xs.toList.reverse
-                           .collect { case (x, FunctionSym) => Apply(toNel(x), Nil) }))
+                           .collect { case (x, FunctionSym) => Apply(x, Nil) }))
     )
     applyStd(out)
   }

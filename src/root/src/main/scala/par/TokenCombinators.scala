@@ -5,7 +5,7 @@ import Atto._
 import cats.data.NonEmptyList
 
 object TokenCombinators {
-  import TokenTypes._
+  /*import TokenTypes._
   implicit class ParserTap[+A](p: Parser[A]) {
     def tap(f: A => Unit): Parser[A] = p.map { value =>
       f(value)
@@ -83,5 +83,5 @@ object TokenCombinators {
 
   val body: Parser[List[Declaration]] = many(declaration | typelevelDecl | redundantNl | comment)
 
-  val parser: Parser[List[Declaration]] = token(body)
+  val parser: Parser[List[Declaration]] = token(body)*/
 }

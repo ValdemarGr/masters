@@ -3,6 +3,7 @@ package par
 import scala.language.postfixOps
 import com.codecommit.gll._
 import par.TokenTypes._
+import cats.data.NonEmptyList
 
 object GLLParser extends Parsers with RegexParsers {
   lazy val id: Parser[String] = """[a-z][a-zA-Z]*""".r
@@ -15,20 +16,43 @@ object GLLParser extends Parsers with RegexParsers {
   )
 
   lazy val number: Parser[ConstantInteger] = """\d+""".r ^^ { x => ConstantInteger(x.toInt) }
-  lazy val app: Parser[Expression] = (id | typeId) ~ (expr *) ^^ { (id, exps) => Apply(id, exps) }
-  lazy val infix: Parser[Expression] = expr ~ infixOp ~ expr ^^ { (e1, op, e2) => InfixBuiltin(e1, op, e2) }
+  lazy val app: Parser[Expression] = (id | typeId) ~ (exprParen *) ^^ { (id, exps) => Apply(id, exps) }
+  lazy val infix: Parser[Expression] = exprParen ~ infixOp ~ exprParen ^^ { (e1, op, e2) => InfixBuiltin(e1, op, e2) }
   lazy val conditional: Parser[Expression] =
     (
-      ("if" ~> ("(" ~> expr <~ ")") ~ functionBody)
-      ~ ("else" ~> functionBody)
-    )
-  lazy val matchCase = 
-    ("|" ~> (typeId ~ (id *)) <~ "->") ~ functionBody
-  lazy val patternMatch: Parser[Expression] = 
-    ("match" ~> expr) ~ (matchCase *)
-  lazy val expr: Parser[Expression] = number | app | infix | conditional | matchCase | patternMatch
+      ("if" ~> ("(" ~> exprParen <~ ")") ~ functionBody)
+        ~ ("else" ~> functionBody)
+    ) ^^ { (e, b1, b2) => If(e, b1, b2) }
+  lazy val matchCase: Parser[MatchCase] =
+    ("|" ~> (typeId ~ (id *)) <~ "->") ~ functionBody ^^ { (s, ps, b) => MatchCase(s, ps, b) }
+  lazy val patternMatch: Parser[Expression] =
+    ("match" ~> exprParen) ~ (matchCase +) ^^ { (e, cs) => PatternMatch(e, NonEmptyList(cs.head, cs.tail)) }
+  lazy val expr: Parser[Expression] = number | app | infix | conditional | patternMatch
+  lazy val exprParen: Parser[Expression] = ("(" ~> expr <~ ")") | expr
 
-  lazy val letD = ()
-  def parse(s: String) = id(s)
+  lazy val letD: Parser[ValueDeclaration] =
+    ("let" ~> id <~ "=") ~ exprParen <~ ";" ^^ { (id, e) => LetDecl(id, e) }
+  lazy val funD: Parser[ValueDeclaration] =
+    ("fun" ~> id ~ (id *) <~ "=") ~ functionBody ^^ { (id, ps, fb) => FunDecl(id, ps.map(FunctionParam), fb) }
+  lazy val declaration: Parser[ValueDeclaration] = letD | funD
+  lazy val comment = "//" ~> """.*""".r ^^^ Ignore
+
+  lazy val functionBody =
+    ((
+      declaration
+        | comment
+    ) *) ~ exprParen <~ ";" ^^ { (b, e) => FunctionBody(b, e) }
+  
+  lazy val typeName: Parser[TypeName] = id ^^ TypeName
+  lazy val parensType: Parser[TypeName] = "(" ~> tagType <~ ")" ^^ ParensType
+  lazy val typeParams: Parser[List[TypeParam]] = (typeName | typeParams)* 
+  lazy val tagType: Parser[TagType] = 
+    typeId ~ typeParams ^^ TagType
+  lazy val disjointUnion =
+    tagType ~ (("|" ~> tagType)*) ^^ NonEmptyList.apply ^^ DisjointUnion
+  
+
+  lazy val toplevel: Parser[List[Declaration]] = (declaration | comment) *
+  def parse(s: String) = toplevel(s).toList.toList
 
 }
