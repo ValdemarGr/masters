@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 
 object TokenTypes {
   trait Token
-  type Identifier = NonEmptyList[Char]
+  type Identifier = String
 
   trait Declaration extends Token
   trait ValueDeclaration extends Declaration

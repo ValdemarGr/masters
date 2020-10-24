@@ -17,4 +17,6 @@ object Dependencies {
 
   lazy val atto = "org.tpolecat" %% "atto-core" % "0.8.0"
   lazy val attoRefined = "org.tpolecat" %% "atto-refined" % "0.8.0"
+
+  lazy val gll = "com.codecommit" %% "gll-combinators" % "2.3"
 }

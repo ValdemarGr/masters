@@ -20,6 +20,7 @@ lazy val root = (project in file("root"))
         refined,
         refinedCats,
         atto,
-        attoRefined
+        attoRefined,
+        gll
     )
   )

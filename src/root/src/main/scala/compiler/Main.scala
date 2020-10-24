@@ -10,6 +10,7 @@ import par._
 
 object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { _ =>
+    println(GLLParser.parse(" \ntestVar\n"))
     val program = {
       """
         |
