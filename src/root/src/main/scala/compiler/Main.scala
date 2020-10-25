@@ -7,6 +7,10 @@ import cats.effect.{Blocker, ExitCode, IO, IOApp}
 import cats.implicits._
 import ir.LCTransform
 import par._
+import scala.collection.immutable.Nil
+import com.codecommit.gll.Success
+import com.codecommit.gll.Failure
+import par.TokenTypes.Declaration
 
 object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { _ =>
@@ -35,18 +39,34 @@ object Main extends IOApp {
         |""".stripMargin
     }
     val p2 = """
-        |//abk i mat . ,, //
-        |fun main =
-        |  let a = add ( 4 ) 22;
-        |  2 + 2;
-        |""".stripMargin
+               |//abk i mat . ,, //
+               |fun add a b = a + b;
+               |
+               |type List a = Cons a (List a) | Nil
+               |
+               |fun main =
+               |  let a = add ( 4 ) 22;
+               |  2 + 2;
+               |""".stripMargin
 
     val parsed = par.GLLParser.parse(p2)
 
     val programStart = "\n\n#include <iostream>\n#include <variant>\n\nint main() {\nauto v ="
     val programEnd = ";\n\n    std::cout << v << std::endl;\n\n    return 0;\n}"
-    //IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint()) + programEnd)) *>
-    IO(println(parsed)) *>
+
+    val folded = parsed.foldLeft(IO.pure(List.empty[Declaration])) {
+      case (accum, next) =>
+        next match {
+          case Success(value, _) => accum.map(xs => xs ::: value)
+          case Failure(data, _) =>
+            IO.raiseError(new Exception(s"failed parsing with $data"))
+        }
+    }
+
+    folded.flatMap { decls =>
+      IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(decls)) + programEnd))
+    } *>
+      //IO(println(parsed)) *>
       IO(ExitCode.Success)
   }
 }

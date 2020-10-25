@@ -44,15 +44,18 @@ object GLLParser extends Parsers with RegexParsers {
     ) *) ~ exprParen <~ ";" ^^ { (b, e) => FunctionBody(b, e) }
   
   lazy val typeName: Parser[TypeName] = id ^^ TypeName
-  lazy val parensType: Parser[TypeName] = "(" ~> tagType <~ ")" ^^ ParensType
-  lazy val typeParams: Parser[List[TypeParam]] = (typeName | typeParams)* 
+  lazy val parensType: Parser[TypeParam] = "(" ~> tagType <~ ")" ^^ ParensType
+  lazy val typeParams: Parser[List[TypeParam]] = (typeName | parensType)* 
   lazy val tagType: Parser[TagType] = 
     typeId ~ typeParams ^^ TagType
   lazy val disjointUnion =
     tagType ~ (("|" ~> tagType)*) ^^ NonEmptyList.apply ^^ DisjointUnion
+  lazy val typeDecl: Parser[TypeDeclaration] =
+    ("type" ~> (typeId ~ (id*)) <~ "=") ~ disjointUnion ^^ TypeDeclaration
+  lazy val typelevelDecl = typeDecl
   
 
-  lazy val toplevel: Parser[List[Declaration]] = (declaration | comment) *
+  lazy val toplevel: Parser[List[Declaration]] = (typelevelDecl | declaration | comment) *
   def parse(s: String) = toplevel(s).toList.toList
 
 }
