@@ -61,10 +61,12 @@ object LCTransform {
   type SymbolMap = Map[String, SymbolSet]
 
   def suspend(exp: LCExp): LCExp =
-    LCFunction("unit", LCName("unit"), exp)
+    //LCFunction("unit", LCName("unit"), exp)
+    exp
 
   def unSuspend(exp: LCExp): LCExp =
-    LCApplication(exp, LCRawCode("nullptr"))
+    //LCApplication(exp, LCRawCode("nullptr"))
+    exp
 
   def evalPatternMatch(sm: SymbolMap)(pm: PatternMatch): LCExp = {
     import pm.{cases, expr}
@@ -122,6 +124,8 @@ object LCTransform {
       def makeE(inner: LCExp): LCExp = e.foldLeft[LCExp](inner) {
         case (accum, next) => LCApplication(accum, evalExpr(sm)(next))
       }
+
+      println(s"apply $sm $f $e")
 
       sm.get(f) match {
         case None => makeE(fName)
@@ -252,7 +256,6 @@ object LCTransform {
     val typesDeclsFirst = definedDeclarations
       .sortBy(_._1)
       .collect { case (_, v) => v }
-
     typesDeclsFirst.foldLeft(expr) {
       case (innerExp, (name, functionBodyExp)) =>
         val actualExp = unSuspend(functionBodyExp)
@@ -266,7 +269,7 @@ object LCTransform {
 
   def vdInScope(vd: ValueDeclaration): SymbolSet = vd match {
     case FunDecl(name, _, _) => SortedSet((name, FunctionSym))
-    case LetDecl(name, _)    => SortedSet((name, FunctionSym))
+    case LetDecl(_, _)    => SortedSet.empty
     case Import(_)           => SortedSet.empty
     case Ignore              => SortedSet.empty
   }

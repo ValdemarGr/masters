@@ -40,13 +40,11 @@ object Main extends IOApp {
     }
     val p2 = """
                |//abk i mat . ,, //
-               |fun add a b = a + b;
-               |
-               |type List a = Cons a (List a) | Nil
+               |//fun add a b = a + b;
                |
                |fun main =
-               |  let a = add ( 4 ) 22;
-               |  2 + 2;
+               |  let b = 4 + 8;
+               |  b;
                |""".stripMargin
 
     val parsed = par.GLLParser.parse(p2)
