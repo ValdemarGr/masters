@@ -42,7 +42,20 @@ object Main extends IOApp {
                |//abk i mat . ,, //
                |//fun add a b = a + b;
                |
+               |type List a = 
+               |  | Cons a (List a) 
+               |  | Nil
+               |;
+               |
+               |fun foldl f a l =
+               |  match l;
+               //|  match l
+               //|    | Nil -> a
+               //|    | Cons x xs -> foldl f (f a x) xs
+               //|  ;
+               |
                |fun main =
+               |  let a = Cons 1 (Cons 2 Nil);
                |  let b = 4 + 8;
                |  b;
                |""".stripMargin
@@ -50,14 +63,14 @@ object Main extends IOApp {
     val parsed = par.GLLParser.parse(p2)
 
     val programStart = "\n\n#include <iostream>\n#include <variant>\n\nint main() {\nauto v ="
-    val programEnd = ";\n\n    std::cout << v << std::endl;\n\n    return 0;\n}"
+    val programEnd = ";\n\n    std::cout << v(nullptr) << std::endl;\n\n    return 0;\n}"
 
     val folded = parsed.foldLeft(IO.pure(List.empty[Declaration])) {
       case (accum, next) =>
         next match {
           case Success(value, _) => accum.map(xs => xs ::: value)
-          case Failure(data, _) =>
-            IO.raiseError(new Exception(s"failed parsing with $data"))
+          case Failure(data, rest) =>
+            IO.raiseError(new Exception(s"failed parsing with $data, and rest \n${rest.takeWhile(_ != ';').mkString}"))
         }
     }
 

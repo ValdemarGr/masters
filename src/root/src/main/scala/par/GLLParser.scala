@@ -49,10 +49,10 @@ object GLLParser extends Parsers with RegexParsers {
   lazy val tagType: Parser[TagType] = 
     typeId ~ typeParams ^^ TagType
   lazy val disjointUnion =
-    tagType ~ (("|" ~> tagType)*) ^^ NonEmptyList.apply ^^ DisjointUnion
+    ("|" ?) ~> tagType ~ (("|" ~> tagType)*) ^^ NonEmptyList.apply ^^ DisjointUnion
   lazy val typeDecl: Parser[TypeDeclaration] =
     ("type" ~> (typeId ~ (id*)) <~ "=") ~ disjointUnion ^^ TypeDeclaration
-  lazy val typelevelDecl = typeDecl
+    lazy val typelevelDecl = typeDecl <~ ";"
   
 
   lazy val toplevel: Parser[List[Declaration]] = (typelevelDecl | declaration | comment) *

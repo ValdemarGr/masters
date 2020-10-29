@@ -61,12 +61,10 @@ object LCTransform {
   type SymbolMap = Map[String, SymbolSet]
 
   def suspend(exp: LCExp): LCExp =
-    //LCFunction("unit", LCName("unit"), exp)
-    exp
+    LCFunction("unit", LCName("unit"), exp)
 
   def unSuspend(exp: LCExp): LCExp =
-    //LCApplication(exp, LCRawCode("nullptr"))
-    exp
+    LCApplication(exp, LCRawCode("nullptr"))
 
   def evalPatternMatch(sm: SymbolMap)(pm: PatternMatch): LCExp = {
     import pm.{cases, expr}
@@ -125,7 +123,7 @@ object LCTransform {
         case (accum, next) => LCApplication(accum, evalExpr(sm)(next))
       }
 
-      println(s"apply $sm $f $e")
+      //println(s"apply $sm $f $e")
 
       sm.get(f) match {
         case None => makeE(fName)
@@ -258,7 +256,7 @@ object LCTransform {
       .collect { case (_, v) => v }
     typesDeclsFirst.foldLeft(expr) {
       case (innerExp, (name, functionBodyExp)) =>
-        val actualExp = unSuspend(functionBodyExp)
+        val actualExp = functionBodyExp
         val aps: LCExp = dis.collect { case (x, FunctionSym) => x }.toList.foldLeft[LCExp](actualExp) {
           case (accum, next) =>
             LCFunction(next, LCName(next), accum)
