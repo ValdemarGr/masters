@@ -39,25 +39,30 @@ object Main extends IOApp {
         |""".stripMargin
     }
     val p2 = """
-               |//abk i mat . ,, //
-               |//fun add a b = a + b;
-               |
                |type List a = 
                |  | Cons a (List a) 
                |  | Nil
                |;
                |
                |fun foldl f a l =
-               |  match l;
-               //|  match l
-               //|    | Nil -> a
-               //|    | Cons x xs -> foldl f (f a x) xs
-               //|  ;
+               |  match l
+               |    | Nil -> a;
+               |    | Cons x xs -> foldl (f) (f a x) (xs);
+               |  ;
+               |
+               |fun add a b = a + b;
+               |
+               |fun range n =
+               |  if (n == 0)
+               |    Nil;
+               |  else
+               |    Cons (n) (range (n - 1));
+               |  ;
                |
                |fun main =
-               |  let a = Cons 1 (Cons 2 Nil);
-               |  let b = 4 + 8;
-               |  b;
+               | // let a = Cons 1 (Cons 2 Nil);
+               |  let b = range 10;
+               |  foldl (add) 0 (b);
                |""".stripMargin
 
     val parsed = par.GLLParser.parse(p2)

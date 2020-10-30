@@ -6,6 +6,7 @@ import ir.LCLanguage._
 import par.TokenTypes._
 
 import scala.collection.SortedSet
+import java.{util => ju}
 
 /*
      (λf'.
@@ -122,8 +123,6 @@ object LCTransform {
       def makeE(inner: LCExp): LCExp = e.foldLeft[LCExp](inner) {
         case (accum, next) => LCApplication(accum, evalExpr(sm)(next))
       }
-
-      //println(s"apply $sm $f $e")
 
       sm.get(f) match {
         case None => makeE(fName)
@@ -254,10 +253,10 @@ object LCTransform {
     val typesDeclsFirst = definedDeclarations
       .sortBy(_._1)
       .collect { case (_, v) => v }
-    typesDeclsFirst.foldLeft(expr) {
+
+    typesDeclsFirst.distinct.foldLeft(expr) {
       case (innerExp, (name, functionBodyExp)) =>
-        val actualExp = functionBodyExp
-        val aps: LCExp = dis.collect { case (x, FunctionSym) => x }.toList.foldLeft[LCExp](actualExp) {
+        val aps: LCExp = dis.collect { case (x, FunctionSym) => x }.toList.foldLeft[LCExp](functionBodyExp) {
           case (accum, next) =>
             LCFunction(next, LCName(next), accum)
         }
