@@ -44,39 +44,39 @@ object Main extends IOApp {
                //|  | Nil
                //|;
                //|
+               //|type Boolean =
+               //|  | False
+               //|  | True
+               //|;
+               //|
+               //|fun eq a b =
+               //|  if (a == b)
+               //|    True;
+               //|  else
+               //|    False;
+               //|  ;
+               //|
                //|fun foldl f a l =
                //|  match l
                //|    | Nil -> a;
                //|    | Cons x xs -> foldl (f) (f (a) x) (xs);
                //|  ;
-               //|
-               //|fun add a b = a + b;
-               //|
-               //|fun range n =
-               //|  if (n == 0)
-               //|    Nil;
-               //|  else
-               //|    Cons (n) (range (n - 1));
-               //|  ;
-               //|
-               |fun cnd i =
-               |  if (i == 3)
-               |    2;
-               |  else
-               |    4;
-               |  ;
+               |
+               |fun add a b = a + b;
                |
                |fun main =
+               //|  let b = eq 1 2;
+               //|  b (0) (22);
                //|  let b = Cons 1 (Cons 2 Nil);
-               //|  let b = range 10;
                //|  foldl (add) 0 (b);
-               |  cnd 2;
+               |  add 10 20;
                |""".stripMargin
 
     val parsed = par.GLLParser.parse(p2)
 
     val programStart = "\n\n#include <iostream>\n#include <variant>\n\nint main() {\nauto v ="
-    val programEnd = ";\n\n    std::cout << v(nullptr) << std::endl;\n\n    return 0;\n}"
+    //val programEnd = ";\n\n    std::cout << v(nullptr) << std::endl;\n\n    return 0;\n}"
+    val programEnd = ";\n\n    std::cout << v << std::endl;\n\n    return 0;\n}"
 
     val checked = parsed match {
       case x :: Nil => IO(x)
@@ -91,7 +91,8 @@ object Main extends IOApp {
     }
 
     succ.flatMap { decls =>
-      IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(decls)) + programEnd))
+      //IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(decls)) + programEnd))
+      IO(println(s"main = let prog = ${emitter.LCEmitter.emitHaskell(LCTransform.entrypoint(decls))} in putStrLn $$ show prog"))
     } *>
       //IO(println(parsed)) *>
       IO(ExitCode.Success)

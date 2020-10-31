@@ -104,4 +104,7 @@ object LCLanguage {
   case class LCRawCode(s: String) extends LCExp {
     def stringify(implicit indentation: Indentation) = indentation.indent + s"code ${s}"
   }
+  case class LCIf(exp:LCExp, fst: LCExp, snd: LCExp) extends LCExp {
+    def stringify(implicit indentation: Indentation) = indentation.indent + s""
+  }
 }

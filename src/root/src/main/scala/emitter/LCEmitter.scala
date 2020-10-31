@@ -11,6 +11,18 @@ object LCEmitter {
     case Inequallity => "!="
   }
 
+  def emitHaskell(e: LCExp): String = e match {
+    case LCName(x)                         => x
+    case LCFunction(_, n, e)               => s"(\\${n.name} -> ${emitHaskell(e)})"
+    case LCApplication(l: LCExp, r: LCExp) => s"(${emitHaskell(l)}) (${emitHaskell(r)})"
+    case LCTerminalOperation(l, op, r)     => s"((${emitHaskell(l)}) ${emitOp(op)} (${emitHaskell(r)}))"
+    case LCString(s)                       => ("\"" + s + "\"")
+    case LCNumber(n)                       => n.toString
+    case LCIf(e, f, s) => s"if (${emitHaskell(e)}) then (${emitHaskell(f)}) else (${emitHaskell(s)})"
+    case _                                 => ""
+    //case LCRawCode(code)                   => code
+  }
+
   def emit(e: LCExp): String = e match {
     case LCName(x)                         => x
     case LCFunction(_, n, e)               => s"[=](auto ${n.name}) {\n return ${emit(e)};\n }"

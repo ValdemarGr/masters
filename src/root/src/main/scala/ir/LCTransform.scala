@@ -62,10 +62,12 @@ object LCTransform {
   type SymbolMap = Map[String, SymbolSet]
 
   def suspend(exp: LCExp): LCExp =
-    LCFunction("unit", LCName("unit"), exp)
+    //LCFunction("unit", LCName("unit"), exp)
+  exp
 
   def unSuspend(exp: LCExp): LCExp =
-    LCApplication(exp, LCRawCode("nullptr"))
+    //LCApplication(exp, LCRawCode("nullptr"))
+  exp
 
   def evalPatternMatch(sm: SymbolMap)(pm: PatternMatch): LCExp = {
     import pm.{cases, expr}
@@ -135,9 +137,10 @@ object LCTransform {
           )
       }
     case If(expr, fst, snd) =>
-      val cndApp = LCApplication(LCName(IF), evalExpr(sm)(expr))
-      val fstApp = LCApplication(cndApp, buildFunBody(sm)(fst))
-      LCApplication(fstApp, buildFunBody(sm)(snd))
+      LCIf(evalExpr(sm)(expr), buildFunBody(sm)(fst), buildFunBody(sm)(snd))
+      //val cndApp = LCApplication(LCName(IF), evalExpr(sm)(expr))
+      //val fstApp = LCApplication(cndApp, buildFunBody(sm)(fst))
+      //LCApplication(fstApp, buildFunBody(sm)(snd))
     case p: PatternMatch => evalPatternMatch(sm)(p)
   }
 
@@ -291,14 +294,24 @@ object LCTransform {
   def applyStd(program: LCExp): LCExp = {
     // If
     val withIf = {
-      val expName = "exp"
-      val fstName = "fst"
-      val sndName = "snd"
-      val ifStatement = s"(${expName})(nullptr) ? (${fstName})(nullptr) : (${sndName})(nullptr)"
-      val sndLayer = LCFunction(sndName, LCName(sndName), suspend(LCRawCode(ifStatement)))
-      val fstLayer = LCFunction(fstName, LCName(fstName), sndLayer)
-      val expLayer = LCFunction(expName, LCName(expName), fstLayer)
-      LCApplication(LCFunction(IF, LCName(IF), program), expLayer)
+      //val expName = "exp"
+      //val fstName = "fst"
+      //val sndName = "snd"
+      //val ifStatement = s"(${expName})(nullptr) ? (${fstName})(nullptr) : (${sndName})(nullptr)"
+      //val ifStatement = s"if (${expName}) return (${fstName}); else return (${sndName});"
+      //val sndLayer = LCFunction(sndName, LCName(sndName), suspend(LCRawCode(ifStatement)))
+      //val fstLayer = LCFunction(fstName, LCName(fstName), sndLayer)
+      //val expLayer = LCFunction(expName, LCName(expName), fstLayer)
+      val stm = """([=](auto exp) {
+    return [=](auto fst) {
+      return [=](auto snd) {
+        if (exp) return (fst);
+        else return (snd);
+        ;
+      };
+    };
+  })"""
+      LCApplication(LCFunction(IF, LCName(IF), program), LCRawCode(stm))
     }
 
     withIf
@@ -318,6 +331,7 @@ object LCTransform {
                          xs.toList.reverse
                            .collect { case (x, FunctionSym) => Apply(x, Nil) }))
     )
-    applyStd(out)
+    out
+    //applyStd(out)
   }
 }
