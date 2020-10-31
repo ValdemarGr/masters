@@ -151,6 +151,7 @@ object LCTransform {
         case (accum, next) =>
           LCFunction(next.id, LCName(next.id), accum)
       }
+
       Some(name -> withParams)
     case LetDecl(name, expr) =>
       Some(name -> evalExpr(fm)(expr))
@@ -254,7 +255,7 @@ object LCTransform {
       .sortBy(_._1)
       .collect { case (_, v) => v }
 
-    typesDeclsFirst.distinct.foldLeft(expr) {
+    typesDeclsFirst.foldLeft(expr) {
       case (innerExp, (name, functionBodyExp)) =>
         val aps: LCExp = dis.collect { case (x, FunctionSym) => x }.toList.foldLeft[LCExp](functionBodyExp) {
           case (accum, next) =>
@@ -266,7 +267,7 @@ object LCTransform {
 
   def vdInScope(vd: ValueDeclaration): SymbolSet = vd match {
     case FunDecl(name, _, _) => SortedSet((name, FunctionSym))
-    case LetDecl(_, _)    => SortedSet.empty
+    case LetDecl(_, _)       => SortedSet.empty
     case Import(_)           => SortedSet.empty
     case Ignore              => SortedSet.empty
   }
@@ -293,8 +294,8 @@ object LCTransform {
       val expName = "exp"
       val fstName = "fst"
       val sndName = "snd"
-      val ifStatement = s"(${expName}) ? (${fstName}) : (${sndName})"
-      val sndLayer = LCFunction(sndName, LCName(sndName), LCRawCode(ifStatement))
+      val ifStatement = s"(${expName})(nullptr) ? (${fstName})(nullptr) : (${sndName})(nullptr)"
+      val sndLayer = LCFunction(sndName, LCName(sndName), suspend(LCRawCode(ifStatement)))
       val fstLayer = LCFunction(fstName, LCName(fstName), sndLayer)
       val expLayer = LCFunction(expName, LCName(expName), fstLayer)
       LCApplication(LCFunction(IF, LCName(IF), program), expLayer)

@@ -56,6 +56,6 @@ object GLLParser extends Parsers with RegexParsers {
   
 
   lazy val toplevel: Parser[List[Declaration]] = (typelevelDecl | declaration | comment) *
-  def parse(s: String) = toplevel(s).toList.toList
+  def parse(s: String) = toplevel(s).toList
 
 }

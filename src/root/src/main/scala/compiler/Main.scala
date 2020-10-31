@@ -39,30 +39,38 @@ object Main extends IOApp {
         |""".stripMargin
     }
     val p2 = """
-               |type List a = 
-               |  | Cons a (List a) 
-               |  | Nil
-               |;
-               |
-               |fun foldl f a l =
-               |  match l
-               |    | Nil -> a;
-               |    | Cons x xs -> foldl (f) (f a x) (xs);
-               |  ;
-               |
-               |fun add a b = a + b;
-               |
-               |fun range n =
-               |  if (n == 0)
-               |    Nil;
+               //|type List a = 
+               //|  | Cons a (List a) 
+               //|  | Nil
+               //|;
+               //|
+               //|fun foldl f a l =
+               //|  match l
+               //|    | Nil -> a;
+               //|    | Cons x xs -> foldl (f) (f (a) x) (xs);
+               //|  ;
+               //|
+               //|fun add a b = a + b;
+               //|
+               //|fun range n =
+               //|  if (n == 0)
+               //|    Nil;
+               //|  else
+               //|    Cons (n) (range (n - 1));
+               //|  ;
+               //|
+               |fun cnd i =
+               |  if (i == 3)
+               |    2;
                |  else
-               |    Cons (n) (range (n - 1));
+               |    4;
                |  ;
                |
                |fun main =
-               | // let a = Cons 1 (Cons 2 Nil);
-               |  let b = range 10;
-               |  foldl (add) 0 (b);
+               //|  let b = Cons 1 (Cons 2 Nil);
+               //|  let b = range 10;
+               //|  foldl (add) 0 (b);
+               |  cnd 2;
                |""".stripMargin
 
     val parsed = par.GLLParser.parse(p2)
@@ -70,16 +78,19 @@ object Main extends IOApp {
     val programStart = "\n\n#include <iostream>\n#include <variant>\n\nint main() {\nauto v ="
     val programEnd = ";\n\n    std::cout << v(nullptr) << std::endl;\n\n    return 0;\n}"
 
-    val folded = parsed.foldLeft(IO.pure(List.empty[Declaration])) {
-      case (accum, next) =>
-        next match {
-          case Success(value, _) => accum.map(xs => xs ::: value)
-          case Failure(data, rest) =>
-            IO.raiseError(new Exception(s"failed parsing with $data, and rest \n${rest.takeWhile(_ != ';').mkString}"))
-        }
+    val checked = parsed match {
+      case x :: Nil => IO(x)
+      case xs =>
+        IO.raiseError(new Exception(s"failed parsing with ambiguity (multiple options) results \n${xs.mkString("\n\n")}"))
     }
 
-    folded.flatMap { decls =>
+    val succ = checked.flatMap {
+      case Success(value, _) => IO.pure(value)
+      case Failure(data, rest) =>
+        IO.raiseError(new Exception(s"failed parsing with $data, and rest \n${rest.takeWhile(_ != ';').mkString}"))
+    }
+
+    succ.flatMap { decls =>
       IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(decls)) + programEnd))
     } *>
       //IO(println(parsed)) *>
