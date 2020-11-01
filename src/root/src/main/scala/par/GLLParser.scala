@@ -6,8 +6,8 @@ import par.TokenTypes._
 import cats.data.NonEmptyList
 
 object GLLParser extends Parsers with RegexParsers {
-  lazy val id: Parser[String] = """[a-z][a-zA-Z]*""".r ^^ { s => s.head.toLower + s.tail }
-  lazy val typeId: Parser[String] = """[A-Za-z][a-zA-Z]*""".r ^^ { s => s.head.toLower + s.tail }
+  lazy val id: Parser[String] = """[a-z][a-zA-Z]*""".r
+  lazy val typeId: Parser[String] = """[A-Za-z][a-zA-Z]*""".r
   lazy val infixOp: Parser[BuiltinOperator] = (
     "+" ^^^ Addition
       | "-" ^^^ Subtraction
