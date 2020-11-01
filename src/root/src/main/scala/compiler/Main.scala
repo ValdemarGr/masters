@@ -50,11 +50,42 @@ object Main extends IOApp {
                |    | Cons x xs -> foldl (f) (f (a) x) (xs);
                |  ;
                |
+               |fun range n =
+               |  if (n == 0)
+               |    Nil;
+               |  else
+               |    Cons (n) (range (n - 1));
+               |  ;
+               |
                |fun add a b = a + b;
                |
+               |type Tree a =
+               |  | Tnil
+               |  | Node (Tree a) a (Tree a)
+               |;
+               |
+               |fun insert t a =
+               |  match t
+               |    | Tnil -> Node (Tnil) (a) (Tnil);
+               |    | Node l x r -> 
+               |    if (x > a)
+               |      Node (insert (l) (a)) (x) (r);
+               |    else
+               |      Node (l) (x) (insert (r) (a));
+               |    ;      
+               |  ;      
+               |      
+               |fun treesum t =
+               |  match t
+               |    | Tnil -> 0;
+               |    | Node l x r -> ((treesum l) + (x)) + (treesum r);
+               |  ;
+               |
                |fun main =
-               |  let b = Cons 1 (Cons 2 Nil);
-               |  foldl (add) 0 (b);
+               |  let t = insert (insert (insert (Tnil) 10) 20) 5;
+               |  treesum t;
+               //|  let b = range 10;
+               //|  foldl (add) 0 (b);
                |""".stripMargin
 
     val parsed = par.GLLParser.parse(p2)

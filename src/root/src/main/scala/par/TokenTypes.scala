@@ -30,6 +30,8 @@ object TokenTypes {
   case object Subtraction extends BuiltinOperator
   case object Equallity extends BuiltinOperator
   case object Inequallity extends BuiltinOperator
+  case object Geq extends BuiltinOperator
+  case object Leq extends BuiltinOperator
 
   trait Expression extends Token
   case class InfixBuiltin(lhs: Expression, op: BuiltinOperator, rhs: Expression) extends Expression

@@ -11,6 +11,8 @@ object GLLParser extends Parsers with RegexParsers {
   lazy val infixOp: Parser[BuiltinOperator] = (
     "+" ^^^ Addition
       | "-" ^^^ Subtraction
+      | ">" ^^^ Geq
+      | "<" ^^^ Leq
       | "==" ^^^ Equallity
       | "!=" ^^^ Inequallity
   )

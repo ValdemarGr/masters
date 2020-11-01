@@ -7,8 +7,10 @@ object LCEmitter {
   def emitOp(op: BuiltinOperator) = op match {
     case Addition    => "+"
     case Subtraction => "-"
-    case Equallity   => "=="
+    case Equallity   => "="
     case Inequallity => "!="
+    case Leq => "<"
+    case Geq => ">"
   }
 
   def emitScheme(e: LCExp): String = e match {
@@ -18,7 +20,7 @@ object LCEmitter {
     case LCTerminalOperation(l, op, r)     => s"(${emitOp(op)} ${emitScheme(l)} ${emitScheme(r)})"
     case LCString(s)                       => ("\"" + s + "\"")
     case LCNumber(n)                       => n.toString
-    case LCIf(e, f, s) => s"if ${emitScheme(e)} ${emitScheme(f)} ${emitScheme(s)}"
+    case LCIf(e, f, s) => s"(if ${emitScheme(e)} ${emitScheme(f)} ${emitScheme(s)})"
     case _                                 => ""
   }
 
