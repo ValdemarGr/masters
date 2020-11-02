@@ -18,7 +18,8 @@ object GLLParser extends Parsers with RegexParsers {
   )
 
   lazy val number: Parser[ConstantInteger] = """\d+""".r ^^ { x => ConstantInteger(x.toInt) }
-  lazy val app: Parser[Expression] = (id | typeId) ~ (exprParen *) ^^ { (id, exps) => Apply(id, exps) }
+  lazy val ref: Parser[Expression] = (id | typeId) ^^ { id => Apply(id, Nil) }
+  lazy val app: Parser[Expression] = (id | typeId) ~ ((ref | exprP | exprNoApp) *) ^^ { (id, exps) => Apply(id, exps) }
   lazy val infix: Parser[Expression] = exprParen ~ infixOp ~ exprParen ^^ { (e1, op, e2) => InfixBuiltin(e1, op, e2) }
   lazy val conditional: Parser[Expression] =
     (
@@ -29,8 +30,10 @@ object GLLParser extends Parsers with RegexParsers {
     ("|" ~> (typeId ~ (id *)) <~ "->") ~ functionBody ^^ { (s, ps, b) => MatchCase(s, ps, b) }
   lazy val patternMatch: Parser[Expression] =
     ("match" ~> exprParen) ~ (matchCase +) ^^ { (e, cs) => PatternMatch(e, NonEmptyList(cs.head, cs.tail)) }
+  lazy val exprNoApp: Parser[Expression] = number | infix | conditional | patternMatch
   lazy val expr: Parser[Expression] = number | app | infix | conditional | patternMatch
-  lazy val exprParen: Parser[Expression] = ("(" ~> expr <~ ")") | expr
+  lazy val exprP: Parser[Expression] = "(" ~> expr <~ ")"
+  lazy val exprParen: Parser[Expression] = exprP | expr
 
   lazy val letD: Parser[ValueDeclaration] =
     ("let" ~> id <~ "=") ~ exprParen <~ ";" ^^ { (id, e) => LetDecl(id, e) }
@@ -44,18 +47,17 @@ object GLLParser extends Parsers with RegexParsers {
       declaration
         | comment
     ) *) ~ exprParen <~ ";" ^^ { (b, e) => FunctionBody(b, e) }
-  
+
   lazy val typeName: Parser[TypeName] = id ^^ TypeName
   lazy val parensType: Parser[TypeParam] = "(" ~> tagType <~ ")" ^^ ParensType
-  lazy val typeParams: Parser[List[TypeParam]] = (typeName | parensType)* 
-  lazy val tagType: Parser[TagType] = 
-      typeId ~ typeParams ^^ TagType
+  lazy val typeParams: Parser[List[TypeParam]] = (typeName | parensType) *
+  lazy val tagType: Parser[TagType] =
+    typeId ~ typeParams ^^ TagType
   lazy val disjointUnion =
-    ("|" ?) ~> tagType ~ (("|" ~> tagType)*) ^^ NonEmptyList.apply ^^ DisjointUnion
+    ("|" ?) ~> tagType ~ (("|" ~> tagType) *) ^^ NonEmptyList.apply ^^ DisjointUnion
   lazy val typeDecl: Parser[TypeDeclaration] =
-    ("type" ~> (typeId ~ (id*)) <~ "=") ~ disjointUnion ^^ TypeDeclaration
-    lazy val typelevelDecl = typeDecl <~ ";"
-  
+    ("type" ~> (typeId ~ (id *)) <~ "=") ~ disjointUnion ^^ TypeDeclaration
+  lazy val typelevelDecl = typeDecl <~ ";"
 
   lazy val toplevel: Parser[List[Declaration]] = (typelevelDecl | declaration | comment) *
   def parse(s: String) = toplevel(s).toList
