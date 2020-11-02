@@ -68,11 +68,11 @@ object Main extends IOApp {
                |  match t
                |    | Tnil -> Node Tnil a Tnil;
                |    | Node l x r -> 
-               |    if (x > a)
-               |      Node (insert l a) x r;
-               |    else
-               |      Node l x (insert r a);
-               |    ;      
+               |      if (x > a)
+               |        Node (insert l a) x r;
+               |      else
+               |        Node l x (insert r a);
+               |      ;      
                |  ;      
                |      
                |fun treesum t =
