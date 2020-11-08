@@ -42,14 +42,45 @@ The turing completeness of the untyped lambda calculus, can be derived using Chu
 For the remainder of the dissertation, ordinary arithmetic expressions are written in traditional mathematics.
 The expressiveness and simplicity of lambda calculus, makes it an exellent language to transpile to, which in fact, is a common technique.
 
-\section{High level programming languages}
+\section{Translation to lambda calculus}
 High level languages associated with lambda calculus are often also very close to it.
-The $L$ language is very close to the untyped lambda calculus, for instance see two equivalent programs, that both add an $a$ and a $b$.
+The $L$ language is very close to the untyped lambda calculus.
+See two equivalent programs, that both add an $a$ and a $b$.
 \begin{align}
 (\lambda add . E)(\lambda a . (\lambda b . a + b))
+\label{lc:add}
 \end{align}
 \begin{lstlisting}[language=ML,caption={Add function},xleftmargin=.35\textwidth]
 fun add a b = a + b;
 \end{lstlisting}
-Notice here that the lambda calculus variant must bind the function name ``outside the rest of the program'' or more formally in 
+
+\subsection{Scoping}
+Notice that \autoref{lc:add}, must bind the function name ``outside the rest of the program'' or more formally in an outer scope.
+In a traditional program such as \autoref{lst:traditional}, functions must be explicitly named to translate as in the above example.
+\begin{lstlisting}[language=ML,caption={A traditional program},label={lst:traditional},xleftmargin=.32\textwidth]
+fun add a b = a + b;
+fun sub a b = a - b;
+sub (add 10 20) 5;
+\end{lstlisting}
+\begin{lstlisting}[language=ML,caption={An order dependant program},label={lst:orddep},xleftmargin=.32\textwidth]
+fun sub a b = add a (0 - b);
+fun add a b = a + b;
+sub (add 10 20) 5;
+\end{lstlisting}
+Notice that there are several problems, such as, the order of which functions are defined may alter whether the program is correct or not.
+For instance, the program defined in \autoref{lst:orddep} would not translate correct, it would translate to \autoref{lc:orddep}.
+The definition of sub, or rather, the applied lambda abstraction, is missing a reference to the $add$ function.
+\begin{align}
+(\lambda sub . (\lambda add . (sub \,\, (add \,\, 10 \,\, 20) \,\, 5)) \,\, (\lambda a . (\lambda b . a + b))) \,\, (\lambda a . (\lambda b . add \,\, a (0 - b)))
+\label{lc:orddep}
+\end{align}
+
+\textit{lambda lifting} is a technique where \textit{free variables}, are explicitly parameterized.
+A \textit{free variable}, is a variable in respect to some function $f$ that is referenced from within $f$, but defined outside. 
+This is exactly the problem in \autoref{lc:orddep}, which has the lambda lifted solution \autoref{lc:ordfix}.
+\begin{align}
+(\lambda sub . (\lambda add . (sub \,\, add \,\, (add \,\, 10 \,\, 20) \,\, 5)) \,\, (\lambda a . (\lambda b . a + b))) \,\, (\lambda add .(\lambda a . (\lambda b . add \,\, a (0 - b))))
+\label{lc:ordfix}
+\end{align}
+As it will turn out, this will also enables complicated behaviour, such as \textit{mutual recursion}.
 \end{document}
