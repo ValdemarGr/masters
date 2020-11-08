@@ -1,0 +1,55 @@
+\documentclass[11pt,oneside,a4paper]{report}
+
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\begin{document}
+
+\chapter{Programming languages}
+Computers are devices which read a well-defined, finite sequence of simple instructions and emit a result.
+In theoretical analysis of computers, models have been developed to understand and prove properties.
+A finite sequence of instructions fed to a computer is called an \textit{algorithm}, which is the language of high level computation\cite{copeland1997church}.
+In modern encodings of algorithms or programs, ``high level'' languages are used instead of the computational models.
+Such languages are then translated into instructions, that often are much closer to a computational model.
+The process of translating programs into computer instructions is called \textit{compiling}, or \textit{transpiling} if the program is first translated into another ``high level'' language.
+
+For the purpose of this dissertation, a simple programming language has been implemented to illustrate the concepts in detail.
+The language transpiles to \textit{untyped lambda calculus}.
+For the remainder, the language will be refeered to as $L$.
+
+\section{Untyped lambda calculus}
+The \textit{untyped lambda calculus} is a model of a computer, developed by Alanzo Church\cite{church1936unsolvable}.
+The untyped lambda calculus is a simple tangible language, of just three types of terms.
+\begin{align}
+  &x
+  \label{lc:lang:var}\\
+  &\lambda x . E
+  \label{lc:lang:abs}\\
+  &Y E
+  \label{lc:lang:app}
+\end{align}
+The first component, is that of the \textit{variable} \autoref{lc:lang:app}.
+A variable is a reference to another lambda abstraction.
+\autoref{lc:lang:abs} shows a lambda \textit{abstraction}, which is contains a bound variable $x$ and another lambda term $E$.
+Finally in \autoref{lc:lang:app}, \textit{application}.
+Application can be interpreted as substituting the variable in the left \textit{abstraction} $Y$, with the right term $E$.
+Let $Y$ be $\lambda x . T$ and $E$ be $z$, then $Y E$ can be substituted for $(\lambda x . T) z$.
+Furtermore, substitute $x$ for $E$ or $z$, such that $Y$ becomes $T[x := y]$, read as ``Every instance of $x$ in $T$, should be substituted by $y$''.
+
+The untyped lambda calculus is in fact, turing complete; any algorithm that can be evaluated by a computer, can be encoded in the untyped lambda calculus.
+The turing completeness of the untyped lambda calculus, can be derived using Church encoding, which is an encoding of lambda terms that can express boolean and arithmetic expressions\cite{church1985calculi}.
+For the remainder of the dissertation, ordinary arithmetic expressions are written in traditional mathematics.
+The expressiveness and simplicity of lambda calculus, makes it an exellent language to transpile to, which in fact, is a common technique.
+
+\section{High level programming languages}
+High level languages associated with lambda calculus are often also very close to it.
+The $L$ language is very close to the untyped lambda calculus, for instance see two equivalent programs, that both add an $a$ and a $b$.
+\begin{align}
+(\lambda add . E)(\lambda a . (\lambda b . a + b))
+\end{align}
+\begin{lstlisting}[language=ML,caption={Add function},xleftmargin=.35\textwidth]
+fun add a b = a + b;
+\end{lstlisting}
+Notice here that the lambda calculus variant must bind the function name ``outside the rest of the program'' or more formally in 
+\end{document}
