@@ -38,7 +38,7 @@ Let $Y$ be $\lambda x . T$ and $E$ be $z$, then $Y E$ can be substituted for $(\
 Furtermore, substitute $x$ for $E$ or $z$, such that $Y$ becomes $T[x := y]$, read as ``Every instance of $x$ in $T$, should be substituted by $y$''.
 
 The untyped lambda calculus is in fact, turing complete; any algorithm that can be evaluated by a computer, can be encoded in the untyped lambda calculus.
-The turing completeness of the untyped lambda calculus, can be derived using Church encoding, which is an encoding of lambda terms that can express boolean and arithmetic expressions\cite{church1985calculi}.
+The turing completeness of the untyped lambda calculus, can be derived by enriching the language, with properties such as recursion with the Y-combitator and using Church encoding, which is an encoding of lambda terms that can express boolean and arithmetic expressions\cite{church1985calculi}.
 For the remainder of the dissertation, ordinary arithmetic expressions are written in traditional mathematics.
 The expressiveness and simplicity of lambda calculus, makes it an exellent language to transpile to, which in fact, is a common technique.
 
@@ -69,7 +69,7 @@ sub (add 10 20) 5;
 \end{lstlisting}
 Notice that there are several problems, such as, the order of which functions are defined may alter whether the program is correct or not.
 For instance, the program defined in \autoref{lst:orddep} would not translate correct, it would translate to \autoref{lc:orddep}.
-The definition of sub, or rather, the applied lambda abstraction, is missing a reference to the $add$ function.
+The definition of $sub$, or rather, the applied lambda abstraction, is missing a reference to the $add$ function.
 \begin{align}
 (\lambda sub . (\lambda add . (sub \,\, (add \,\, 10 \,\, 20) \,\, 5)) \,\, (\lambda a . (\lambda b . a + b))) \,\, (\lambda a . (\lambda b . add \,\, a (0 - b)))
 \label{lc:orddep}
@@ -83,4 +83,60 @@ This is exactly the problem in \autoref{lc:orddep}, which has the lambda lifted 
 \label{lc:ordfix}
 \end{align}
 As it will turn out, this will also enables complicated behaviour, such as \textit{mutual recursion}.
+
+Moreover, lambda lifting also conforms to ``traditional'' scoping rules.
+\textit{Variable shadowing} occurs when there exists $1 < $ reachable variables of the same name, but the ``nearest'', in regard to scope distance is chosen.
+Effectively, other variables than the one chosen, are \textit{shadowed}.
+Variable shadowing is an implied side-effect of using using lambda calculus.
+Convince yourself that the function $f$ in \autoref{lst:scoping}, yields $12$.
+\begin{lstlisting}[language=ML,caption={Scoping rules in programming languages},label={lst:scoping},xleftmargin=.32\textwidth]
+let x = 22;
+let a = 10;
+fun f = 
+  let x = 2;
+  a + x;
+\end{lstlisting}
+
+\section{Recursion}
+Complexity - ``The state or quality of being intricate or complicated''
+\\\\
+\noindent Reductions in mathematics and computer science are one of the princiral methods used developing beautiful equations and algorithms.
+\begin{lstlisting}[language=ML,caption={Infinite program},label={lst:infprog},xleftmargin=.32\textwidth]
+fun f n = 
+  if (n == 0) n
+  else if (n == 1) n + (n - 1)
+  else if (n == 2) n + ((n - 1) + (n - 2))
+  ...
+\end{lstlisting}
+\autoref{lst:infprog} defines a function $f$, that in fact is infinite.
+Looking at the untyped lambda calculus, there are not any of the three term types that define infinite functions or abstractions, at first glance.
+Instead of writing an infinite function, the question is rather, how can a reduction for this function to handle \textit{any} case of $n$?
+\begin{lstlisting}[language=ML,caption={Recursive program},label={lst:recprog},xleftmargin=.32\textwidth]
+fun f n = 
+  if (n == 0) n
+  else n + (f (n - 1))
+\end{lstlisting}
+\autoref{lst:recprog} defines a recursive variant of $f$, it is a product of the reduction in \autoref{eq:fred}.
+\begin{align}
+    n + (n - 1) \dots + 0 = \sum_{k = 0}^n k
+    \label{eq:fred}
+\end{align}
+But since the untyped lambda calculus is turing complete, or rather, if one were to show it were.
+It must also realize algorithms that are recursive or include loops, the two of which are equivalent.
+\begin{align}
+    (\lambda f . E) (\lambda n . \texttt{if} (n == 0) (n) (n + (f (n - 1))))
+    \label{eq:naiverec}
+\end{align}
+The naive implementation of a recursive will yield an unsolvable problem, in fact, an infinite problem.
+In \autoref{eq:naiverec}, when $f$ is called recursively, it must be referenced.
+How can $f$ be referenced, if it is ``being constructed''?
+Applying the implementation of $f$ will yield the f
+
+The \textit{Y-combinator} is the key to realize this property.
+\begin{align}
+    jj
+    \label{eq:ycomb}
+\end{align}
+
+
 \end{document}
