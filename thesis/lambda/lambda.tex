@@ -31,7 +31,7 @@ The untyped lambda calculus is a simple tangible language, of just three types o
 \end{align}
 The first component, is that of the \textit{variable} \autoref{lc:lang:app}.
 A variable is a reference to another lambda abstraction.
-\autoref{lc:lang:abs} shows a lambda \textit{abstraction}, which is contains a bound variable $x$ and another lambda term $E$.
+\autoref{lc:lang:abs} shows a lambda \textit{abstraction}, which contains a bound variable $x$ and another lambda term $E$.
 Finally in \autoref{lc:lang:app}, \textit{application}.
 Application can be interpreted as substituting the variable in the left \textit{abstraction} $Y$, with the right term $E$.
 Let $Y$ be $\lambda x . T$ and $E$ be $z$, then $Y E$ can be substituted for $(\lambda x . T) z$.
@@ -45,12 +45,12 @@ The expressiveness and simplicity of lambda calculus, makes it an exellent langu
 \section{Translation to lambda calculus}
 High level languages associated with lambda calculus are often also very close to it.
 The $L$ language is very close to the untyped lambda calculus.
-See two equivalent programs, that both add an $a$ and a $b$.
+See two equivalent programs, \autoref{lc:add} and \autoref{lst:add}, that both add an $a$ and a $b$.
 \begin{align}
 (\lambda add . E)(\lambda a . (\lambda b . a + b))
 \label{lc:add}
 \end{align}
-\begin{lstlisting}[language=ML,caption={Add function},xleftmargin=.35\textwidth]
+\begin{lstlisting}[language=ML,caption={Add function},label={lst:add},xleftmargin=.35\textwidth]
 fun add a b = a + b;
 \end{lstlisting}
 
@@ -97,7 +97,7 @@ fun f =
   a + x;
 \end{lstlisting}
 
-\section{Recursion}
+\subsection{Recursion}
 Complexity - ``The state or quality of being intricate or complicated''
 \\\\
 \noindent Reductions in mathematics and computer science are one of the princiral methods used developing beautiful equations and algorithms.
@@ -110,7 +110,7 @@ fun f n =
 \end{lstlisting}
 \autoref{lst:infprog} defines a function $f$, that in fact is infinite.
 Looking at the untyped lambda calculus, there are not any of the three term types that define infinite functions or abstractions, at first glance.
-Instead of writing an infinite function, the question is rather, how can a reduction for this function to handle \textit{any} case of $n$?
+Instead of writing an infinite function, the question is rather, how can a reduction be peformed on this function, such that it can evaluate \textit{any} case of $n$?
 \begin{lstlisting}[language=ML,caption={Recursive program},label={lst:recprog},xleftmargin=.32\textwidth]
 fun f n = 
   if (n == 0) n
@@ -121,20 +121,36 @@ fun f n =
     n + (n - 1) \dots + 0 = \sum_{k = 0}^n k
     \label{eq:fred}
 \end{align}
-But since the untyped lambda calculus is turing complete, or rather, if one were to show it were.
-It must also realize algorithms that are recursive or include loops, the two of which are equivalent.
+But since the untyped lambda calculus is turing complete, or rather, if one were to show it were,
+it must also realize algorithms that are recursive or include loops, the two of which are equivalent.
 \begin{align}
     (\lambda f . E) (\lambda n . \texttt{if} (n == 0) (n) (n + (f (n - 1))))
     \label{eq:naiverec}
 \end{align}
-The naive implementation of a recursive will yield an unsolvable problem, in fact, an infinite problem.
-In \autoref{eq:naiverec}, when $f$ is called recursively, it must be referenced.
+The naive implementation of a recursive variant, will yield an unsolvable problem, in fact, an infinite problem.
+In \autoref{eq:naiverec}, when $f$ is applied recursively, it must be referenced.
 How can $f$ be referenced, if it is ``being constructed''?
-Applying the implementation of $f$ will yield the f
-
-The \textit{Y-combinator} is the key to realize this property.
+Substituting $f$ with its implementation in \autoref{eq:naiverecdepth}, will yield the same problem again, but at one level deeper.
 \begin{align}
-    jj
+    (\lambda f . E) (\lambda n . \texttt{if} (n == 0) (n) (n + ((\lambda n . \texttt{if} (n == 0) (n) (n + (f (n - 1)))) (n - 1))))
+    \label{eq:naiverecdepth}
+\end{align}
+One could say, that the problem is now recursive.
+Recall that lambda lifting, is the technique of explicitly parameterizing outside references.
+Convince yourself that $f$ lives in the scope above its own body, such that, when referenceing $f$ from within $f$, $f$ should be parameterized as in \autoref{lst:erec}, translating to \autoref{eq:erec}.
+\begin{lstlisting}[language=ML,caption={Explicitly passing recursive function},label={lst:erec},xleftmargin=.32\textwidth]
+fun f f n = 
+  if (n == 0) n
+  else n + (f f (n - 1))
+\end{lstlisting}
+\begin{align}
+    (\lambda f . E) (\lambda f . (\lambda n . \texttt{if} (n == 0) (n) (n + (f \,\, f \,\, (n - 1)))))
+    \label{eq:erec}
+\end{align}
+The initial invocation of $f$, must involve $f$, such that it becomes $f \,\, f \,\, n$.
+The formal lambda calculus recursion combinator is called the \textit{Y-combinator}, and is the key to realize this property.
+\begin{align}
+    \lambda f . (\lambda x . f (x x)) (\lambda x . f (x x))
     \label{eq:ycomb}
 \end{align}
 

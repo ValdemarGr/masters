@@ -7,6 +7,9 @@
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{float}
+\usepackage[english]{babel}
+
+
 \lstset{
     numbers=left,
     showstringspaces=false,
@@ -15,10 +18,43 @@
 
 \newfloat{lstfloat}{htbp}{lop}
 
-%\usepackage{titlesec}
-%\titleformat{\chapter}[display]{\bfseries\centering}{\huge \thechapter}{0pt}{\Huge}
 
 \begin{document}
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        \huge{Aspects of efficiency in functional programming languages}
+
+        \vspace*{0.5cm}
+        \large{by}
+
+        \vspace{0.5cm}
+        \Large{Samuel Valdemar Grange}
+
+        \vspace*{0.5cm}
+        \normalsize{supervised by}
+
+        \vspace{0.5cm}
+        \large{Prof. Kim Skak Larsen}
+
+        \vfill
+
+        \vspace*{0.7cm}
+        \includegraphics[width=0.4\textwidth]{sdulogo}
+
+        \vspace*{1cm}
+        \MakeUppercase{University of southern Denmark}
+
+        \vspace*{0.3cm}
+        \MakeUppercase{Institute of mathematics and computer science}
+
+        \vspace*{0.3cm}
+        \large{Masters thesis in Computer Science}
+    \end{center}
+    
+\end{titlepage}
+
+\tableofcontents
 
 \part{Compilers and languages}
 
