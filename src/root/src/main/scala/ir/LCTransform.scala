@@ -252,7 +252,8 @@ object LCTransform {
     val dis = declsInScope(body)
     val modFm: SymbolMap = fm ++ dis.map { case (x, _) => x -> dis }.toMap
 
-    val definedDeclarations = body.flatMap(buildDeclaration(modFm))
+    //println(body)
+    val definedDeclarations = body.flatMap(buildDeclaration(modFm)).reverse
 
     val typesDeclsFirst = definedDeclarations
       .sortBy(_._1)

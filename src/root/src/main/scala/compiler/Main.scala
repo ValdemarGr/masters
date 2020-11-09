@@ -38,6 +38,13 @@ object Main extends IOApp {
         |  (2 + 2)
         |""".stripMargin
     }
+    val p3 = """
+        |fun main =
+        |  let a = 1;
+        |  let b = a + 2;
+        |  let c = 10;
+        |  (a + b) + c;
+    """.stripMargin
     val p2 = """
                |type List a = 
                |  | Cons a (List a) 
@@ -83,7 +90,9 @@ object Main extends IOApp {
                |
                |fun main =
                |  let t = insert (insert (insert Tnil 10) 20) 5;
-               |  treesum t;
+               |  let b = insert t 2;
+               |  let a = insert b 3;
+               |  treesum a;
                //|  let b = range 10;
                //|  foldl (add) 0 (b);
                |""".stripMargin
