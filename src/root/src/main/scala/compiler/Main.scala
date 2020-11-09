@@ -92,7 +92,7 @@ object Main extends IOApp {
                |  let t = insert (insert (insert Tnil 10) 20) 5;
                |  let b = insert t 2;
                |  let a = insert b 3;
-               |  treesum a;
+               |  treesum t;
                //|  let b = range 10;
                //|  foldl (add) 0 (b);
                |""".stripMargin
