@@ -54,7 +54,7 @@ See two equivalent programs, \autoref{lc:add} and \autoref{lst:add}, that both a
 fun add a b = a + b;
 \end{lstlisting}
 
-\subsection{Scoping}
+\subsection{Scoping}\label{scoping}
 Notice that \autoref{lc:add}, must bind the function name ``outside the rest of the program'' or more formally in an outer scope.
 In a traditional program such as \autoref{lst:traditional}, functions must be explicitly named to translate as in the above example.
 \begin{lstlisting}[language=ML,caption={A traditional program},label={lst:traditional},xleftmargin=.32\textwidth]
@@ -148,11 +148,19 @@ fun f f n =
     \label{eq:erec}
 \end{align}
 The initial invocation of $f$, must involve $f$, such that it becomes $f \,\, f \,\, n$.
-The formal lambda calculus recursion combinator is called the \textit{Y-combinator}, and is the key to realize this property.
+The \textit{Y-combinator} in \autoref{eq:ycomb}, is the key to realize that the untyped lambda calculus can implement recursion.
+Languages with functions and support binding functions to parameters, can implement recursion with the Y-combinator.
 \begin{align}
     \lambda f . (\lambda x . f (x x)) (\lambda x . f (x x))
     \label{eq:ycomb}
 \end{align}
 
+Implementing mutual recursion is an interesting case of lambda lifting and recursion in untyped lambda calculus.
+\begin{lstlisting}[language=ML,caption={Mutual recursion},label={lst:mutrec},xleftmargin=.32\textwidth]
+fun g = f;
+fun f = g;
+\end{lstlisting}
+Notice in \autoref{lst:mutrec} that $g$ requires $f$ to be lifted and $f$ requires $g$ to be lifted.
+If a translation ``pessimistically'' lifts all definitions from the above scope, then all required references exist in lexical scope.
 
 \end{document}
