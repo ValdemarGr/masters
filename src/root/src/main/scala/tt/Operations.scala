@@ -5,24 +5,27 @@ import par.TokenTypes._
 import scala.language.postfixOps
 import cats.MonadError
 import scala.collection.immutable.Nil
-import tt.Constraints._
 
 object Operations {
   // typeclasses for freevar
   sealed trait Free[A] {
-    def freevars(a: A): MonoVars
+    def freevars(a: A): Set[TypeVar]
   }
   object Free {
     def freevars[A](a: A)(implicit F: Free[A]) = F.freevars(a)
   }
 
   implicit object TFree extends Free[Type] {
-    def freevars(a: Type): MonoVars =
+    def freevars(a: Type): Set[TypeVar] =
       a match {
         case TypeArrow(lh, rh) => Free.freevars(lh) | Free.freevars(rh)
         case x: TypeVar        => Set(x)
         case TypeAtom(a)       => Set.empty
       }
+  }
+  implicit object SFree extends Free[Scheme] {
+    def freevars(s: Scheme): Set[TypeVar] =
+      Free.freevars(s).diff(s.typevars)
   }
 
   // typeclasses for substitution
@@ -48,8 +51,10 @@ object Operations {
     ctx.copy(varnameCounter = ctx.varnameCounter + 1) -> TypeVar(newName)
   }
 
-  def generalize(m: MonoVars, t: Type): Scheme =
-    Scheme(Free.freevars(t) -- m, t)
+  def generalize(env: Environment, t: Type): Scheme = {
+    val eS = env.values.toList.flatMap(Free.freevars[Scheme]).toSet
+    Scheme(Free.freevars(t) -- eS, t)
+  }
 
   def instantiate(ctx: Context, s: Scheme): (Context, Type) = {
     val asl = s.typevars.toList
@@ -62,50 +67,12 @@ object Operations {
     (c2, o)
   }
 
-  def getvar[F[_]](ctx: Context, a: Assumption, id: Identifier)(
-    implicit M: MonadError[F, Throwable]
-  ): F[(Context, Type)] =
-    a.get(id) match {
-      case Some(value) => M.pure(instantiate(ctx, value))
-      case None        => M.raiseError[(Context, Type)](new Exception(s"failed to find $id in type envrionment ${a}"))
-    }
+  def inferType(ctx: Context, env: Environment, b: List[Declaration]) = {
+    def inferExpr(): (Context, Substitution, Type) = ???
 
-  def typer[F[_]](ctx: Context, a: Assumption, c: ConstraintSet, funB: FunctionBody)(
-    implicit M: MonadError[F, Throwable]
-  ) = {
-    def typeExpr(e: Expression): Constraint = e match {
-      case Apply(name, vs) => 
-        vs match {
-          case Nil => 
-          case head :: tl => 
-        }
-      case ConstantInteger(v) => TypeAtom(AInt)
-      case InfixBuiltin(lhs, op, rhs) => 
-        val l = typeExpr(lhs)
-        val r = typeExpr(rhs)
-        val (_, f) = fresh(ctx)
-        val asFT = TypeArrow(l, TypeArrow(l, f))
-        val opType = op match {
-          case Addition => 
-            val it = TypeAtom(AInt)
-            TypeArrow(it, TypeArrow(it, it))
-        }
-        Equivalent(opType, asFT)
-    }
-
-    def typeDecl(d: Declaration): (Identifier, Type) = d match {
-      case LetDecl(name, expr) => name -> typeExpr(expr)
-      case _                   => ???
-    }
-
-    funB.children match {
-      case Nil => typeExpr(funB.end)
+    b match {
+      case Nil => 
       case head :: tl =>
-        val lets = tl.foldLeft(typeDecl(head)) {
-          case (accum, next) =>
-            typeDecl(next)
-        }
-        typeExpr(funB.end)
     }
   }
 }

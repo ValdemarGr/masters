@@ -2,6 +2,7 @@ package compiler
 
 import ir.LCLanguage._
 import atto.Atto._
+import tt.Operations._
 import atto._
 import cats.effect.{Blocker, ExitCode, IO, IOApp}
 import cats.implicits._
@@ -10,7 +11,8 @@ import par._
 import scala.collection.immutable.Nil
 import com.codecommit.gll.Success
 import com.codecommit.gll.Failure
-import par.TokenTypes.Declaration
+import par.TokenTypes._
+import tt.Types.Context
 
 object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { _ =>
@@ -97,7 +99,15 @@ object Main extends IOApp {
                //|  foldl (add) 0 (b);
                |""".stripMargin
 
-    val parsed = par.GLLParser.parse(p2)
+               val simple = """
+               |
+               |fun main = 
+               |let a = 22;
+               |a;
+               |
+               """.stripMargin
+
+    val parsed = par.GLLParser.parse(simple)
 
     val programStart = "\n\n#include <iostream>\n#include <variant>\n\nint main() {\nauto v ="
     val programEnd = ";\n\n    std::cout << v << std::endl;\n\n    return 0;\n}"
@@ -117,6 +127,7 @@ object Main extends IOApp {
     succ.flatMap { decls =>
       //IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(decls)) + programEnd))
       IO(println(s"(define main ${emitter.LCEmitter.emitScheme(LCTransform.entrypoint(decls))})\n(display main)"))
+      //IO(typer[IO](Context(0), Map.empty, Set.empty, decls.collectFirst{ case FunDecl(_, _, b) => b }.get)).flatMap(x => IO(println(x)))
     } *>
       //IO(println(parsed)) *>
       IO(ExitCode.Success)

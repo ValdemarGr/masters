@@ -7,8 +7,7 @@ import cats.data.State
 import cats.Monad
 
 object Types {
-  type Assumption = Map[Identifier, Scheme]
-  type MonoVars = Set[TypeVar]
+  type Environment = Map[Identifier, Scheme]
   type Substitution = Map[TypeVar, Type]
   
   case class Scheme(typevars: Set[TypeVar], t: Type)
