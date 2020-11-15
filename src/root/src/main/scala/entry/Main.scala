@@ -16,37 +16,6 @@ import tt.Types.Context
 
 object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { _ =>
-    val program = {
-      """
-        |
-        |//fun f a = g a;
-        |//fun g a = f a;
-        |
-        |//type List a = Cons a (List a) | Nil
-        |
-        |//type Maybe a = Just a | Nothing
-        |
-        |fun add a b = (a + b);
-        |
-        |//fun foldl f a l =
-        |//  match l
-        |//    | Nil -> a
-        |//    | Cons x xs -> foldl (f) (f (a) (x)) xs
-        |
-        |//fun main =
-        |//  foldl (add) 0 (Cons 2 (Cons 4 (Cons 9 Nil)))
-        |
-        |fun main = 
-        |  (2 + 2)
-        |""".stripMargin
-    }
-    val p3 = """
-        |fun main =
-        |  let a = 1;
-        |  let b = a + 2;
-        |  let c = 10;
-        |  (a + b) + c;
-    """.stripMargin
     val p2 = """
                |type List a = 
                |  | Cons a (List a) 
@@ -102,8 +71,9 @@ object Main extends IOApp {
                val simple = """
                |
                |fun main = 
+               |fun f g c = c + (g + 2);
                |let a = 22;
-               |a;
+               |f;
                |
                """.stripMargin
 
@@ -126,8 +96,8 @@ object Main extends IOApp {
 
     succ.flatMap { decls =>
       //IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(decls)) + programEnd))
-      IO(println(s"(define main ${emitter.LCEmitter.emitScheme(LCTransform.entrypoint(decls))})\n(display main)"))
-      //IO(typer[IO](Context(0), Map.empty, Set.empty, decls.collectFirst{ case FunDecl(_, _, b) => b }.get)).flatMap(x => IO(println(x)))
+      //IO(println(s"(define main ${emitter.LCEmitter.emitScheme(LCTransform.entrypoint(decls))})\n(display main)"))
+      IO(inferType(Context(0), Map.empty, Map.empty, decls.collectFirst{ case FunDecl(_, _, b) => b }.get)).flatMap(x => IO(println(x)))
     } *>
       //IO(println(parsed)) *>
       IO(ExitCode.Success)

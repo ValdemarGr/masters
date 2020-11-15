@@ -24,7 +24,13 @@ object Types {
   }
 
   sealed trait Type
-  case class TypeArrow(lh: Type, rh: Type) extends Type
-  case class TypeVar(typename: String) extends Type
-  case class TypeAtom(a: Atom) extends Type
+    case class TypeArrow(lh: Type, rh: Type) extends Type {
+      override def toString() = s"$lh -> $rh"
+    }
+    case class TypeVar(typename: String) extends Type { 
+      override def toString() = typename
+    }
+    case class TypeAtom(a: Atom) extends Type {
+      override def toString() = a.toString
+    }
 }
