@@ -71,7 +71,7 @@ object Main extends IOApp {
                val simple = """
                |
                |fun main = 
-               |fun f g c = c + (g + 2);
+               |fun f g c = g + 2;
                |let a = 22;
                |f;
                |

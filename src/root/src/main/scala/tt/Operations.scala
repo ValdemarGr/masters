@@ -109,7 +109,7 @@ object Operations {
   def inferExpr(ctx: Context, sub: Substitution, env: Environment, e: Expression): (Context, Substitution, Type) =
     e match {
       case _: ConstantInteger => (ctx, sub, TypeAtom(AInt))
-      case Apply(name, _) =>
+      case Apply(name, ps) =>
         val (c1, f) = fresh(ctx)
         val (c2, t1) = findVar(c1, env, name)
         (c2, sub, t1)
