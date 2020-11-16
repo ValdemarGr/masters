@@ -106,6 +106,22 @@ object Operations {
     case _        => ???
   }
 
+  def inferAppParams(ctx: Context,
+                     sub: Substitution,
+                     env: Environment,
+                     ps: List[Expression]): (Context, Substitution, Type) =
+    ps match {
+      case Nil =>
+        val (c, f) = fresh(ctx)
+        (c, sub, f)
+      case head :: tl =>
+        val newEnv = env.mapValues(x => Sub.substitute(x, sub))
+        val (c1, s1, t1) = inferExpr(ctx, sub, newEnv, head)
+        val (c2, s2, t2) = inferAppParams(c1, s1, newEnv, tl)
+        val newT = TypeArrow(t1, t2)
+        (c2, s2, newT)
+    }
+
   def inferExpr(ctx: Context, sub: Substitution, env: Environment, e: Expression): (Context, Substitution, Type) =
     e match {
       case _: ConstantInteger => (ctx, sub, TypeAtom(AInt))
@@ -115,19 +131,11 @@ object Operations {
         ps match {
           case Nil => (c1, sub, ot)
           case head :: tl =>
-            val (c2, f) = fresh(c1)
-            val (c3, s1, t1) = inferExpr(c2, sub, env, head)
-            val (c4, s4, t4, e4) = tl.foldLeft((c3, s1, t1, env)) {
-              case ((ctx, sub, prevT, env), next) =>
-                val newEnv = env.mapValues(x => Sub.substitute(x, sub))
-                val (c1, s1, t1) = inferExpr(ctx, sub, newEnv, next)
-                val newT = TypeArrow(prevT, t1)
-                (c1, s1, newT, newEnv)
-            }
-            val outT = TypeArrow(t4, f)
-            val subOt = Sub.substitute(ot, s4)
-            val un = unify(subOt, outT)
-            (c4, dot(un, dot(s4, s1)), Sub.substitute[Type](f, un))
+            val (c2, s2, t2) = inferAppParams(c1, sub, env, head :: tl)
+            println(s"original is $ot new is $t2")
+            val subOt = Sub.substitute(ot, s2)
+            val un = unify(subOt, t2)
+            (c2, dot(un, dot(s2, sub)), Sub.substitute[Type](t2, un))
         }
       case InfixBuiltin(lhs, op, rhs) =>
         val (c1, s1, t1) = inferExpr(ctx, sub, env, lhs)
