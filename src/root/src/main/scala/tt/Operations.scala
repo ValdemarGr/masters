@@ -73,14 +73,14 @@ object Operations {
 
   def unify(t1: Type, t2: Type): Substitution =
     (t1, t2) match {
-      case (TypeArrow(l1, r1), TypeArrow(l2, r2)) => 
+      case (TypeArrow(l1, r1), TypeArrow(l2, r2)) =>
         val s1 = unify(l1, l2)
         val s2 = unify(Sub.substitute(r1, s1), Sub.substitute(r2, s1))
         dot(s2, s1)
-      case (tv@TypeVar(_), t) => checkRec(tv, t)
-      case (t, tv@TypeVar(_)) => checkRec(tv, t)
+      case (tv @ TypeVar(_), t)                     => checkRec(tv, t)
+      case (t, tv @ TypeVar(_))                     => checkRec(tv, t)
       case (TypeAtom(a1), TypeAtom(a2)) if a1 == a2 => Map.empty
-      case (t1, t2) => throw new Exception(s"failed to unify $t1 and $t2")
+      case (t1, t2)                                 => throw new Exception(s"failed to unify $t1 and $t2")
     }
 
   def checkRec(tv: TypeVar, t: Type): Substitution =
@@ -98,22 +98,38 @@ object Operations {
       case None        => throw new Exception(s"unbound variable $id in $env")
     }
 
-  def extend(env: Environment, id: Identifier, s: Scheme): Environment = 
+  def extend(env: Environment, id: Identifier, s: Scheme): Environment =
     env + (id -> s)
 
   def getOp(op: BuiltinOperator) = op match {
     case Addition => TypeArrow(TypeAtom(AInt), TypeArrow(TypeAtom(AInt), TypeAtom(AInt)))
-    case _ => ???
+    case _        => ???
   }
 
   def inferExpr(ctx: Context, sub: Substitution, env: Environment, e: Expression): (Context, Substitution, Type) =
     e match {
       case _: ConstantInteger => (ctx, sub, TypeAtom(AInt))
       case Apply(name, ps) =>
-        val (c1, f) = fresh(ctx)
-        val (c2, t1) = findVar(c1, env, name)
-        (c2, sub, t1)
-      case InfixBuiltin(lhs, op, rhs) => 
+        val (c1, ot) = findVar(ctx, env, name)
+
+        ps match {
+          case Nil => (c1, sub, ot)
+          case head :: tl =>
+            val (c2, f) = fresh(c1)
+            val (c3, s1, t1) = inferExpr(c2, sub, env, head)
+            val (c4, s4, t4, e4) = tl.foldLeft((c3, s1, t1, env)) {
+              case ((ctx, sub, prevT, env), next) =>
+                val newEnv = env.mapValues(x => Sub.substitute(x, sub))
+                val (c1, s1, t1) = inferExpr(ctx, sub, newEnv, next)
+                val newT = TypeArrow(prevT, t1)
+                (c1, s1, newT, newEnv)
+            }
+            val outT = TypeArrow(t4, f)
+            val subOt = Sub.substitute(ot, s4)
+            val un = unify(subOt, outT)
+            (c4, dot(un, dot(s4, s1)), Sub.substitute[Type](f, un))
+        }
+      case InfixBuiltin(lhs, op, rhs) =>
         val (c1, s1, t1) = inferExpr(ctx, sub, env, lhs)
         val (c2, s2, t2) = inferExpr(c1, sub, env, rhs)
         val (c3, f) = fresh(c2)
@@ -122,10 +138,14 @@ object Operations {
         (c3, dot(s1, dot(s2, s3)), Sub.substitute[Type](f, s3))
     }
 
-  def dot(s1: Substitution, s2: Substitution): Substitution = 
-    s2 ++ s1 mapValues (x => Sub.substitute(x, s1))
+  def dot(s1: Substitution, s2: Substitution): Substitution =
+    (s2 ++ s1).mapValues(x => Sub.substitute(x, s1))
 
-  def inferFun(ctx: Context, sub: Substitution, env: Environment, ids: List[Identifier], b: FunctionBody): (Context, Substitution, Type) = 
+  def inferFun(ctx: Context,
+               sub: Substitution,
+               env: Environment,
+               ids: List[Identifier],
+               b: FunctionBody): (Context, Substitution, Type) =
     ids match {
       case Nil => inferType(ctx, sub, env, b)
       case head :: tl =>
@@ -134,7 +154,6 @@ object Operations {
         val (c2, s2, innerT) = inferFun(c1, sub, newEnv, tl, b)
         (c2, s2, Sub.substitute[Type](TypeArrow(f, innerT), s2))
     }
-  
 
   def inferDecl(ctx: Context,
                 sub: Substitution,
@@ -146,7 +165,7 @@ object Operations {
       val newt = generalize(newEnv, t1)
       val extededEnv = extend(env, varname, newt)
       (c1, s1, extededEnv)
-    case FunDecl(varname, params, body) => 
+    case FunDecl(varname, params, body) =>
       val (c1, s1, t1) = inferFun(ctx, sub, env, params.map(_.id), body)
       val gen = generalize(env, t1)
       val eo = extend(env, varname, gen)

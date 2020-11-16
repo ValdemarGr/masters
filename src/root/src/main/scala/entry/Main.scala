@@ -73,7 +73,8 @@ object Main extends IOApp {
                |fun main = 
                |fun f g c = g + 2;
                |let a = 22;
-               |f;
+               |let n = f 2;
+               |n;
                |
                """.stripMargin
 
