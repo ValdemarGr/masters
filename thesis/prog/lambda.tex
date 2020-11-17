@@ -75,7 +75,7 @@ The definition of $sub$, or rather, the applied lambda abstraction, is missing a
 \label{lc:orddep}
 \end{align}
 
-\textit{lambda lifting} is a technique where \textit{free variables}, are explicitly parameterized.
+\textit{lambda lifting} is a technique where \textit{free variables}, are explicitly parameterized\cite{johnsson1985lambda}.
 A \textit{free variable}, is a variable in respect to some function $f$ that is referenced from within $f$, but defined outside. 
 This is exactly the problem in \autoref{lc:orddep}, which has the lambda lifted solution \autoref{lc:ordfix}.
 \begin{align}
@@ -162,5 +162,10 @@ fun f = g;
 \end{lstlisting}
 Notice in \autoref{lst:mutrec} that $g$ requires $f$ to be lifted and $f$ requires $g$ to be lifted.
 If a translation ``pessimistically'' lifts all definitions from the above scope, then all required references exist in lexical scope.
+\\\\
+Languages have diffirent methods of introducing recursion, some of which have very different implications, especially when considering types.
+For instance, OCaml has the \texttt{let rec} binding, to introduce recursive definitions.
+The \texttt{rec} keyword indicates to the compiler that the binding should be able to ``see itself'',
+
 
 \end{document}

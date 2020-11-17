@@ -19,8 +19,10 @@ object Types {
 
   sealed trait Atom
   case object AInt extends Atom
+  case object ABool extends Atom
   implicit val atomShow = Show.show[Atom]{ 
     case AInt => "Int"
+    case ABool => "Bool"
   }
 
   sealed trait Type

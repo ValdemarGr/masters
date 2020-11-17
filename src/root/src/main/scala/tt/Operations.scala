@@ -102,8 +102,9 @@ object Operations {
     env + (id -> s)
 
   def getOp(op: BuiltinOperator) = op match {
-    case Addition => TypeArrow(TypeAtom(AInt), TypeArrow(TypeAtom(AInt), TypeAtom(AInt)))
-    case _        => ???
+    case Addition  => TypeArrow(TypeAtom(AInt), TypeArrow(TypeAtom(AInt), TypeAtom(AInt)))
+    case Equallity => TypeArrow(TypeAtom(AInt), TypeArrow(TypeAtom(AInt), TypeAtom(ABool)))
+    case _         => ???
   }
 
   def inferAppParams(ctx: Context,
@@ -137,6 +138,14 @@ object Operations {
             val un = unify(subOt, t2)
             (c2, dot(un, dot(s2, sub)), Sub.substitute[Type](t2, un))
         }
+      case If(expr, fst, snd) =>
+        val (c1, s1, t1) = inferExpr(ctx, sub, env, expr)
+        val (c2, s2, t2) = inferType(c1, sub, env, fst)
+        val (c3, s3, t3) = inferType(c2, sub, env, snd)
+
+        val s4 = unify(t1, TypeAtom(ABool))
+        val s5 = unify(t2, t3)
+        (c3, dot(s5, dot(s4, dot(s3, dot(s2, s1)))), Sub.substitute(t2, s5))
       case InfixBuiltin(lhs, op, rhs) =>
         val (c1, s1, t1) = inferExpr(ctx, sub, env, lhs)
         val (c2, s2, t2) = inferExpr(c1, sub, env, rhs)

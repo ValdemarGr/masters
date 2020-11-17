@@ -71,10 +71,9 @@ object Main extends IOApp {
                val simple = """
                |
                |fun main = 
-               |fun f g c t = g + 2;
-               |let a = 22;
-               |let n = f 2 2;
-               |n;
+               |fun f g a = g + 2;
+               |let a = if (2 == 3) 2; else 4;;
+               |a;
                |
                """.stripMargin
 
