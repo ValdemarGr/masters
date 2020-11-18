@@ -70,10 +70,18 @@ object Main extends IOApp {
 
                val simple = """
                |
+               |type Maybe a = 
+               |  | Nothing
+               |  | Just a
+               |;
+               |
                |fun main = 
-               |fun f g a = g + 2;
-               |let a = if (2 == 3) 2; else 4;;
-               |a;
+               |  let o = Just 2;
+               |  let h = match o
+               |    | Just n -> n;
+               |    | Nothing -> 42;
+               |  ;
+               |  h;
                |
                """.stripMargin
 
@@ -97,7 +105,7 @@ object Main extends IOApp {
     succ.flatMap { decls =>
       //IO(println(programStart + emitter.LCEmitter.emit(LCTransform.entrypoint(decls)) + programEnd))
       //IO(println(s"(define main ${emitter.LCEmitter.emitScheme(LCTransform.entrypoint(decls))})\n(display main)"))
-      IO(inferType(Context(0), Map.empty, Map.empty, decls.collectFirst{ case FunDecl(_, _, b) => b }.get)).flatMap(x => IO(println(x)))
+      IO(println(inferProgram(decls)))
     } *>
       //IO(println(parsed)) *>
       IO(ExitCode.Success)

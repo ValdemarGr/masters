@@ -5,6 +5,7 @@ import par.TokenTypes._
 import scala.language.postfixOps
 import cats.MonadError
 import scala.collection.immutable.Nil
+import cats.data.NonEmptyList
 
 object Operations {
   // typeclasses for freevar
@@ -123,6 +124,60 @@ object Operations {
         (c2, s2, newT)
     }
 
+  def unrollArr(t: Type): NonEmptyList[Type] = t match {
+    case TypeArrow(lh, rh) => NonEmptyList.of(lh) concatNel unrollArr(rh)
+    case x => NonEmptyList.of(x)
+  }
+
+  def zipPair(ctx: Context, sub: Substitution, env: Environment, t: Type, x: Identifier) = {
+    val (c1, tv) = fresh(ctx)
+    val sc = generalize(env, tv)
+    val newEnv = extend(env, x, sc)
+    val s1 = unify(tv, t)
+    (c1, s1, newEnv)
+  }
+
+  def unifyZip(ctx: Context,
+               sub: Substitution,
+               env: Environment,
+               xs: List[(Type, Identifier)]): (Context, Substitution, Environment) =
+                 xs match {
+      case ((t, id) :: tail) =>
+        val (c1, s1, e1) = zipPair(ctx, sub, env, t, id)
+        unifyZip(c1, s1, e1, tail)
+      case Nil =>
+        (ctx, sub, env)
+    }
+
+  def getTypeConstructorType(env: Environment, c: MatchCase) =
+    env
+      .get(c.typeConstructor)
+      .getOrElse(throw new Exception(s"failed to find typeConstructor for match case ${c} in env $env"))
+
+  def inferPatternMatch(ctx: Context, sub: Substitution, env: Environment, cases: List[MatchCase], tcName: Identifier): (Context, Substitution, Type) =
+    cases match {
+      case Nil => 
+        val (c1, f) = fresh(ctx)
+        (c1, sub, f)
+      case head :: tl =>
+        val tc = getTypeConstructorType(env, head).t
+        val unrolled = unrollArr(tc)
+        val uninionType = unrolled.last match {
+          case t: TypeVar => t
+          case x => throw new Exception(s"failed to match type $x to typevar")
+        }
+        if (uninionType.typename != tcName) {
+          throw new Exception(s"found unexpected typeConstructor, expected $tcName, found ${uninionType.typename}")
+        } else {
+          val comb = unrolled.tail.zip(head.bindings)
+          val (c1, s1, e1) = unifyZip(ctx, sub, env, comb)
+          val (c2, s2, t) = inferType(c1, s1, e1, head.body)
+          val (c3, s3, t3) = inferPatternMatch(c2, dot(s2, s1), env, tl, tcName)
+          val s4 = unify(t, t3)
+          (c3, dot(s1, dot(s2, dot(s3, s4))), t)
+        }
+    }
+
   def inferExpr(ctx: Context, sub: Substitution, env: Environment, e: Expression): (Context, Substitution, Type) =
     e match {
       case _: ConstantInteger => (ctx, sub, TypeAtom(AInt))
@@ -153,6 +208,15 @@ object Operations {
         val binF = TypeArrow(t1, TypeArrow(t2, f))
         val s3 = unify(binF, getOp(op))
         (c3, dot(s1, dot(s2, s3)), Sub.substitute[Type](f, s3))
+      case PatternMatch(e, cases) =>
+        val (c1, s1, t1) = inferExpr(ctx, sub, env, e)
+        val fc = getTypeConstructorType(env, cases.head).t
+        val unrolled = unrollArr(fc)
+        val uninionType = unrolled.last match {
+          case t: TypeVar => t
+          case x => throw new Exception(s"failed to match type $x to typevar")
+        }
+        inferPatternMatch(c1, s1, env, cases.toList, uninionType.typename)
     }
 
   def dot(s1: Substitution, s2: Substitution): Substitution =
@@ -172,10 +236,31 @@ object Operations {
         (c2, s2, Sub.substitute[Type](TypeArrow(f, innerT), s2))
     }
 
+  def inferTypeConstructor(tps: Set[Identifier], name: Identifier, tt: List[TypeParam]): Type = tt match {
+    case Nil => TypeVar(name)
+    case head :: tl =>
+      head match {
+        case TypeName(cin) =>
+          if (tps.contains(cin)) {
+            TypeArrow(TypeVar(cin), inferTypeConstructor(tps, name, tl))
+          } else {
+            throw new Exception(s"failed to find any type for $cin")
+          }
+      }
+  }
+
   def inferDecl(ctx: Context,
                 sub: Substitution,
                 env: Environment,
                 d: Declaration): (Context, Substitution, Environment) = d match {
+    case TypeDeclaration(typename, typeParams, expr) =>
+      val newEnv = expr.types.foldLeft(env) {
+        case (accum, next) =>
+          val paramType = inferTypeConstructor(typeParams.toSet, typename, next.ids)
+          val scheme = generalize(accum, paramType)
+          extend(accum, next.name, scheme)
+      }
+      (ctx, sub, newEnv)
     case LetDecl(varname, value) =>
       val (c1, s1, t1) = inferExpr(ctx, sub, env, value)
       val newEnv = env.mapValues(x => Sub.substitute(x, s1))
@@ -202,4 +287,12 @@ object Operations {
         val (c2, s2, t2) = inferExpr(bc, bs, be, b.end)
         (c2, dot(bs, s2), t2)
     }
+
+  def inferProgram(dls: List[Declaration]) = {
+    val pesudoExpr = Apply("main", Nil)
+    val fb = FunctionBody(dls, pesudoExpr)
+    val (_, s1, programType) = inferType(Context(0), Map.empty, Map.empty, fb)
+    val s2 = unify(TypeAtom(AInt), programType)
+    Sub.substitute(programType, s2)
+  }
 }
