@@ -95,10 +95,8 @@ object Operations {
 
   def findVar(ctx: Context, env: Environment, id: Identifier): (Context, Type) =
     env.get(id) match {
-      case Some(Scheme(_, tn@TypeVar(typename))) if (id.head.isUpper) => (ctx, tn) 
+      case Some(Scheme(_, tn)) if (id.head.isUpper) => (ctx, tn) 
       case Some(value) => 
-println(value)
-println(id)
         instantiate(ctx, value)
       case None        => throw new Exception(s"unbound variable $id in $env")
     }
@@ -167,11 +165,11 @@ println(id)
         val tc = getTypeConstructorType(env, head).t
         val unrolled = unrollArr(tc)
         val uninionType = unrolled.last match {
-          case t: TypeVar => t
+          case TypeAtom(tv@AADT(_)) => tv
           case x => throw new Exception(s"failed to match type $x to typevar")
         }
-        if (uninionType.typename != tcName) {
-          throw new Exception(s"found unexpected typeConstructor, expected $tcName, found ${uninionType.typename}")
+        if (uninionType.name != tcName) {
+          throw new Exception(s"found unexpected typeConstructor, expected $tcName, found ${uninionType.name}")
         } else {
           val comb = unrolled.toList.dropRight(1).zip(head.bindings)
           val (c1, s1, e1) = unifyZip(ctx, sub, env, comb)
@@ -193,10 +191,11 @@ println(id)
           case Nil => (c1, sub, ot)
           case head :: tl =>
             val (c2, s2, t2) = inferAppParams(c1, sub, env, head :: tl)
-            println(s"original is $ot new is $t2")
             val subOt = Sub.substitute(ot, s2)
             val un = unify(subOt, t2)
-            (c2, dot(un, dot(s2, sub)), Sub.substitute[Type](t2, un))
+            val l = unrollArr(t2).last
+            println(s"original is $ot subOt is $subOt new is $t2 unified is ${un} subbed is ${Sub.substitute[Type](l, un)}")
+            (c2, dot(un, dot(s2, sub)), Sub.substitute[Type](l, un))
         }
       case If(expr, fst, snd) =>
         val (c1, s1, t1) = inferExpr(ctx, sub, env, expr)
@@ -218,10 +217,11 @@ println(id)
         val fc = getTypeConstructorType(env, cases.head).t
         val unrolled = unrollArr(fc)
         val uninionType = unrolled.last match {
-          case t: TypeVar => t
+          case TypeAtom(tv@AADT(_)) => tv
           case x => throw new Exception(s"failed to match type $x to typevar")
         }
-        inferPatternMatch(c1, s1, env, cases.toList, uninionType.typename)
+        val s2 = unify(TypeAtom(uninionType), t1)
+        inferPatternMatch(c1, dot(s1, s2), env, cases.toList, uninionType.name)
     }
 
   def dot(s1: Substitution, s2: Substitution): Substitution =
@@ -242,7 +242,7 @@ println(id)
     }
 
   def inferTypeConstructor(tps: Set[Identifier], name: Identifier, tt: List[TypeParam]): Type = tt match {
-    case Nil => TypeVar(name)
+    case Nil => TypeAtom(AADT(name))
     case head :: tl =>
       head match {
         case TypeName(cin) =>

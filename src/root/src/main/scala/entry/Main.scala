@@ -73,13 +73,15 @@ object Main extends IOApp {
                |type Maybe a = 
                |  | Nothing
                |  | Just a
+               |  | Two a a
                |;
                |
                |fun main = 
-               |  let o = Just 2;
+               |  let o = Two 2 2;
                |  let h = match o
-               |    | Just n -> Just n;
-               |    | Nothing -> Just 2;
+               |    | Just n -> n;
+               |    | Nothing -> 2;
+               |    | Two k v -> k + v;
                |  ;
                |  h;
                |

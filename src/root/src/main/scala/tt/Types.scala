@@ -5,6 +5,8 @@ import cats.Show
 import cats.kernel.Monoid
 import cats.data.State
 import cats.Monad
+import cats.syntax._
+import cats.implicits._
 
 object Types {
   type Environment = Map[Identifier, Scheme]
@@ -20,9 +22,11 @@ object Types {
   sealed trait Atom
   case object AInt extends Atom
   case object ABool extends Atom
+  case class AADT(name: String) extends Atom
   implicit val atomShow = Show.show[Atom]{ 
     case AInt => "Int"
     case ABool => "Bool"
+    case AADT(name) => name
   }
 
   sealed trait Type
@@ -33,6 +37,6 @@ object Types {
       override def toString() = typename
     }
     case class TypeAtom(a: Atom) extends Type {
-      override def toString() = a.toString
+      override def toString() = a.show
     }
 }
