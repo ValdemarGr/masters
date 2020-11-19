@@ -95,7 +95,11 @@ object Operations {
 
   def findVar(ctx: Context, env: Environment, id: Identifier): (Context, Type) =
     env.get(id) match {
-      case Some(value) => instantiate(ctx, value)
+      case Some(Scheme(_, tn@TypeVar(typename))) if (id.head.isUpper) => (ctx, tn) 
+      case Some(value) => 
+println(value)
+println(id)
+        instantiate(ctx, value)
       case None        => throw new Exception(s"unbound variable $id in $env")
     }
 
@@ -169,11 +173,12 @@ object Operations {
         if (uninionType.typename != tcName) {
           throw new Exception(s"found unexpected typeConstructor, expected $tcName, found ${uninionType.typename}")
         } else {
-          val comb = unrolled.tail.zip(head.bindings)
+          val comb = unrolled.toList.dropRight(1).zip(head.bindings)
           val (c1, s1, e1) = unifyZip(ctx, sub, env, comb)
           val (c2, s2, t) = inferType(c1, s1, e1, head.body)
           val (c3, s3, t3) = inferPatternMatch(c2, dot(s2, s1), env, tl, tcName)
           val s4 = unify(t, t3)
+          println(s"t $t t3 $t3 s4 $s4 env $env comb $comb")
           (c3, dot(s1, dot(s2, dot(s3, s4))), t)
         }
     }

@@ -78,8 +78,8 @@ object Main extends IOApp {
                |fun main = 
                |  let o = Just 2;
                |  let h = match o
-               |    | Just n -> n;
-               |    | Nothing -> 42;
+               |    | Just n -> Just n;
+               |    | Nothing -> Just 2;
                |  ;
                |  h;
                |
