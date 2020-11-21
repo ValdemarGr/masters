@@ -9,11 +9,23 @@
 \usepackage{float}
 \usepackage[english]{babel}
 \usepackage{cleveref}
+\usepackage{amsthm}
+\usepackage{fancybox}
+
+\makeatletter
+\newenvironment{CenteredBox}{% 
+\begin{Sbox}}{% Save the content in a box
+\end{Sbox}\centerline{\parbox{\wd\@Sbox}{\TheSbox}}}% And output it centered
+\makeatother
+\theoremstyle{definition}
+\newtheorem{exmp}{Example}[section]
+\newtheorem{remark}{Remark}[section]
 
 \lstset{
     numbers=left,
     showstringspaces=false,
-    tabsize=1
+    tabsize=1,
+    frame=tbrl
 }
 
 \newfloat{lstfloat}{htbp}{lop}
@@ -46,10 +58,10 @@
         \MakeUppercase{University of southern Denmark}
 
         \vspace*{0.3cm}
-        \MakeUppercase{Institute of mathematics and computer science}
+        \MakeUppercase{Department of mathematics and computer science}
 
         \vspace*{0.3cm}
-        \large{Masters thesis in Computer Science}
+        \large{Master's thesis in Computer Science}
     \end{center}
     
 \end{titlepage}
@@ -58,7 +70,7 @@
 
 \part{Compilers and languages}
 
-\input{prog/lambda}
+\input{prog/prog}
 
 \bibliography{bib.bib}{}
 \bibliographystyle{plain}

@@ -1,0 +1,83 @@
+\documentclass[11pt,oneside,a4paper]{report}
+
+\begin{document}
+\section{High level abstractions}\label{sec:highlevel}
+The lambda calculus is a powerful language that can express any algorithm.
+Expressiveness does not necessarily imply ergonomics or elegance, in fact encoding moderately complicated algorithms in lambda calculus becomes quite messy.
+Many high level techniques exist to model abstractions in tangible concepts.
+
+\subsection{Algebraic data types}
+Algebraic data types are essentially a combination of disjoint unions, tuples and records.
+Algebraic data types are closely related to types thus require some type theory to fully grasp.
+Types are explored more in depth in \autoref{types}.
+\begin{lstlisting}[language=ML,caption={List algebraic data type},label={lst:listadt}]
+type List a = 
+    | Nil
+    | Cons a (List a)
+;
+\end{lstlisting}
+\autoref{lst:listadt} is an implementation of a linked list. 
+The list value can either take the type of \texttt{Nil} indicating an empty list, or it can take the type of \texttt{Cons} indicating a pair of type $a$ and another list.
+The list implementation has two type constructors and one type parameter.
+The type parameter $a$ of the list algebraic data type defines a \textit{polymorphic type}; $a$ can agree on any type, it is universally quantified \texttt{$\forall a. $ Cons $a$ (List $a$)}.
+The two type constructors \texttt{Nil} and \texttt{Cons} both create a value of type \texttt{List a} once instatiated.
+\begin{lstlisting}[language=ML,caption={List instance and match},label={lst:listinstance}]
+type List a = 
+    | Nil
+    | Cons a (List a)
+;
+
+let l = Cons 1 (Cons 2 (Cons 3 Nil));
+
+match l 
+    | Nil -> 0;
+    | Cons n _ -> n;
+;
+\end{lstlisting}
+Once a value is embedded into an algebraic data type such as a list it must be extractable to be of any use.
+Values of algebraic data types are extracted and analysed with \textit{pattern matching}.
+Pattern match comes in may forms, notably it allows one to define a computation based on the type an algebraic data type instance realizes (\autoref{lst:listinstance}).
+
+\subsubsection{Scott encoding}
+Pattern matching strays far from the simple untyped lambda calculus, but can in fact be encoded into it.
+The \textit{scott encoding} (\autoref{se:general}) is a technique that describes a general purpose framework to encode algebraic data types into lambda calculus~\cite{scott1962system}.
+Considering an algebraic data type as a function which accepts a set of ``handlers'' allows the encoding into lambda calculus.
+The scott encoding  also specifies that type constructors should now be functions that are each parameterized by the type constructor parameters $x_1 \dots x_{A_i}$ where $A_i$ is the arity of the type constructor $i$.
+Additionally each of the type constructor functions return a $n$ arity function, where $n$ is the cardinality of the set of type constructors.
+Of the $n$ functions, the type constructor parameters $x_1 \dots x_{A_i}$ are applied to the $i$'th ``handler'' $c_i$.
+These encoding rules ensure that the ``handler'' functions are provided uniformly to all instances of the algebraic data type.
+\begin{align}
+    \lambda x_1 \dots x_{A_i}. \lambda c_1 \dots c_n. c_i x_1 \dots x_{A_i}
+\label{se:general}
+\end{align}
+\begin{exmp}
+   The \texttt{List} algebraic data type in \autoref{lst:listadt} has two type constructors, \texttt{Nil} with the type constructor type \autoref{eq:nilconstructor} and \texttt{Cons} with the type constructor type \autoref{eq:consconstructor}.
+\begin{align}
+   &b \rightarrow (a \rightarrow \texttt{List } a \rightarrow b) \rightarrow b
+   \label{eq:nilconstructor}\\
+   &(a \rightarrow \texttt{List } a \rightarrow b) \rightarrow b \rightarrow (a \rightarrow \texttt{List } a \rightarrow b) \rightarrow b
+   \label{eq:consconstructor}
+\end{align}
+\begin{lstlisting}[language=ML,caption={List algebraic data type implementation},label={lst:listscott}]
+fun cons x xs = 
+    fun c _ onCons = onCons x xs;
+    c;
+
+fun nil = 
+    fun c onNil _ = onNil;
+    c;
+\end{lstlisting}
+Encoding the constructors in $L$ yields the functions defined in \autoref{lst:listscott}.
+Pattern matching is but a matter of applying the appropriate handlers.
+In \autoref{lst:listscottexample}.
+\begin{lstlisting}[language=ML,caption={Example of scott encoded list algebraic data type},label={lst:listscottexample}]
+let l = cons 1 (cons 2 (cons 3 nil));
+
+fun head x _ = 
+    x;
+
+l head 0;
+\end{lstlisting}
+\end{exmp}
+
+\end{document}
