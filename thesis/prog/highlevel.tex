@@ -22,11 +22,6 @@ The list implementation has two type constructors and one type parameter.
 The type parameter $a$ of the list algebraic data type defines a \textit{polymorphic type}; $a$ can agree on any type, it is universally quantified \texttt{$\forall a. $ Cons $a$ (List $a$)}.
 The two type constructors \texttt{Nil} and \texttt{Cons} both create a value of type \texttt{List a} once instatiated.
 \begin{lstlisting}[language=ML,caption={List instance and match},label={lst:listinstance}]
-type List a = 
-    | Nil
-    | Cons a (List a)
-;
-
 let l = Cons 1 (Cons 2 (Cons 3 Nil));
 
 match l 
@@ -41,8 +36,8 @@ Pattern match comes in may forms, notably it allows one to define a computation 
 \subsubsection{Scott encoding}
 Pattern matching strays far from the simple untyped lambda calculus, but can in fact be encoded into it.
 The \textit{scott encoding} (\autoref{se:general}) is a technique that describes a general purpose framework to encode algebraic data types into lambda calculus~\cite{scott1962system}.
-Considering an algebraic data type as a function which accepts a set of ``handlers'' allows the encoding into lambda calculus.
-The scott encoding  also specifies that type constructors should now be functions that are each parameterized by the type constructor parameters $x_1 \dots x_{A_i}$ where $A_i$ is the arity of the type constructor $i$.
+Considering an algebraic data type instance as a function which accepts a set of ``handlers'' allows the encoding into lambda calculus.
+The scott encoding specifies that type constructors should now be functions that are each parameterized by the type constructor parameters $x_1 \dots x_{A_i}$ where $A_i$ is the arity of the type constructor $i$.
 Additionally each of the type constructor functions return a $n$ arity function, where $n$ is the cardinality of the set of type constructors.
 Of the $n$ functions, the type constructor parameters $x_1 \dots x_{A_i}$ are applied to the $i$'th ``handler'' $c_i$.
 These encoding rules ensure that the ``handler'' functions are provided uniformly to all instances of the algebraic data type.
@@ -51,7 +46,8 @@ These encoding rules ensure that the ``handler'' functions are provided uniforml
 \label{se:general}
 \end{align}
 \begin{exmp}
-   The \texttt{List} algebraic data type in \autoref{lst:listadt} has two type constructors, \texttt{Nil} with the type constructor type \autoref{eq:nilconstructor} and \texttt{Cons} with the type constructor type \autoref{eq:consconstructor}.
+    The \texttt{List} algebraic data type in \autoref{lst:listadt} has two type constructors, \texttt{Nil} with the type constructor type \autoref{eq:nilconstructor} and \texttt{Cons} with the type constructor type \autoref{eq:consconstructor}.
+    \autoref{eq:nilconstructor} is in fact also the type of \texttt{List} once instantiated, effetively treating partially applied functions as data.
 \begin{align}
    &b \rightarrow (a \rightarrow \texttt{List } a \rightarrow b) \rightarrow b
    \label{eq:nilconstructor}\\
@@ -79,5 +75,16 @@ fun head x _ =
 l head 0;
 \end{lstlisting}
 \end{exmp}
+
+Efficiency can be a bit tricky in lambda calculus as it is at the mercy of implementation.
+A common method of considering efficiency is counting \textit{$\beta$-reduction} since they evaluate to function invocations.
+The $\beta$-reduction is a substitution which substitutes an application where the left side is an abstraction in witch the bound varable is substituted with the right side term (\autoref{eq:betareduction}). 
+\begin{align}
+    &\beta_{red}((\lambda x . T) E) = T[x := E]
+   \label{eq:betareduction}
+\end{align}
+It should be clear that invoking a $n$ arity function will take $n$ applications.
+In the case of scott encoded algebraic data types the largest complexity terms is either the size of the set of ``handler'' functions or the ``handler'' function with most parameters.
+The time to evaluate pattern match is thus $O(\max_i(c_i + A_i))$.
 
 \end{document}
