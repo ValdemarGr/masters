@@ -78,13 +78,15 @@ l head 0;
 
 Efficiency can be a bit tricky in lambda calculus as it is at the mercy of implementation.
 A common method of considering efficiency is counting \textit{$\beta$-reduction} since they evaluate to function invocations.
-The $\beta$-reduction is a substitution which substitutes an application where the left side is an abstraction in witch the bound varable is substituted with the right side term (\autoref{eq:betareduction}). 
+The $\beta$-reduction is a substitution which substitutes an application where the left side is an abstraction in witch the bound variable is substituted with the right side term (\autoref{eq:betareduction}). 
 \begin{align}
     &\beta_{red}((\lambda x . T) E) = T[x := E]
    \label{eq:betareduction}
 \end{align}
 It should be clear that invoking a $n$ arity function will take $n$ applications.
-In the case of scott encoded algebraic data types the largest complexity terms is either the size of the set of ``handler'' functions or the ``handler'' function with most parameters.
+In the case of a scott encoded algebraic data types the largest term in regard to complexity is either the size of the set of ``handler'' functions or the ``handler'' function with most parameters.
 The time to evaluate pattern match is thus $O(\max_i(c_i + A_i))$.
+
+
 
 \end{document}
