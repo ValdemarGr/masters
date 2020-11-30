@@ -13,6 +13,17 @@
 \usepackage{cleveref}
 \usepackage{amsthm}
 \usepackage{fancybox}
+\usepackage{amsmath}
+
+\theoremstyle{plain}
+\newtheorem{lemma}[chapter]{Lemma}
+
+\newtheoremstyle{case}{}{}{}{}{}{:}{ }{}
+\theoremstyle{case}
+\newtheorem{case}{Case}
+
+\mdfdefinestyle{style1}{leftmargin=-0.5cm,rightmargin=-0.5cm,skipbelow=1cm,skipabove=1cm,
+   innertopmargin=0pt}
 
 \makeatletter
 \newenvironment{CenteredBox}{% 
@@ -35,37 +46,37 @@
 
 \begin{document}
 \begin{titlepage}
-    \begin{center}
-        \vspace*{1cm}
-        \huge{Aspects of efficiency in functional programming languages}
+	\begin{center}
+		\vspace*{1cm}
+		\huge{Aspects of efficiency in functional programming languages}
 
-        \vspace*{0.5cm}
-        \large{by}
+		\vspace*{0.5cm}
+		\large{by}
 
-        \vspace{0.5cm}
-        \Large{Samuel Valdemar Grange}
+		\vspace{0.5cm}
+		\Large{Samuel Valdemar Grange}
 
-        \vspace*{0.5cm}
-        \normalsize{supervised by}
+		\vspace*{0.5cm}
+		\normalsize{supervised by}
 
-        \vspace{0.5cm}
-        \large{Prof. Kim Skak Larsen}
+		\vspace{0.5cm}
+		\large{Prof. Kim Skak Larsen}
 
-        \vfill
+		\vfill
 
-        \vspace*{0.7cm}
-        \includegraphics[width=0.4\textwidth]{sdulogo}
+		\vspace*{0.7cm}
+		\includegraphics[width=0.4\textwidth]{sdulogo}
 
-        \vspace*{1cm}
-        \MakeUppercase{University of southern Denmark}
+		\vspace*{1cm}
+		\MakeUppercase{University of southern Denmark}
 
-        \vspace*{0.3cm}
-        \MakeUppercase{Department of mathematics and computer science}
+		\vspace*{0.3cm}
+		\MakeUppercase{Department of mathematics and computer science}
 
-        \vspace*{0.3cm}
-        \large{Master's thesis in Computer Science}
-    \end{center}
-    
+		\vspace*{0.3cm}
+		\large{Master's thesis in Computer Science}
+	\end{center}
+
 \end{titlepage}
 
 \tableofcontents
