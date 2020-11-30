@@ -13,6 +13,17 @@ object LCEmitter {
     case Geq => ">"
   }
 
+  def emitGraphMachine(e: LCExp): String = e match {
+    case LCName(x)                         => x
+    case LCFunction(_, n, e)               => s"(${emitGraphMachine(n)}.${emitGraphMachine(e)})"
+    case LCApplication(l: LCExp, r: LCExp) => s"((${emitGraphMachine(l)})(${emitGraphMachine(r)}))"
+    case LCTerminalOperation(l, op, r)     => s"(((${emitOp(op)})(${emitGraphMachine(l)}))(${emitGraphMachine(r)}))"
+    case LCString(s)                       => ("\"" + s + "\"")
+    case LCNumber(n)                       => n.toString
+    case LCIf(e, f, s) => s"if (${emitGraphMachine(e)}) (${emitGraphMachine(f)}) (${emitGraphMachine(s)})"
+    case _                                 => ""
+  }
+
   def emitScheme(e: LCExp): String = e match {
     case LCName(x)                         => x
     case LCFunction(_, n, e)               => s"(lambda (${n.name}) ${emitScheme(e)})"
@@ -36,11 +47,11 @@ object LCEmitter {
     //case LCRawCode(code)                   => code
   }
 
-  def emit(e: LCExp): String = e match {
+  def emitCpp(e: LCExp): String = e match {
     case LCName(x)                         => x
-    case LCFunction(_, n, e)               => s"[=](auto ${n.name}) {\n return ${emit(e)};\n }"
-    case LCApplication(l: LCExp, r: LCExp) => s"(${emit(l)})(${emit(r)})"
-    case LCTerminalOperation(l, op, r)     => s"((${emit(l)}) ${emitOp(op)} (${emit(r)}))"
+    case LCFunction(_, n, e)               => s"[=](auto ${n.name}) {\n return ${emitCpp(e)};\n }"
+    case LCApplication(l: LCExp, r: LCExp) => s"(${emitCpp(l)})(${emitCpp(r)})"
+    case LCTerminalOperation(l, op, r)     => s"((${emitCpp(l)}) ${emitOp(op)} (${emitCpp(r)}))"
     case LCString(s)                       => ("\"" + s + "\"")
     case LCNumber(n)                       => n.toString
     case LCRawCode(code)                   => code

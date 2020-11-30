@@ -176,7 +176,7 @@ object Operations {
           val (c2, s2, t) = inferType(c1, s1, e1, head.body)
           val (c3, s3, t3) = inferPatternMatch(c2, dot(s2, s1), env, tl, tcName)
           val s4 = unify(t, t3)
-          println(s"t $t t3 $t3 s4 $s4 env $env comb $comb")
+          //println(s"t $t t3 $t3 s4 $s4 env $env comb $comb")
           (c3, dot(s1, dot(s2, dot(s3, s4))), t)
         }
     }
@@ -194,7 +194,7 @@ object Operations {
             val subOt = Sub.substitute(ot, s2)
             val un = unify(subOt, t2)
             val l = unrollArr(t2).last
-            println(s"original is $ot subOt is $subOt new is $t2 unified is ${un} subbed is ${Sub.substitute[Type](l, un)}")
+            //println(s"original is $ot subOt is $subOt new is $t2 unified is ${un} subbed is ${Sub.substitute[Type](l, un)}")
             (c2, dot(un, dot(s2, sub)), Sub.substitute[Type](l, un))
         }
       case If(expr, fst, snd) =>

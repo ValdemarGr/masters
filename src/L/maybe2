@@ -1,0 +1,16 @@
+
+type Maybe a = 
+  | Nothing
+  | Just a
+  | Two a a
+;
+
+fun main = 
+  let o = Two 2 2;
+  let h = match o
+    | Just n -> n;
+    | Nothing -> 2;
+    | Two k v -> k + v;
+  ;
+  h;
+

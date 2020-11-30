@@ -13,9 +13,73 @@ import com.codecommit.gll.Success
 import com.codecommit.gll.Failure
 import par.TokenTypes._
 import tt.Types.Context
+import fs2.io._
+import java.nio.file.Paths
 
 object Main extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { _ =>
+  val compileKey = "-c"
+  val asScheme = "-s"
+
+  def compile(code: String, asScheme: Boolean): IO[String] = {
+    val parsed = par.GLLParser.parse(code)
+
+    val checked = parsed match {
+      case x :: Nil => IO(x)
+      case xs =>
+        IO.raiseError(new Exception(s"failed parsing with ambiguity (multiple options) results \n${xs.mkString("\n\n")}"))
+    }
+
+    val succ = checked.flatMap {
+      case Success(value, _) => IO.pure(value)
+      case Failure(data, rest) =>
+        IO.raiseError(new Exception(s"failed parsing with $data, and rest \n${rest.takeWhile(_ != ';').mkString}"))
+    }
+
+    val output = succ.map { decls =>
+      inferProgram(decls)
+      val transformed = LCTransform.entrypoint(decls)
+      if (asScheme) 
+        s"(define main ${emitter.LCEmitter.emitScheme(transformed)})\n(display main)" 
+      else 
+        emitter.LCEmitter.emitGraphMachine(transformed)
+    }
+
+    output
+  }
+
+  override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { b =>
+    if (args.find(_ == compileKey).isDefined) {
+      val files = args.filter(x => x != compileKey && x != asScheme)
+      //val stdinstream = stdinUtf8[IO](1024, b)
+      val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
+      val instream = fs2.Stream(streams: _*)
+        .lift[IO]
+        .flatten
+        .through(fs2.text.utf8Decode)
+
+      val folded = instream
+        .compile
+        .fold(""){ case (accum, next) => accum + next }
+
+      val sch = args.find(_ == asScheme).isDefined
+
+      val compiledCode = folded.flatMap{ code =>
+        compile(code, sch)
+      }
+
+      val outPipe = stdout[IO](b)
+
+      val written = fs2.Stream.eval(compiledCode)
+        .flatMap(x => fs2.Stream(x.getBytes: _*))
+        .through(outPipe)
+
+      written
+        .compile
+        .drain
+        .as(ExitCode.Success)
+    } else IO(ExitCode.Success)
+  }
+/*
     val p2 = """
                |type List a = 
                |  | Cons a (List a) 
@@ -111,5 +175,5 @@ object Main extends IOApp {
     } *>
       //IO(println(parsed)) *>
       IO(ExitCode.Success)
-  }
+  }*/
 }
