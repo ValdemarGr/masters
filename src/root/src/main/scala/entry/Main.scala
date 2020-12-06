@@ -17,7 +17,6 @@ import fs2.io._
 import java.nio.file.Paths
 
 object Main extends IOApp {
-  val compileKey = "-c"
   val asScheme = "-s"
 
   def compile(code: String, asScheme: Boolean): IO[String] = {
@@ -48,36 +47,34 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { b =>
-    if (args.find(_ == compileKey).isDefined) {
-      val files = args.filter(x => x != compileKey && x != asScheme)
-      //val stdinstream = stdinUtf8[IO](1024, b)
-      val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
-      val instream = fs2.Stream(streams: _*)
-        .lift[IO]
-        .flatten
-        .through(fs2.text.utf8Decode)
+    val files = args.filter(x => x != asScheme)
+    //val stdinstream = stdinUtf8[IO](1024, b)
+    val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
+    val instream = fs2.Stream(streams: _*)
+      .lift[IO]
+      .flatten
+      .through(fs2.text.utf8Decode)
 
-      val folded = instream
-        .compile
-        .fold(""){ case (accum, next) => accum + next }
+    val folded = instream
+      .compile
+      .fold(""){ case (accum, next) => accum + next }
 
-      val sch = args.find(_ == asScheme).isDefined
+    val sch = args.find(_ == asScheme).isDefined
 
-      val compiledCode = folded.flatMap{ code =>
-        compile(code, sch)
-      }
+    val compiledCode = folded.flatMap{ code =>
+      compile(code, sch)
+    }
 
-      val outPipe = stdout[IO](b)
+    val outPipe = stdout[IO](b)
 
-      val written = fs2.Stream.eval(compiledCode)
-        .flatMap(x => fs2.Stream(x.getBytes: _*))
-        .through(outPipe)
+    val written = fs2.Stream.eval(compiledCode)
+      .flatMap(x => fs2.Stream(x.getBytes: _*))
+      .through(outPipe)
 
-      written
-        .compile
-        .drain
-        .as(ExitCode.Success)
-    } else IO(ExitCode.Success)
+    written
+      .compile
+      .drain
+      .as(ExitCode.Success)
   }
 /*
     val p2 = """
