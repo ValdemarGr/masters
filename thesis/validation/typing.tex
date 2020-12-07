@@ -92,8 +92,8 @@ With the now introduced primitives the Hindley-Milner type system is but a set o
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \sigma$}
 			\LeftLabel{Let}
-			\AxiomC{$\Gamma x : \sigma \vdash e_2 : \tau$}
-			\BinaryInfC{$\Gamma \vdash \texttt{ let } x = e_1 \texttt{ in } e_2 : \tau$}
+			\AxiomC{$\Gamma ,x : \sigma \vdash e_2 : \tau$}
+			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau$}
 		\end{prooftree}
 		\endminipage\hfill\vspace{0.8cm}
 
@@ -108,9 +108,9 @@ With the now introduced primitives the Hindley-Milner type system is but a set o
 		\minipage{0.49\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e : \sigma$}
-			\AxiomC{$a \notin free(\Gamma)$}
+            \AxiomC{$a \notin \textit{free}(\Gamma)$}
 			\LeftLabel{Gen}
-			\BinaryInfC{$\Gamma e : \forall a . \sigma$}
+			\BinaryInfC{$\Gamma , e : \forall a . \sigma$}
 		\end{prooftree}
 		\endminipage
 	\end{mdframed}
@@ -121,10 +121,137 @@ There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules
 The first rule and also the only axiom is the Variable.
 The Variable rule states that if some variable $x$ with type $\sigma$ has been deemed to exist, then they must be in the environment.
 The Application rule states that if $e_1 e_2$ is of type $\tau_2$ then $e_1$ must conform to a type that can produce a type $\tau_2$ given a type $\tau_1$ and $e_2$ must conform to the type of this $\tau_1$.
-The Instatiate rule are important to specify a quantified type $\sigma_1$ to a specific one $\sigma_2$.
+The Instatiate rule specifies a quantified type $\sigma_1$ to a specific one $\sigma_2$.
 Generalization lifts a type into a quantified type for all types which are bound.
-
 When inferring types in Hindley-Milner it is important to keep track of which variables are bound in a generalization if some instantiation were to happen.
+
+One might ask themselves why the let expression is of any importance since it is expressible by a lambda abstraction.
+The let expression has a slight difference which makes it considerably more powerful than the lambda abstraction namely the property of \textit{let polymorphism}.
+Let polymorphism is the property of being able to be polymorphic within different instantiations.
+When a parameter in a lambda expression is instantiated the first time it cannot adhere to polymorphism anymore, the let expression can however.
+Let polymorphism is examplified in \autoref{exmp:letpoly}.
+
+\begin{exmp}
+\label{exmp:letpoly}
+The identity function is a common example to illustrate type systems (\autoref{lst:idfun}).
+\begin{lstlisting}[language=ML,caption={Identity function in $L$},label={lst:idfun}]
+fun id x = x;
+id 4;
+\end{lstlisting}
+\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus with let},label={lst:idfun},mathescape=true]
+let id = ($\lambda x . x$) in
+id 4
+\end{lstlisting}
+Stating that id has the type $\forall a.a \rightarrow a$ and $4$ has the type \texttt{Int} is this program correct?
+By applying the Hindley-Milner rules one can prove or disprove this statement.
+One pitfall to be aware of while proving types is that of let polymorphism.
+\autoref{fig:typewrongexampleid} illustrates this point quite well by unifying too early such that \texttt{id} is no longer polymorphic.
+Logically the example also states that the symbol $\texttt{id}: \texttt{Int} \rightarrow \texttt{Int}$ exists in the environment in \autoref{fig:typewrongexampleid:2} which is incorrect.
+\begin{lstlisting}[language=ML,caption={Identity as lambda abstraction},label={lst:idabs},mathescape=true]
+$(\lambda \texttt{id} . \texttt{id } 4) (\lambda x . x)$
+\end{lstlisting}
+By using a lambda abstraction instead the parameter type will be instantiated on the first unification (\autoref{lst:idabs}) thus programs like \autoref{lst:idpoly} become impossible to prove.
+\begin{lstlisting}[language=ML,caption={Identity in let polymorphism},label={lst:idpoly},mathescape=true]
+let id = $(\lambda x . x)$ in
+(id 4, id id)
+\end{lstlisting}
+Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampleid}.
+\begin{figure}[ht]
+    \begin{mdframed}[style=bigbox]
+        \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+                            \AxiomC{$x : a \in \Gamma$}
+                            \LeftLabel{Var}
+                        \UnaryInfC{$\Gamma \vdash x : a$}
+                    \LeftLabel{Abs}
+                \UnaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
+                    \LeftLabel{Gen}
+                    \AxiomC{$a \notin \textit{free}(\Gamma)$}
+                \BinaryInfC{$\Gamma, x: \forall a. a \vdash x : \forall a . a$}
+                \AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
+            \LeftLabel{Inst}
+            \BinaryInfC{$\Gamma \vdash (\lambda x . x) : \texttt{Int} \rightarrow \texttt{Int}$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:typewrongexampleid:1}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.49\textwidth}
+        \begin{prooftree}
+                    \AxiomC{$\text{id} : \texttt{Int} \rightarrow \texttt{Int} \in \Gamma$}
+                    \LeftLabel{Var}
+                \UnaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
+                    \AxiomC{$4 : \texttt{Int} \in \Gamma$}
+                    \RightLabel{Var}
+                \UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
+            \RightLabel{App}
+            \BinaryInfC{$\Gamma, \text{ id} : \texttt{Int} \rightarrow \texttt{Int} \vdash $ id 4 : \texttt{Int}}
+        \end{prooftree}
+        \caption{}
+        \label{fig:typewrongexampleid:2}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.49\textwidth}
+        \begin{prooftree}
+                \AxiomC{\ref{fig:typewrongexampleid:1}}
+                \AxiomC{\ref{fig:typewrongexampleid:2}}
+            \LeftLabel{Let}
+            \BinaryInfC{$\Gamma \vdash $ \texttt{let} id = $(\lambda x . x)$ \texttt{in} id 4: \texttt{Int}}
+        \end{prooftree}
+        \caption{}
+        \label{fig:typewrongexampleid:3}
+        \end{subfigure}
+    \end{mdframed}
+    \caption{Incorrect identity function instantiation proof}
+    \label{fig:typewrongexampleid}
+\end{figure}
+\begin{figure}[ht]
+    \begin{mdframed}[style=bigbox]
+        \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+                            \AxiomC{$\text{id} : a \rightarrow a \in \Gamma$}
+                            \LeftLabel{Var}
+                        \UnaryInfC{$\Gamma \vdash \text{id} : a \rightarrow a$}
+                        \AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
+                    \BinaryInfC{$\Gamma, \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
+                        \AxiomC{$4 : \texttt{Int} \in \Gamma$}
+                        \RightLabel{Var}
+                    \UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
+                \RightLabel{App}
+                \BinaryInfC{$\Gamma, \text{ id} : \forall a . a \rightarrow a \vdash $ id 4 : \texttt{Int}}
+        \end{prooftree}
+        \caption{}
+        \label{fig:typeexampleid:2}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.49\textwidth}
+        \begin{prooftree}
+                                \AxiomC{$x : a \in \Gamma$}
+                                \LeftLabel{Var}
+                            \UnaryInfC{$\Gamma \vdash x : a$}
+                        \LeftLabel{Abs}
+                    \UnaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
+                        \LeftLabel{Gen}
+                        \AxiomC{$a \notin \textit{free}(\Gamma)$}
+                    \BinaryInfC{$\Gamma, x: \forall a. a \vdash x : \forall a . a$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:typeexampleid:1}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.49\textwidth}
+        \begin{prooftree}
+                \AxiomC{\ref{fig:typeexampleid:1}}
+                \AxiomC{\ref{fig:typeexampleid:2}}
+            \LeftLabel{Let}
+            \BinaryInfC{$\Gamma \vdash $ \texttt{let} id = $(\lambda x . x)$ \texttt{in} id 4: \texttt{Int}}
+        \end{prooftree}
+        \caption{}
+        \label{fig:typeexampleid:3}
+        \end{subfigure}
+    \end{mdframed}
+    \caption{Identity function instantiation proof}
+    \label{fig:typeexampleid}
+\end{figure}
+\end{exmp}
+
+
 
 \subsection{Damas-Milner Algorithm W}
 Typing rules are by themselves not that useful since they need all type information declared ahead of checking.
@@ -169,6 +296,7 @@ Substitution sets can also be combined $S_1 \cdot S_2$ with well defined semanti
 The combination of substitution sets is an important component for the correctness of the Damas-Milner inference algorithm.
 \begin{align}
     S_1 \cdot S_2 = \{ (a \mapsto S_1\tau) \,\,|\,\, (a \mapsto \tau) \in (S_2 \cup_. S_1) \}
+    \label{eq:combination}
 \end{align}
 The $\cup_.$ operator is distinct in the typevariable and is left-biased (\autoref{eq:cupdot}).
 \begin{align}
@@ -177,6 +305,7 @@ The $\cup_.$ operator is distinct in the typevariable and is left-biased (\autor
 \end{align}
 \begin{remark}
 By substitution set combination transitive and cirular substitutions cannot occur since typevariables in $S_1$ will inherit all of the mappings from $S_2$ and substitute ones that exist in both.
+The properties ensured by the combination semantics also induce the property of idempotence.
 This property is enforced by the Damas-Milner Algorithm W inference rules.
 \end{remark}
 Unification is performed differently based on the context.
@@ -187,7 +316,7 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 \end{lemma}
 \begin{proof}
 	Var empty is trivially true since $\equiv$ is commutative and for any $a$ and $\tau_1$ the rule produces $\emptyset \cup T = T$.\\\\
-    The commutative property of Var sub comes from the realization that $S \cup \{ \tau_1 \rightarrow S\tau_2 \}$ and $S \cup \{ \tau_2 \rightarrow S\tau_1 \}$ lets Algorithm W accept on the same inputs.
+    The commutative property of Var sub comes from the realization that $S \cup \{ \tau_1 \mapsto S\tau_2 \}$ and $S \cup \{ \tau_2 \mapsto S\tau_1 \}$ lets Algorithm W accept on the same inputs.
     Furthermor note that Algorithm W substitutes and combines substitution sets at every step of the expression tree such that transitive types never occur because of the combination semantics.
     \begin{case}
         The types $\tau_1$ and $\tau_2$ are first introduced and used in unification.
@@ -195,8 +324,8 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
     \end{case}
     \begin{case}
         $\tau_1$ has been assigned in an earlier unification.
-        If $\tau_2 \rightarrow \tau_1$ any existing references to $\tau_1$ need not change since all expressions of type variable $\tau_2$ will be mapped by the rules defined in \autoref{fig:hmrules}.
-        If any future rules need the type variable $\tau_1$ and $\tau_1 \rightarrow \tau_2$ is introduced to the substitution set, the substitution rules in \autoref{fig:hmrules} will substitute the type.
+        If $\tau_2 \mapsto \tau_1$ any existing references to $\tau_1$ need not change since all expressions of type variable $\tau_2$ will be mapped by the rules defined in \autoref{fig:hmrules}.
+        If any future rules need the type variable $\tau_1$ and $\tau_1 \mapsto \tau_2$ is introduced to the substitution set, the substitution rules in \autoref{fig:hmrules} will substitute the type.
     \end{case}
 \end{proof}
 \begin{figure}
@@ -232,7 +361,7 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 			\AxiomC{$S, \{ (a, \tau_1) \} \cup T $}
 			\AxiomC{$a \notin \textit{free}(\tau_1)$}
 			\LeftLabel{Var sub}
-			\BinaryInfC{$S \cup \{ a \mapsto S\tau_1 \}, \{ a \mapsto S\tau_1 \}, T$}
+			\BinaryInfC{$S \cup \{ a \mapsto S\tau_1 \}, \{ a \mapsto S\tau_1 \} \cup T$}
 		\end{prooftree}
 		\endminipage\hfill\vspace{0.8cm}
 
