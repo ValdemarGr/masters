@@ -2,8 +2,8 @@
 
 \begin{document}
 \section{Types and validation}
-The spellchecking equivalent for computer programs could be type checking; the problem of validating a programmers intuition of a program's intent.
-Types also have other properties than simply validating they can in fact be related to thorems to which an implementation is the proof~\cite{howard1980formulae}.
+The spellchecking equivalent for computer programs could be type checking; the problem of validating a programmer's intuition of a program's intent.
+Types also have other properties than simply validating they can in fact be related to theorems to which an implementation is the proof~\cite{howard1980formulae}.
 \begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl}]
 fun head l: List a -> a = 
     match l
@@ -11,12 +11,12 @@ fun head l: List a -> a =
         | Nil -> ?;
     ;
 \end{lstlisting}
-For instance consider the implementation of type \texttt{List a -> a} in \autoref{lst:headimpl}, a total implementation of the function cannot exist.
+For instance, consider the implementation of type \texttt{List a -> a} in \autoref{lst:headimpl}, a total implementation of the function cannot exist.
 
 The type system for the $L$ language will be the Hindley-Milner type system~\cite{hindley1969principal,milner1978theory}.
 
 \subsection{The language of types}
-Before delving into types the lambda calculus defined in \autoref{sec:lc} must be agumented with the \textit{let expression} (\autoref{eq:letb}).
+Before delving into types, the lambda calculus defined in \autoref{sec:lc} must be augmented with the \textit{let expression} (\autoref{eq:letb}).
 \begin{align}
 	\texttt{let } x = Y \texttt{ in } E
 	\label{eq:letb}
@@ -27,23 +27,23 @@ It should be noted that the let binding can be expressed by abstraction and appl
 	\label{eq:letaa}
 \end{align}
 The let expression has a nice property that will become apparent later when typing rules are introduced.
-The untyped lambda calculus exists at the ``value level'' while the now introduced syntax exists at the ``type level''.
-There are two vairants of types in Hindley-Milner, the \textit{monotype} and the \textit{polytype}.
+The untyped lambda calculus exists at the ``value level'' while the now introduced syntax exists at the ``type level.''
+There are two variants of types in Hindley-Milner, the \textit{monotype} and the \textit{polytype}.
 A monotype is either a variable, an abstraction of two monotypes or an application (\autoref{eq:mono}).
 \begin{align}
 	mono \,\,\tau = a \,|\, \tau \rightarrow \tau \,|\, C \tau_1 \dots \tau_n
 	\label{eq:mono}
 \end{align}
-The application term of the monotype is dependant on the primitive types of the programming language.
+The application term of the monotype is dependent on the primitive types of the programming language.
 In $L$ the set of monotypes are $\{ \texttt{Int}, \texttt{Bool}, \texttt{ADT} \}$.
-The types $\tau_1 \dots \tau_n$ are the typevariables required to construct some atomic type.
+The types $\tau_1 \dots \tau_n$ are the type variables required to construct some atomic type.
 An instance of which could be a \texttt{List a} with one type parameter \texttt{a}.
 A polytype is a polymorphic type (\autoref{eq:poly}).
 \begin{align}
 	poly \,\, \sigma = \tau \,|\, \forall a . \sigma
 	\label{eq:poly}
 \end{align}
-A central component of typing in Hindley-Milner is the \textit{environment}.
+A principal component of typing in Hindley-Milner is the \textit{environment}.
 The environment list $\Gamma$ is a list of pairs of variable and type (\autoref{eq:env}).
 $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment} meaning that given $\Gamma$ the variable $x$ has type $\sigma$.
 \begin{align}
@@ -51,8 +51,8 @@ $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment} meaning that given 
 	\label{eq:env}
 \end{align}
 
-Like in the untyped lambda calculus types also have notions of free and bound type varables.
-Varables are bound when they have been introduced by a quantification or exist in the environment.
+Like in the untyped lambda calculus types also have notions of free and bound type variables.
+Variables are bound when they have been introduced by a quantification or exist in the environment.
 \begin{align}
 	 & \textit{free}(a) = \{ a \}                                                              \\
 	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i-1}^n \textit{free}(\tau_i)           \\
@@ -118,18 +118,17 @@ With the now introduced primitives the Hindley-Milner type system is but a set o
 	\label{fig:hmrules}
 \end{figure}
 There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules}.
-The first rule and also the only axiom is the Variable.
+The first rule and the only axiom is the Variable.
 The Variable rule states that if some variable $x$ with type $\sigma$ has been deemed to exist, then they must be in the environment.
 The Application rule states that if $e_1 e_2$ is of type $\tau_2$ then $e_1$ must conform to a type that can produce a type $\tau_2$ given a type $\tau_1$ and $e_2$ must conform to the type of this $\tau_1$.
-The Instatiate rule specifies a quantified type $\sigma_1$ to a specific one $\sigma_2$.
+The Instantiate rule specifies a quantified type $\sigma_1$ to a specific one $\sigma_2$.
 Generalization lifts a type into a quantified type for all types which are bound.
 When inferring types in Hindley-Milner it is important to keep track of which variables are bound in a generalization if some instantiation were to happen.
 
 One might ask themselves why the let expression is of any importance since it is expressible by a lambda abstraction.
-The let expression has a slight difference which makes it considerably more powerful than the lambda abstraction namely the property of \textit{let polymorphism}.
-Let polymorphism is the property of being able to be polymorphic within different instantiations.
-When a parameter in a lambda expression is instantiated the first time it cannot adhere to polymorphism anymore, the let expression can however.
-Let polymorphism is examplified in \autoref{exmp:letpoly}.
+\textit{Let polymorphism} is the property of being able to be polymorphic within different instantiations.
+When a parameter in a lambda expression is instantiated the first time it cannot adhere to polymorphism anymore, the let expression can, however.
+Let polymorphism is exemplified in \autoref{exmp:letpoly}.
 
 \begin{exmp}
 \label{exmp:letpoly}
@@ -150,10 +149,9 @@ Logically the example also states that the symbol $\texttt{id}: \texttt{Int} \ri
 \begin{lstlisting}[language=ML,caption={Identity as lambda abstraction},label={lst:idabs},mathescape=true]
 $(\lambda \texttt{id} . \texttt{id } 4) (\lambda x . x)$
 \end{lstlisting}
-By using a lambda abstraction instead the parameter type will be instantiated on the first unification (\autoref{lst:idabs}) thus programs like \autoref{lst:idpoly} become impossible to prove.
-\begin{lstlisting}[language=ML,caption={Identity in let polymorphism},label={lst:idpoly},mathescape=true]
-let id = $(\lambda x . x)$ in
-(id 4, id id)
+By using a lambda abstraction instead, the parameter type will be instantiated on the first unification (\autoref{lst:idabs}) thus programs like \autoref{lst:idpoly} become impossible to prove.
+\begin{lstlisting}[language=ML,caption={Identity with multiple instantiations},label={lst:idpoly},mathescape=true]
+$(\lambda\texttt{id}.(\texttt{id } 4, \texttt{id } \texttt{id}))(\lambda x.x)$
 \end{lstlisting}
 Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampleid}.
 \begin{figure}[ht]
@@ -164,10 +162,10 @@ Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampl
                             \LeftLabel{Var}
                         \UnaryInfC{$\Gamma \vdash x : a$}
                     \LeftLabel{Abs}
-                \UnaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
+                \UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
                     \LeftLabel{Gen}
                     \AxiomC{$a \notin \textit{free}(\Gamma)$}
-                \BinaryInfC{$\Gamma, x: \forall a. a \vdash x : \forall a . a$}
+                \BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
                 \AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
             \LeftLabel{Inst}
             \BinaryInfC{$\Gamma \vdash (\lambda x . x) : \texttt{Int} \rightarrow \texttt{Int}$}
@@ -207,10 +205,11 @@ Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampl
     \begin{mdframed}[style=bigbox]
         \begin{subfigure}[b]{1\textwidth}
         \begin{prooftree}
-                            \AxiomC{$\text{id} : a \rightarrow a \in \Gamma$}
+                            \AxiomC{$\text{id} : \forall a . a \rightarrow a \in \Gamma$}
                             \LeftLabel{Var}
-                        \UnaryInfC{$\Gamma \vdash \text{id} : a \rightarrow a$}
+                        \UnaryInfC{$\Gamma \vdash \text{id} : \forall a . a \rightarrow a$}
                         \AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
+                    \LeftLabel{Inst}
                     \BinaryInfC{$\Gamma, \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
                         \AxiomC{$4 : \texttt{Int} \in \Gamma$}
                         \RightLabel{Var}
@@ -227,10 +226,10 @@ Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampl
                                 \LeftLabel{Var}
                             \UnaryInfC{$\Gamma \vdash x : a$}
                         \LeftLabel{Abs}
-                    \UnaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
+                    \UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
                         \LeftLabel{Gen}
                         \AxiomC{$a \notin \textit{free}(\Gamma)$}
-                    \BinaryInfC{$\Gamma, x: \forall a. a \vdash x : \forall a . a$}
+                    \BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
         \end{prooftree}
         \caption{}
         \label{fig:typeexampleid:1}
@@ -254,21 +253,20 @@ Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampl
 
 
 \subsection{Damas-Milner Algorithm W}
-Typing rules are by themselves not that useful since they need all type information declared ahead of checking.
-For this reason \textit{type inference} is considerably more useful.
-Type inference is the techinque of automatically deriving types, of which there exist many algorithms.
+Typing rules are by themselves not that useful since they need all type information declared ahead of checking, inference attempts to guess types such that the rules are satisfied.
+Type inference is the technique of automatically deriving types, of which there exist many algorithms.
 One of the most common Hindley-Milner compatible algorithms is the Damas-Milner Algorithm W inference algorithm that infers correct types~\cite{damas1984type,damas1982principal}.
 The Hindley-Milner rules will accept any rules inferred and accepted by Algorithm W.
 
-The Damas-Milner Algorithm W rules (\autoref{fig:hmrules}) introduce some new concepts such as \textit{fresh variables}, \textit{most general unifier} and the \textit{substitution set}.
-Fresh varables are introduced from a by picking a variable that has not been picked before from the infinite set $\tau_1, \tau_2 \dots $.
+The Damas-Milner Algorithm W rules (\autoref{fig:hmrules}) introduce some new concepts such as \textit{fresh variables}, \textit{most general unifier}, and the \textit{substitution set}.
+Fresh variables are introduced by picking a variable that has not been picked before from the infinite set $\tau_1, \tau_2 \dots $.
 Fresh variables are introduced when unknown types are discovered and later unified.
-The substitution set is a mapping from typevariables to types (\autoref{eq:substitution}).
+The substitution set is a mapping from type variables to types (\autoref{eq:substitution}).
 \begin{align}
     S = \{ a_1 \mapsto \tau_1, a_2 \mapsto \tau_2 \dots , a_n \mapsto \tau_n \} 
     \label{eq:substitution}
 \end{align}
-A substitution written $S T$ where $T$ is an arbitary component of Hindley-Milner like an environment in which all typevariables are substituted (\autoref{fig:subsem}).
+A substitution written $S T$ where $T$ is an arbitrary component of Hindley-Milner like an environment in which all type variables are substituted (\autoref{fig:subsem}).
 \begin{figure}
 \begin{mdframed}
 \begin{align}
@@ -292,24 +290,24 @@ A substitution written $S T$ where $T$ is an arbitary component of Hindley-Milne
     \caption{Substitution semantics}
     \label{fig:subsem}
 \end{figure}
-Substitution sets can also be combined $S_1 \cdot S_2$ with well defined semantics.
-The combination of substitution sets is an important component for the correctness of the Damas-Milner inference algorithm.
+Substitution sets can also be combined $S_1 \cdot S_2$ with well defined-semantics.
+The combination of substitution sets is a key component for the correctness of the Damas-Milner inference algorithm.
 \begin{align}
     S_1 \cdot S_2 = \{ (a \mapsto S_1\tau) \,\,|\,\, (a \mapsto \tau) \in (S_2 \cup_. S_1) \}
     \label{eq:combination}
 \end{align}
-The $\cup_.$ operator is distinct in the typevariable and is left-biased (\autoref{eq:cupdot}).
+The $\cup_.$ operator is distinct in the type variable and is left-biased (\autoref{eq:cupdot}).
 \begin{align}
     S_1 \cup_. S_2 = S_1 \cup \{ (a \mapsto \tau) \,\,|\,\, (a \mapsto \tau) \in S_2 \,\,|\,\, (a, *) \notin S_1 \}
     \label{eq:cupdot}
 \end{align}
 \begin{remark}
-By substitution set combination transitive and cirular substitutions cannot occur since typevariables in $S_1$ will inherit all of the mappings from $S_2$ and substitute ones that exist in both.
+By the substitution set combination operator transitive and circular substitutions cannot occur since type variables in $S_1$ will inherit all the mappings from $S_2$ and substitute ones that exist in both.
 The properties ensured by the combination semantics also induce the property of idempotence.
 This property is enforced by the Damas-Milner Algorithm W inference rules.
 \end{remark}
 Unification is performed differently based on the context.
-Unification is performed on monotypes, each of which which can take one of three forms (\autoref{eq:mono}).
+Unification is performed on monotypes, each of which can take one of three forms (\autoref{eq:mono}).
 Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} are commutative.
 \begin{lemma}
 	Var sub and Var empty are commutative.
