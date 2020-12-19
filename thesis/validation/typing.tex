@@ -2,16 +2,17 @@
 
 \begin{document}
 \section{Types and validation}
-The spellchecking equivalent for computer programs could be type checking; the problem of validating a programmer's intuition of a program's intent.
+The spell checking equivalent for computer programs could be type checking; the subproblem of validating a programmer's intuition of a program's intent.
 Types also have other properties than simply validating they can in fact be related to theorems to which an implementation is the proof~\cite{howard1980formulae}.
-\begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl}]
-fun head l: List a -> a = 
-    match l
-        | Cons x _ -> x;
-        | Nil -> ?;
+\begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl},mathescape=true]
+$\texttt{fun head l: List a} \rightarrow \texttt{a =}$
+    $\texttt{match l}$
+        $\texttt{| Cons x \_ } \rightarrow \texttt{x;}$
+        $\texttt{| Nil} \rightarrow \texttt{?;}$
     ;
 \end{lstlisting}
-For instance, consider the implementation of type \texttt{List a -> a} in \autoref{lst:headimpl}, a total implementation of the function cannot exist.
+For instance, consider the implementation of the fuction with type $\texttt{List a} \rightarrow \texttt{a}$ in \autoref{lst:headimpl}.
+A total implementation of the function cannot exist.
 
 The type system for the $L$ language will be the Hindley-Milner type system~\cite{hindley1969principal,milner1978theory}.
 
@@ -27,24 +28,75 @@ It should be noted that the let binding can be expressed by abstraction and appl
 	\label{eq:letaa}
 \end{align}
 The let expression has a nice property that will become apparent later when typing rules are introduced.
-The untyped lambda calculus exists at the ``value level'' while the now introduced syntax exists at the ``type level.''
-There are two variants of types in Hindley-Milner, the \textit{monotype} and the \textit{polytype}.
-A monotype is either a variable, an abstraction of two monotypes or an application (\autoref{eq:mono}).
+
+Types are an artificial layer atop of a program just as spell checking is an artificial layer atop text.
+There are two variants of types in the Hindley-Milner type system, the \textit{monotype} and the \textit{polytype}.
+A monotype is either a type variable, an abstraction of two monotypes or an application of a type constructor(\autoref{eq:mono}).
 \begin{align}
 	mono \,\,\tau = a \,|\, \tau \rightarrow \tau \,|\, C \tau_1 \dots \tau_n
 	\label{eq:mono}
 \end{align}
+\textit{Atoms} are terminal terms in a formula and are expressed either by type variable $a$ or $C$ with no type parameters.
 The application term of the monotype is dependent on the primitive types of the programming language.
-In $L$ the set of monotypes are $\{ \texttt{Int}, \texttt{Bool}, \texttt{ADT} \}$.
-The types $\tau_1 \dots \tau_n$ are the type variables required to construct some atomic type.
-An instance of which could be a \texttt{List a} with one type parameter \texttt{a}.
+The types $\tau_1 \dots \tau_n$ are monotype parameters required to construct some type $C$.
+In $L$ the set of type constructors are $\{ \texttt{Int}, \texttt{Bool} \} \cup \texttt{ADT}$.
+\texttt{Int} and \texttt{Bool} are type constructors of arity 0 thus only have one instantiation and are atomic.
+The set of type constructors \texttt{ADT} encapsulates the set of program defined algebraic data structures (\autoref{adts}).
+\begin{exmp}
+    Let $\texttt{ADT} = \{ \texttt{List} \}$ where \texttt{List} is defined as in \autoref{lst:listadt}.
+    The type constructor for \texttt{List} has the signature $\texttt{a} \rightarrow \texttt{List a}$ stating that if supplied with some type \texttt{a} it constructs a type of \texttt{List a} (effectively containing the provided type).
+    The type \texttt{List} is a type constructor with one type parameter \texttt{a}.
+\end{exmp}
+
+$\bot$ denotes falsity, in type systems a value of this type can never exist since that in itself would disprove the program.
+It is common in programming languages with strong type systems to let thrown exceptions be of type $\bot$ since it adheres to every type and indicates that the program is no longer running, since no instance of $\bot$ can exist.
+$\top$ denotes truth, in type systems every type is a supertype of $\top$.
+$\top$ is in practice only used to model side effects, since not all side effects return useful values.
+In programming languages with side effects $\bot$ and $\top$ are considerably more useful than in pure programming languages.
+
 A polytype is a polymorphic type (\autoref{eq:poly}).
 \begin{align}
 	poly \,\, \sigma = \tau \,|\, \forall a . \sigma
 	\label{eq:poly}
 \end{align}
+Polymorphic types state that either they take the shape of a type variable or they introduce a type which all types adhere to. 
+\begin{remark}
+    All types adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
+    The concept of adherence in types is commonly called \textit{subtyping}.
+    Every subtype is a \textit{at least} an implementation of it's supertype.
+    Since this concept can be difficult to grasp from just text, observe \autoref{fig:polytree}.
+    \begin{figure}[ht]
+        \centering
+            \begin{tikzpicture}
+                \node[draw=none] (sigma) {$\sigma$};
+
+                \node[draw=none, below = of sigma] (top) {$\top$};
+
+                \node[draw=none, below = of top] (tv) {$\tau$};
+                \node[draw=none, left = of tv] (arr) {$\tau_1 \rightarrow \tau_2$};
+                \node[draw=none, right = of tv] (tc) {$C \tau_1 \dots \tau_n$};
+
+                \node[draw=none, below = of tv] (bot) {$\bot$};
+
+                \path [->] (sigma) edge node[left] {} (top);
+
+                \path [->] (top) edge node[left] {} (arr);
+                \path [->] (top) edge node[left] {} (tv);
+                \path [->] (top) edge node[left] {} (tc);
+
+                \path [->] (tv) edge node[left] {} (bot);
+                \path [->] (arr) edge node[left] {} (bot);
+                \path [->] (tc) edge node[left] {} (bot);
+            \end{tikzpicture}
+        \caption{The type hierarchy of Hindley-Milner.}
+        \label{fig:polytree}
+    \end{figure}
+    Note that $\sigma$ is controversial to introduce to the type hierarchy and has only been so to illustrate the point of subtyping.
+    $\sigma$ is but a mechanism to prove type systems, $\sigma$ is never a specific type.
+
+\end{remark}
 A principal component of typing in Hindley-Milner is the \textit{environment}.
-The environment list $\Gamma$ is a list of pairs of variable and type (\autoref{eq:env}).
+The environment $\Gamma$ is a set of pairs of variable and type (\autoref{eq:env}).
 $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment} meaning that given $\Gamma$ the variable $x$ has type $\sigma$.
 \begin{align}
 	\Gamma \,\, = \epsilon \,|\, \Gamma, x : \sigma
@@ -55,7 +107,7 @@ Like in the untyped lambda calculus types also have notions of free and bound ty
 Variables are bound when they have been introduced by a quantification or exist in the environment.
 \begin{align}
 	 & \textit{free}(a) = \{ a \}                                                              \\
-	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i-1}^n \textit{free}(\tau_i)           \\
+	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i = 1}^n \textit{free}(\tau_i)           \\
 	 & \textit{free}(\Gamma) = \bigcup_{x:\sigma \in \Gamma} \textit{free}(\sigma)             \\
 	 & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     \\
 	 & \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma)
