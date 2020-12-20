@@ -97,7 +97,13 @@ Polymorphic types state that either they take the shape of a type variable or th
 \end{remark}
 A principal component of typing in Hindley-Milner is the \textit{environment}.
 The environment $\Gamma$ is a set of pairs of variable and type (\autoref{eq:env}).
-$\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ has type $\sigma$.
+$\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can adhere to the type $\sigma$.
+\begin{remark}
+    \label{remark:judgpoly}
+    Judging a type does not necessarily mean that the judged type is the only type that $x$ may take, it states that it is one \textit{possible} type that $x$ may take.
+    The property of taking multiple possible types is what allows polymorphism.
+    This is made more apparent in \autoref{exmp:letpoly} where \texttt{id} may take type of $\forall a . a \rightarrow a$, $\texttt{Int} \rightarrow \texttt{Int}$ and $\forall a . (a \rightarrow a) \rightarrow (a \rightarrow a)$.
+\end{remark}
 \begin{align}
 	\Gamma \,\, = \epsilon \,|\, \Gamma, x : \sigma
 	\label{eq:env}
@@ -172,7 +178,17 @@ With the now introduced primitives, the Hindley-Milner type system is but a set 
 	\label{fig:hmrules}
 \end{figure}
 There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules}.
-The first rule and the only axiom is the Variable.
+\begin{itemize}
+    \item \textbf{Var} states that if some variable $x$ with type $\sigma$ exists in the environment, the type can be judged.
+        In practice, when $x: \sigma$ is encountered in the expression tree it is added to the environment.
+    \item \textbf{App} decides that if $e_1 : \tau_1 \rightarrow \tau_2$ and $e_2 : \tau_1$ has been judged to exist then $e_1 e_2$ implies the removal of $\tau_1$ from $\tau_1 \rightarrow \tau_2$ such that $e_1 e_2: \tau_2$.
+    \item \textbf{Abs} is the typing rule of lambda abstractions.
+        If $x : \tau_1$ exists in the environment from some type analysis of $e$ and the abstraction's body $e$ has been judged to be of type $\tau_2$ then the abstraction of $x$ must take the type of $x$ to create the type of the body $e$.
+    \item \textbf{Let} states that if $e_1$ has been judged to have type $\sigma$ then the let expression's identifier $x: \sigma$ must exist in the environment when deriving the type of $e_2$.
+        Note that by \autoref{remark:judgpoly} $x$ may be polymorphic in $e_2$.
+
+    
+\end{itemize}
 The Variable rule states that if some variable $x$ with type $\sigma$ has been deemed to exist, then they must be in the environment.
 The Application rule states that if $e_1 e_2$ is of type $\tau_2$ then $e_1$ must conform to a type that can produce a type $\tau_2$ given a type $\tau_1$ and $e_2$ must conform to the type of this $\tau_1$.
 The Instantiate rule specifies a quantified type $\sigma_1$ to a specific one $\sigma_2$.
