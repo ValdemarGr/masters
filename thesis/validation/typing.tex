@@ -97,24 +97,26 @@ Polymorphic types state that either they take the shape of a type variable or th
 \end{remark}
 A principal component of typing in Hindley-Milner is the \textit{environment}.
 The environment $\Gamma$ is a set of pairs of variable and type (\autoref{eq:env}).
-$\Gamma \vdash x: \sigma$ implies a \textit{typing judgment} meaning that given $\Gamma$ the variable $x$ has type $\sigma$.
+$\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ has type $\sigma$.
 \begin{align}
 	\Gamma \,\, = \epsilon \,|\, \Gamma, x : \sigma
 	\label{eq:env}
 \end{align}
 
-Like in the untyped lambda calculus types also have notions of free and bound type variables.
+Like in the untyped lambda calculus, types also have notions of free and bound type variables.
+Type variables are bound when introduced by quantification.
 Variables are bound when they have been introduced by a quantification or exist in the environment.
 \begin{align}
 	 & \textit{free}(a) = \{ a \}                                                              \\
 	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i = 1}^n \textit{free}(\tau_i)           \\
+     & \textit{free}(\tau_1 \rightarrow \tau_2) = \textit{free}(\tau_1) \cup \textit{free}(\tau_2)          \\
 	 & \textit{free}(\Gamma) = \bigcup_{x:\sigma \in \Gamma} \textit{free}(\sigma)             \\
-	 & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     \\
-	 & \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma)
+	 & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     
+	 %& \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma)
 \end{align}
 
 \subsection{Hindley-Milner rules}
-With the now introduced primitives the Hindley-Milner type system is but a set of inference rules composed by said primitives.
+With the now introduced primitives, the Hindley-Milner type system is but a set of inference rules composed by said primitives.
 \begin{figure}[ht]
 	\begin{mdframed}
 		\minipage{0.49\textwidth}
@@ -162,7 +164,7 @@ With the now introduced primitives the Hindley-Milner type system is but a set o
 			\AxiomC{$\Gamma \vdash e : \sigma$}
             \AxiomC{$a \notin \textit{free}(\Gamma)$}
 			\LeftLabel{Gen}
-			\BinaryInfC{$\Gamma , e : \forall a . \sigma$}
+			\BinaryInfC{$\Gamma \vdash e : \forall a . \sigma$}
 		\end{prooftree}
 		\endminipage
 	\end{mdframed}
@@ -262,7 +264,7 @@ Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampl
                         \UnaryInfC{$\Gamma \vdash \text{id} : \forall a . a \rightarrow a$}
                         \AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
                     \LeftLabel{Inst}
-                    \BinaryInfC{$\Gamma, \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
+                    \BinaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
                         \AxiomC{$4 : \texttt{Int} \in \Gamma$}
                         \RightLabel{Var}
                     \UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
