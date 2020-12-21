@@ -68,6 +68,7 @@ object Operations {
         val (nc, nt) = fresh(c)
         nc -> (m + (n -> nt))
     }
+    println(s"instantiate sub map is $sub for scheme $s")
     val o = Sub.substitute(s.t, sub)
     (c2, o)
   }
@@ -194,7 +195,7 @@ object Operations {
             val subOt = Sub.substitute(ot, s2)
             val un = unify(subOt, t2)
             val l = unrollArr(t2).last
-            //println(s"original is $ot subOt is $subOt new is $t2 unified is ${un} subbed is ${Sub.substitute[Type](l, un)}")
+            println(s"applying $ps to $name creates substitution set ${dot(un, dot(s2, sub))} and type $l by pre unification $subOt and $t2 and env $env")
             (c2, dot(un, dot(s2, sub)), Sub.substitute[Type](l, un))
         }
       case If(expr, fst, snd) =>
@@ -276,6 +277,7 @@ object Operations {
       val (c1, s1, t1) = inferFun(ctx, sub, env, params.map(_.id), body)
       val gen = generalize(env, t1)
       val eo = extend(env, varname, gen)
+      println(s"fun $varname produced substitution set $s1, type $t1 and current env is $eo")
       (c1, s1, eo)
     case _ => ???
   }

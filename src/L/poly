@@ -1,0 +1,7 @@
+
+
+fun main =
+    fun id x = x;
+    fun i = id 4;
+    fun re = id id;
+    i;

@@ -59,7 +59,8 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 	poly \,\, \sigma = \tau \,|\, \forall a . \sigma
 	\label{eq:poly}
 \end{align}
-Polymorphic types state that either they take the shape of a type variable or they introduce a type which all types adhere to. 
+Polymorphic types state that either they take the shape of a type variable or they introduce a type which all types $a$ adhere to. 
+This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only bound type variables.
 \begin{remark}
     All types adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
     The concept of adherence in types is commonly called \textit{subtyping}.
@@ -102,7 +103,7 @@ $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given
     \label{remark:judgpoly}
     Judging a type does not necessarily mean that the judged type is the only type that $x$ may take, it states that it is one \textit{possible} type that $x$ may take.
     The property of taking multiple possible types is what allows polymorphism.
-    This is made more apparent in \autoref{exmp:letpoly} where \texttt{id} may take type of $\forall a . a \rightarrow a$, $\texttt{Int} \rightarrow \texttt{Int}$ and $\forall a . (a \rightarrow a) \rightarrow (a \rightarrow a)$.
+    This is made more apparent in \autoref{exmp:letpoly} where \texttt{id} may take the type of either $\forall a . a \rightarrow a$, $\texttt{Int} \rightarrow \texttt{Int}$ or $\forall a . (a \rightarrow a) \rightarrow (a \rightarrow a)$.
 \end{remark}
 \begin{align}
 	\Gamma \,\, = \epsilon \,|\, \Gamma, x : \sigma
@@ -120,7 +121,31 @@ Variables are bound when they have been introduced by a quantification or exist 
 	 & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     
 	 %& \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma)
 \end{align}
-
+Free and bound type variables are a vital distinction for type analysis since \textbf{Gen} in \autoref{fig:hmrules} may only generalize over bound type variables.
+The variables which may appear in a quantification have an important role in \autoref{eq:substitution}, since only free variables may be substituted.
+\begin{exmp}
+Consider the type for the function \texttt{fst} in \autoref{lst:fstimpl}.
+\begin{lstlisting}[language=ML,caption={First function},label={lst:fstimplbad},mathescape=true]
+fun fst a b: $\forall$A.$\forall$B.A $\rightarrow$ B $\rightarrow$ A = a;
+\end{lstlisting}
+\begin{lstlisting}[language=ML,caption={First function in lambda calculus},label={lst:fstimpl},mathescape=true]
+let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
+\end{lstlisting}
+\autoref{lst:fstimplbad} must be expressed in lambda calculus to yield a correct value.
+\autoref{eq:badfree} shows what happens if careful consideration is not taken when performing type analysis.
+\autoref{lst:fstimpl} exemplifies why context is important.
+If the context was only from within \texttt{f}, then \texttt{a} would appear free.
+\begin{figure}[ht]
+    \begin{align}
+    &\textit{free}(\forall\texttt{A}.\forall\texttt{B}.\texttt{A} \rightarrow \texttt{B} \rightarrow \texttt{A}) = \\
+    &\textit{free}(\forall\texttt{B}.\texttt{A} \rightarrow \texttt{B} \rightarrow \texttt{A}) - \{ \texttt{A} \} = \\
+    &(\textit{free}(\texttt{A} \rightarrow \texttt{B} \rightarrow \texttt{A}) - \{ \texttt{B} \}) - \{ \texttt{A} \} = \\
+    &(\{ \texttt{A} \} \cup \{ \texttt{B} \} - \{ \texttt{B} \}) - \{ \texttt{A} \} = \emptyset
+    \end{align}
+    \caption{}
+    \label{eq:badfree}
+\end{figure}
+\end{exmp}
 \subsection{Hindley-Milner rules}
 With the now introduced primitives, the Hindley-Milner type system is but a set of inference rules composed by said primitives.
 \begin{figure}[ht]
@@ -185,92 +210,94 @@ There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules
     \item \textbf{Abs} is the typing rule of lambda abstractions.
         If $x : \tau_1$ exists in the environment from some type analysis of $e$ and the abstraction's body $e$ has been judged to be of type $\tau_2$ then the abstraction of $x$ must take the type of $x$ to create the type of the body $e$.
     \item \textbf{Let} states that if $e_1$ has been judged to have type $\sigma$ then the let expression's identifier $x: \sigma$ must exist in the environment when deriving the type of $e_2$.
+        Observe that \textbf{Let} introduces a polymorphic type to the environment while \textbf{Abs} introduces a monomorphic one.
         Note that by \autoref{remark:judgpoly} $x$ may be polymorphic in $e_2$.
-
-    
+    \item \textbf{Inst} specializes some polymorphic type (in regard to the type system implementation) to a more specific polymorphic type.
+        $\sqsubseteq$ is the partial order of types where the binary relation between two types compares the descriptiveness of types.
+        \begin{exmp}
+            In $L$ the smallest element is the top of the type hierarchy (\autoref{fig:polytree}), the polymorphic type.
+        \end{exmp}
+    \item \textbf{Gen} generalizes over all bound variables $a$.
 \end{itemize}
-The Variable rule states that if some variable $x$ with type $\sigma$ has been deemed to exist, then they must be in the environment.
-The Application rule states that if $e_1 e_2$ is of type $\tau_2$ then $e_1$ must conform to a type that can produce a type $\tau_2$ given a type $\tau_1$ and $e_2$ must conform to the type of this $\tau_1$.
-The Instantiate rule specifies a quantified type $\sigma_1$ to a specific one $\sigma_2$.
-Generalization lifts a type into a quantified type for all types which are bound.
-When inferring types in Hindley-Milner it is important to keep track of which variables are bound in a generalization if some instantiation were to happen.
-
-One might ask themselves why the let expression is of any importance since it is expressible by a lambda abstraction.
-\textit{Let polymorphism} is the property of being able to be polymorphic within different instantiations.
-When a parameter in a lambda expression is instantiated the first time it cannot adhere to polymorphism anymore, the let expression can, however.
 Let polymorphism is exemplified in \autoref{exmp:letpoly}.
 
 \begin{exmp}
 \label{exmp:letpoly}
+Throughout this example $(x, z)$ is the pair of the variables $x$ and $z$.
+
 The identity function is a common example to illustrate type systems (\autoref{lst:idfun}).
 \begin{lstlisting}[language=ML,caption={Identity function in $L$},label={lst:idfun}]
 fun id x = x;
 id 4;
 \end{lstlisting}
-\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus with let},label={lst:idfun},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus with let},label={lst:idfunlam},mathescape=true]
 let id = ($\lambda x . x$) in
 id 4
 \end{lstlisting}
-Stating that id has the type $\forall a.a \rightarrow a$ and $4$ has the type \texttt{Int} is this program correct?
+Stating that id has the type $\forall a.a \rightarrow a$ and $4$ has the type \texttt{Int} is \autoref{lst:idfunlam} program correct?
 By applying the Hindley-Milner rules one can prove or disprove this statement.
-One pitfall to be aware of while proving types is that of let polymorphism.
-\autoref{fig:typewrongexampleid} illustrates this point quite well by unifying too early such that \texttt{id} is no longer polymorphic.
-Logically the example also states that the symbol $\texttt{id}: \texttt{Int} \rightarrow \texttt{Int}$ exists in the environment in \autoref{fig:typewrongexampleid:2} which is incorrect.
-\begin{lstlisting}[language=ML,caption={Identity as lambda abstraction},label={lst:idabs},mathescape=true]
-$(\lambda \texttt{id} . \texttt{id } 4) (\lambda x . x)$
+A correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampleid}.
+
+\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus by abstraction},label={lst:idfunlamabs},mathescape=true]
+($\lambda$id.id 4)($\lambda$x.x)
 \end{lstlisting}
-By using a lambda abstraction instead, the parameter type will be instantiated on the first unification (\autoref{lst:idabs}) thus programs like \autoref{lst:idpoly} become impossible to prove.
-\begin{lstlisting}[language=ML,caption={Identity with multiple instantiations},label={lst:idpoly},mathescape=true]
-$(\lambda\texttt{id}.(\texttt{id } 4, \texttt{id } \texttt{id}))(\lambda x.x)$
+\autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} are two equivalent programs with slightly different proofs which raises the question of why the let expression is even needed.
+If \autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} were to be slightly changed such that two new programs \autoref{lst:idfunlam2} and \autoref{lst:idfunlamabs2} were to be proved, \autoref{lst:idfunlamabs2} would not be provable while \autoref{lst:idfunlam2} would.
+\begin{lstlisting}[language=ML,caption={Identity function with two applications},label={lst:idfunlam2},mathescape=true]
+let id = ($\lambda$x.x) in
+(id 4, id id)
 \end{lstlisting}
-Therefore a correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampleid}.
-\begin{figure}[ht]
-    \begin{mdframed}[style=bigbox]
-        \begin{subfigure}[b]{1\textwidth}
-        \begin{prooftree}
-                            \AxiomC{$x : a \in \Gamma$}
-                            \LeftLabel{Var}
-                        \UnaryInfC{$\Gamma \vdash x : a$}
-                    \LeftLabel{Abs}
-                \UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
-                    \LeftLabel{Gen}
-                    \AxiomC{$a \notin \textit{free}(\Gamma)$}
-                \BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
-                \AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
-            \LeftLabel{Inst}
-            \BinaryInfC{$\Gamma \vdash (\lambda x . x) : \texttt{Int} \rightarrow \texttt{Int}$}
-        \end{prooftree}
-        \caption{}
-        \label{fig:typewrongexampleid:1}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.49\textwidth}
-        \begin{prooftree}
-                    \AxiomC{$\text{id} : \texttt{Int} \rightarrow \texttt{Int} \in \Gamma$}
-                    \LeftLabel{Var}
-                \UnaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
-                    \AxiomC{$4 : \texttt{Int} \in \Gamma$}
-                    \RightLabel{Var}
-                \UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
-            \RightLabel{App}
-            \BinaryInfC{$\Gamma, \text{ id} : \texttt{Int} \rightarrow \texttt{Int} \vdash $ id 4 : \texttt{Int}}
-        \end{prooftree}
-        \caption{}
-        \label{fig:typewrongexampleid:2}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.49\textwidth}
-        \begin{prooftree}
-                \AxiomC{\ref{fig:typewrongexampleid:1}}
-                \AxiomC{\ref{fig:typewrongexampleid:2}}
-            \LeftLabel{Let}
-            \BinaryInfC{$\Gamma \vdash $ \texttt{let} id = $(\lambda x . x)$ \texttt{in} id 4: \texttt{Int}}
-        \end{prooftree}
-        \caption{}
-        \label{fig:typewrongexampleid:3}
-        \end{subfigure}
-    \end{mdframed}
-    \caption{Incorrect identity function instantiation proof}
-    \label{fig:typewrongexampleid}
-\end{figure}
+\begin{lstlisting}[language=ML,caption={Identity function with two applications as abstraction},label={lst:idfunlamabs2},mathescape=true]
+($\lambda$id.(id 4, id id)($\lambda$x.x)
+\end{lstlisting}
+In \autoref{lst:idfunlamabs2} \texttt{id} cannot adhere to polymorphism by \textbf{Abs} in \autoref{fig:hmrules} whilst \textbf{Let} can.
+%\begin{figure}[ht]
+    %\begin{mdframed}[style=bigbox]
+        %\begin{subfigure}[b]{1\textwidth}
+        %\begin{prooftree}
+                            %\AxiomC{$x : a \in \Gamma$}
+                            %\LeftLabel{Var}
+                        %\UnaryInfC{$\Gamma \vdash x : a$}
+                    %\LeftLabel{Abs}
+                %\UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
+                    %\LeftLabel{Gen}
+                    %\AxiomC{$a \notin \textit{free}(\Gamma)$}
+                %\BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
+                %\AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
+            %\LeftLabel{Inst}
+            %\BinaryInfC{$\Gamma \vdash (\lambda x . x) : \texttt{Int} \rightarrow \texttt{Int}$}
+        %\end{prooftree}
+        %\caption{}
+        %\label{fig:typewrongexampleid:1}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{0.49\textwidth}
+        %\begin{prooftree}
+                    %\AxiomC{$\text{id} : \texttt{Int} \rightarrow \texttt{Int} \in \Gamma$}
+                    %\LeftLabel{Var}
+                %\UnaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
+                    %\AxiomC{$4 : \texttt{Int} \in \Gamma$}
+                    %\RightLabel{Var}
+                %\UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
+            %\RightLabel{App}
+            %\BinaryInfC{$\Gamma, \text{ id} : \texttt{Int} \rightarrow \texttt{Int} \vdash $ id 4 : \texttt{Int}}
+        %\end{prooftree}
+        %\caption{}
+        %\label{fig:typewrongexampleid:2}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{0.49\textwidth}
+        %\begin{prooftree}
+                %\AxiomC{\ref{fig:typewrongexampleid:1}}
+                %\AxiomC{\ref{fig:typewrongexampleid:2}}
+            %\LeftLabel{Let}
+            %\BinaryInfC{$\Gamma \vdash $ \texttt{let} id = $(\lambda x . x)$ \texttt{in} id 4: \texttt{Int}}
+        %\end{prooftree}
+        %\caption{}
+        %\label{fig:typewrongexampleid:3}
+        %\end{subfigure}
+    %\end{mdframed}
+    %\caption{Incorrect identity function instantiation proof}
+    %\label{fig:typewrongexampleid}
+%\end{figure}
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \begin{subfigure}[b]{1\textwidth}
@@ -379,23 +406,26 @@ This property is enforced by the Damas-Milner Algorithm W inference rules.
 Unification is performed differently based on the context.
 Unification is performed on monotypes, each of which can take one of three forms (\autoref{eq:mono}).
 Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} are commutative.
-\begin{lemma}
-	Var sub and Var empty are commutative.
-\end{lemma}
-\begin{proof}
-	Var empty is trivially true since $\equiv$ is commutative and for any $a$ and $\tau_1$ the rule produces $\emptyset \cup T = T$.\\\\
-    The commutative property of Var sub comes from the realization that $S \cup \{ \tau_1 \mapsto S\tau_2 \}$ and $S \cup \{ \tau_2 \mapsto S\tau_1 \}$ lets Algorithm W accept on the same inputs.
-    Furthermor note that Algorithm W substitutes and combines substitution sets at every step of the expression tree such that transitive types never occur because of the combination semantics.
-    \begin{case}
-        The types $\tau_1$ and $\tau_2$ are first introduced and used in unification.
-        Either all future uses of $\tau_1$ will be mapped to $\tau_2$ by the substitution set or all future uses of $\tau_2$ will be mapped to $\tau_1$.
-    \end{case}
-    \begin{case}
-        $\tau_1$ has been assigned in an earlier unification.
-        If $\tau_2 \mapsto \tau_1$ any existing references to $\tau_1$ need not change since all expressions of type variable $\tau_2$ will be mapped by the rules defined in \autoref{fig:hmrules}.
-        If any future rules need the type variable $\tau_1$ and $\tau_1 \mapsto \tau_2$ is introduced to the substitution set, the substitution rules in \autoref{fig:hmrules} will substitute the type.
-    \end{case}
-\end{proof}
+%\begin{lemma}
+	%Var sub and Var empty are commutative.
+%\end{lemma}
+%\begin{proof}
+	%Var empty is trivially true since $\equiv$ is commutative and for any $a$ and $\tau_1$ the rule produces $\emptyset \cup T = T$.\\\\
+    %The commutative property of Var sub comes from the realization that $S \cup \{ \tau_1 \mapsto S\tau_2 \}$ and $S \cup \{ \tau_2 \mapsto S\tau_1 \}$ lets Algorithm W accept on the same inputs.
+    %Furthermor note that Algorithm W substitutes and combines substitution sets at every step of the expression tree such that transitive types never occur because of the combination semantics.
+    %\begin{case}
+        %The types $\tau_1$ and $\tau_2$ are first introduced and used in unification.
+        %Either all future uses of $\tau_1$ will be mapped to $\tau_2$ by the substitution set or all future uses of $\tau_2$ will be mapped to $\tau_1$.
+    %\end{case}
+    %\begin{case}
+        %$\tau_1$ has been assigned in an earlier unification.
+        %If $\tau_2 \mapsto \tau_1$ any existing references to $\tau_1$ need not change since all expressions of type variable $\tau_2$ will be mapped by the rules defined in \autoref{fig:hmrules}.
+        %If any future rules need the type variable $\tau_1$ and $\tau_1 \mapsto \tau_2$ is introduced to the substitution set, the substitution rules in \autoref{fig:hmrules} will substitute the type.
+    %\end{case}
+%\end{proof}
+An important implementation detail which should be noted is that of the polymorphic type.
+Polymorphic types can be regarded as being a pair of bound types and monotype.
+This representation is convenient for the \textbf{Gen} rule.
 \begin{figure}
 	\begin{mdframed}
 		\minipage{1\textwidth}
@@ -486,7 +516,7 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 		\endminipage
 	\end{mdframed}
 	\caption{Algorithm W rules}
-	\label{fig:hmrules}
+	\label{fig:dmrules}
 \end{figure}
 
 \end{document}
