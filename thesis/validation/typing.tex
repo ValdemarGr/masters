@@ -2,7 +2,7 @@
 
 \begin{document}
 \section{Types and validation}
-The spell checking equivalent for computer programs could be type checking; the subproblem of validating a programmer's intuition of a program's intent.
+The spell checking equivalent for computer programs could be type checking; a subproblem of validating a programmer's intuition of a program's intent.
 Types also have other properties than simply validating they can in fact be related to theorems to which an implementation is the proof~\cite{howard1980formulae}.
 \begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl},mathescape=true]
 $\texttt{fun head l: List a} \rightarrow \texttt{a =}$
@@ -31,7 +31,7 @@ The let expression has a nice property that will become apparent later when typi
 
 Types are an artificial layer atop of a program just as spell checking is an artificial layer atop text.
 There are two variants of types in the Hindley-Milner type system, the \textit{monotype} and the \textit{polytype}.
-A monotype is either a type variable, an abstraction of two monotypes or an application of a type constructor(\autoref{eq:mono}).
+A monotype is either a type variable, an abstraction of two monotypes or an application of a type constructor (\autoref{eq:mono}).
 \begin{align}
 	mono \,\,\tau = a \,|\, \tau \rightarrow \tau \,|\, C \tau_1 \dots \tau_n
 	\label{eq:mono}
@@ -41,10 +41,10 @@ The application term of the monotype is dependent on the primitive types of the 
 The types $\tau_1 \dots \tau_n$ are monotype parameters required to construct some type $C$.
 In $L$ the set of type constructors are $\{ \texttt{Int}, \texttt{Bool} \} \cup \texttt{ADT}$.
 \texttt{Int} and \texttt{Bool} are type constructors of arity 0 thus only have one instantiation and are atomic.
-The set of type constructors \texttt{ADT} encapsulates the set of program defined algebraic data structures (\autoref{adts}).
+The set of constructors \texttt{ADT} encapsulates the set of program defined algebraic data structures (\autoref{adts}).
 \begin{exmp}
     Let $\texttt{ADT} = \{ \texttt{List} \}$ where \texttt{List} is defined as in \autoref{lst:listadt}.
-    The type constructor for \texttt{List} has the signature $\texttt{a} \rightarrow \texttt{List a}$ stating that if supplied with some type \texttt{a} it constructs a type of \texttt{List a} (effectively containing the provided type).
+    The \textit{type constructor} (not to be confused for constructors like \texttt{Cons} or \texttt{Nil}) for \texttt{List} has the signature $\texttt{a} \rightarrow \texttt{List a}$ stating that if supplied with some type \texttt{a} it constructs a type of \texttt{List a} (effectively containing the provided type).
     The type \texttt{List} is a type constructor with one type parameter \texttt{a}.
 \end{exmp}
 
@@ -59,7 +59,7 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 	poly \,\, \sigma = \tau \,|\, \forall a . \sigma
 	\label{eq:poly}
 \end{align}
-Polymorphic types state that either they take the shape of a type variable or they introduce a type which all types $a$ adhere to. 
+Polymorphic types either take the shape of a type variable or introduce a type which all types $a$ adhere to. 
 This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only bound type variables.
 \begin{remark}
     All types adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
@@ -111,8 +111,7 @@ $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given
 \end{align}
 
 Like in the untyped lambda calculus, types also have notions of free and bound type variables.
-Type variables are bound when introduced by quantification.
-Variables are bound when they have been introduced by a quantification or exist in the environment.
+Type variables are bound when they have been introduced by a quantification or exist in the environment.
 \begin{align}
 	 & \textit{free}(a) = \{ a \}                                                              \\
 	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i = 1}^n \textit{free}(\tau_i)           \\
@@ -131,20 +130,11 @@ fun fst a b: $\forall$A.$\forall$B.A $\rightarrow$ B $\rightarrow$ A = a;
 \begin{lstlisting}[language=ML,caption={First function in lambda calculus},label={lst:fstimpl},mathescape=true]
 let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
 \end{lstlisting}
-\autoref{lst:fstimplbad} must be expressed in lambda calculus to yield a correct value.
-\autoref{eq:badfree} shows what happens if careful consideration is not taken when performing type analysis.
-\autoref{lst:fstimpl} exemplifies why context is important.
-If the context was only from within \texttt{f}, then \texttt{a} would appear free.
-\begin{figure}[ht]
-    \begin{align}
-    &\textit{free}(\forall\texttt{A}.\forall\texttt{B}.\texttt{A} \rightarrow \texttt{B} \rightarrow \texttt{A}) = \\
-    &\textit{free}(\forall\texttt{B}.\texttt{A} \rightarrow \texttt{B} \rightarrow \texttt{A}) - \{ \texttt{A} \} = \\
-    &(\textit{free}(\texttt{A} \rightarrow \texttt{B} \rightarrow \texttt{A}) - \{ \texttt{B} \}) - \{ \texttt{A} \} = \\
-    &(\{ \texttt{A} \} \cup \{ \texttt{B} \} - \{ \texttt{B} \}) - \{ \texttt{A} \} = \emptyset
-    \end{align}
-    \caption{}
-    \label{eq:badfree}
-\end{figure}
+    The type for \texttt{fst} is $\forall A \forall B . A \rightarrow B \rightarrow A$.
+
+    Note that a naive typing would look something like $\forall A  . A \rightarrow (\forall B . B \rightarrow A)$ but rank-2 polymorphism is not typable in Hindley-Milner.
+    An important realization is the context from where the type analysis is made.
+    If type analysis is made from within \texttt{f} the type of \texttt{f} becomes $\forall B . B \rightarrow A$ and the type variable $A$ is free.
 \end{exmp}
 \subsection{Hindley-Milner rules}
 With the now introduced primitives, the Hindley-Milner type system is but a set of inference rules composed by said primitives.
@@ -352,10 +342,9 @@ In \autoref{lst:idfunlamabs2} \texttt{id} cannot adhere to polymorphism by \text
 \subsection{Damas-Milner Algorithm W}
 Typing rules are by themselves not that useful since they need all type information declared ahead of checking, inference attempts to guess types such that the rules are satisfied.
 Type inference is the technique of automatically deriving types, of which there exist many algorithms.
-One of the most common Hindley-Milner compatible algorithms is the Damas-Milner Algorithm W inference algorithm that infers correct types~\cite{damas1984type,damas1982principal}.
-The Hindley-Milner rules will accept any rules inferred and accepted by Algorithm W.
+One of the most common inference algorithms that produce typings which the Hindley-Milner rules accept is the Damas-Milner Algorithm W inference algorithm~\cite{damas1984type,damas1982principal}.
 
-The Damas-Milner Algorithm W rules (\autoref{fig:hmrules}) introduce some new concepts such as \textit{fresh variables}, \textit{most general unifier}, and the \textit{substitution set}.
+The Damas-Milner Algorithm W rules (\autoref{fig:dmrules}) introduce some new concepts such as \textit{fresh variables}, \textit{most general unifier}, and the \textit{substitution set}.
 Fresh variables are introduced by picking a variable that has not been picked before from the infinite set $\tau_1, \tau_2 \dots $.
 Fresh variables are introduced when unknown types are discovered and later unified.
 The substitution set is a mapping from type variables to types (\autoref{eq:substitution}).
@@ -381,7 +370,7 @@ A substitution written $S T$ where $T$ is an arbitrary component of Hindley-Miln
             a & 
         \end{cases}
     \tag{Typevariable}\\
-    &S C \tau_1 \dots \tau_n = C S\tau_1 \dots S\tau_n \tag{Type constructor}
+    &S C \tau_1 \dots \tau_n = C S\tau_1 \dots S\tau_n \tag{Constructor}
 \end{align}
 \end{mdframed}
     \caption{Substitution semantics}
@@ -406,26 +395,6 @@ This property is enforced by the Damas-Milner Algorithm W inference rules.
 Unification is performed differently based on the context.
 Unification is performed on monotypes, each of which can take one of three forms (\autoref{eq:mono}).
 Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} are commutative.
-%\begin{lemma}
-	%Var sub and Var empty are commutative.
-%\end{lemma}
-%\begin{proof}
-	%Var empty is trivially true since $\equiv$ is commutative and for any $a$ and $\tau_1$ the rule produces $\emptyset \cup T = T$.\\\\
-    %The commutative property of Var sub comes from the realization that $S \cup \{ \tau_1 \mapsto S\tau_2 \}$ and $S \cup \{ \tau_2 \mapsto S\tau_1 \}$ lets Algorithm W accept on the same inputs.
-    %Furthermor note that Algorithm W substitutes and combines substitution sets at every step of the expression tree such that transitive types never occur because of the combination semantics.
-    %\begin{case}
-        %The types $\tau_1$ and $\tau_2$ are first introduced and used in unification.
-        %Either all future uses of $\tau_1$ will be mapped to $\tau_2$ by the substitution set or all future uses of $\tau_2$ will be mapped to $\tau_1$.
-    %\end{case}
-    %\begin{case}
-        %$\tau_1$ has been assigned in an earlier unification.
-        %If $\tau_2 \mapsto \tau_1$ any existing references to $\tau_1$ need not change since all expressions of type variable $\tau_2$ will be mapped by the rules defined in \autoref{fig:hmrules}.
-        %If any future rules need the type variable $\tau_1$ and $\tau_1 \mapsto \tau_2$ is introduced to the substitution set, the substitution rules in \autoref{fig:hmrules} will substitute the type.
-    %\end{case}
-%\end{proof}
-An important implementation detail which should be noted is that of the polymorphic type.
-Polymorphic types can be regarded as being a pair of bound types and monotype.
-This representation is convenient for the \textbf{Gen} rule.
 \begin{figure}
 	\begin{mdframed}
 		\minipage{1\textwidth}
@@ -475,6 +444,36 @@ This representation is convenient for the \textbf{Gen} rule.
 	\caption{Rules for most general unification}
 	\label{fig:mgu}
 \end{figure}
+
+%\begin{lemma}
+	%Var sub and Var empty are commutative.
+%\end{lemma}
+%\begin{proof}
+	%Var empty is trivially true since $\equiv$ is commutative and for any $a$ and $\tau_1$ the rule produces $\emptyset \cup T = T$.\\\\
+    %The commutative property of Var sub comes from the realization that $S \cup \{ \tau_1 \mapsto S\tau_2 \}$ and $S \cup \{ \tau_2 \mapsto S\tau_1 \}$ lets Algorithm W accept on the same inputs.
+    %Furthermor note that Algorithm W substitutes and combines substitution sets at every step of the expression tree such that transitive types never occur because of the combination semantics.
+    %\begin{case}
+        %The types $\tau_1$ and $\tau_2$ are first introduced and used in unification.
+        %Either all future uses of $\tau_1$ will be mapped to $\tau_2$ by the substitution set or all future uses of $\tau_2$ will be mapped to $\tau_1$.
+    %\end{case}
+    %\begin{case}
+        %$\tau_1$ has been assigned in an earlier unification.
+        %If $\tau_2 \mapsto \tau_1$ any existing references to $\tau_1$ need not change since all expressions of type variable $\tau_2$ will be mapped by the rules defined in \autoref{fig:hmrules}.
+        %If any future rules need the type variable $\tau_1$ and $\tau_1 \mapsto \tau_2$ is introduced to the substitution set, the substitution rules in \autoref{fig:hmrules} will substitute the type.
+    %\end{case}
+%\end{proof}
+An important implementation detail which should be noted is that of the polymorphic type.
+Polymorphic types can be regarded as being a pair of bound types and monotype.
+This representation is convenient for the \textbf{Gen} rule.
+\begin{remark}
+    The Damas-Milner algorithm W is the most popular inference algorithm for Hindley-Milner.
+    Though it remains the most popular, it has some interesting competitors.
+    One of which is that of the constraint solver approach~\cite{heeren2002generalizing}.
+    The constraint solver approach is a two phase type inference algorithm.
+    In the first phase the algorithm inspects the expression tree and generates a set of constraints as it goes.
+    After the set of constraints $C$ has been generated it then traverses the constraints and generates type variable substitutions.
+    It is argued that error reporting is significantly easier in such an approach.
+\end{remark}
 \begin{figure}
 	\begin{mdframed}[style=style1]
 		\minipage{0.40\textwidth}
@@ -515,8 +514,10 @@ This representation is convenient for the \textbf{Gen} rule.
 		\end{prooftree}
 		\endminipage
 	\end{mdframed}
-	\caption{Algorithm W rules}
+	\caption{Algorithm W}
 	\label{fig:dmrules}
 \end{figure}
+
+
 
 \end{document}

@@ -18,9 +18,9 @@ type List a =
 \end{lstlisting}
 \autoref{lst:listadt} is an implementation of a linked list. 
 The list value can either take the type of \texttt{Nil} indicating an empty list, or it can take the type of \texttt{Cons} indicating a pair of type $a$ and another list.
-The list implementation has two type constructors and one type parameter.
+The list implementation has two constructors and one type parameter.
 The type parameter $a$ of the list algebraic data type defines a \textit{polymorphic type}; $a$ can agree on any type, it is universally quantified \texttt{$\forall a. $ Cons $a$ (List $a$)}.
-The two type constructors \texttt{Nil} and \texttt{Cons} both create a value of type \texttt{List a} once instatiated.
+The two constructors \texttt{Nil} and \texttt{Cons} both create a value of type \texttt{List a} once instatiated.
 \begin{lstlisting}[language=ML,caption={List instance and match},label={lst:listinstance}]
 let l = Cons 1 (Cons 2 (Cons 3 Nil));
 
@@ -37,16 +37,16 @@ Pattern match comes in may forms, notably it allows one to define a computation 
 Pattern matching strays far from the simple untyped lambda calculus, but can in fact be encoded into it.
 The \textit{scott encoding} (\autoref{se:general}) is a technique that describes a general purpose framework to encode algebraic data types into lambda calculus~\cite{scott1962system}.
 Considering an algebraic data type instance as a function which accepts a set of ``handlers'' allows the encoding into lambda calculus.
-The scott encoding specifies that type constructors should now be functions that are each parameterized by the type constructor parameters $x_1 \dots x_{A_i}$ where $A_i$ is the arity of the type constructor $i$.
-Additionally each of the type constructor functions return a $n$ arity function, where $n$ is the cardinality of the set of type constructors.
-Of the $n$ functions, the type constructor parameters $x_1 \dots x_{A_i}$ are applied to the $i$'th ``handler'' $c_i$.
+The scott encoding specifies that constructors should now be functions that are each parameterized by the constructor parameters $x_1 \dots x_{A_i}$ where $A_i$ is the arity of the constructor $i$.
+Additionally each of the constructor functions return a $n$ arity function, where $n$ is the cardinality of the set of constructors.
+Of the $n$ functions, the constructor parameters $x_1 \dots x_{A_i}$ are applied to the $i$'th ``handler'' $c_i$.
 These encoding rules ensure that the ``handler'' functions are provided uniformly to all instances of the algebraic data type.
 \begin{align}
     \lambda x_1 \dots x_{A_i}. \lambda c_1 \dots c_n. c_i x_1 \dots x_{A_i}
 \label{se:general}
 \end{align}
 \begin{exmp}
-    The \texttt{List} algebraic data type in \autoref{lst:listadt} has two type constructors, \texttt{Nil} with the type constructor type \autoref{eq:nilconstructor} and \texttt{Cons} with the type constructor type \autoref{eq:consconstructor}.
+    The \texttt{List} algebraic data type in \autoref{lst:listadt} has two constructors, \texttt{Nil} with the constructor type \autoref{eq:nilconstructor} and \texttt{Cons} with the constructor type \autoref{eq:consconstructor}.
     \autoref{eq:nilconstructor} is in fact also the type of \texttt{List} once instantiated, effetively treating partially applied functions as data.
 \begin{align}
    &b \rightarrow (a \rightarrow \texttt{List } a \rightarrow b) \rightarrow b
