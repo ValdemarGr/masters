@@ -136,7 +136,7 @@ let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
     An important realization is the context from where the type analysis is made.
     If type analysis is made from within \texttt{f} the type of \texttt{f} becomes $\forall B . B \rightarrow A$ and the type variable $A$ is free.
 \end{exmp}
-\subsection{Hindley-Milner rules}
+\section{Hindley-Milner}
 With the now introduced primitives, the Hindley-Milner type system is but a set of inference rules composed by said primitives.
 \begin{figure}[ht]
 	\begin{mdframed}
@@ -468,7 +468,7 @@ This representation is convenient for the \textbf{Gen} rule.
 \begin{remark}
     The Damas-Milner algorithm W is the most popular inference algorithm for Hindley-Milner.
     Though it remains the most popular, it has some interesting competitors.
-    One of which is that of the constraint solver approach~\cite{heeren2002generalizing}.
+    One of which is that of the constraint solver approach which is also used in OCaml~\cite{heeren2002generalizing}.
     The constraint solver approach is a two phase type inference algorithm.
     In the first phase the algorithm inspects the expression tree and generates a set of constraints as it goes.
     After the set of constraints $C$ has been generated it then traverses the constraints and generates type variable substitutions.
@@ -517,7 +517,26 @@ This representation is convenient for the \textbf{Gen} rule.
 	\caption{Algorithm W}
 	\label{fig:dmrules}
 \end{figure}
+\subsection{Recursion}
 
+\section{The cost of expressiveness}
+Modern languages with strong type systems tend to be notoriously slow to type.
+In fact many languages with strong type systems provide type systems expressive enough to be turing complete.
+Though languages with strong type systems can be slow it is most commonly observed from pathological inputs.
 
+In the construction of the compiler for $L$ one target was the C++ language.
+An instance of a pathological input for the C++ type checker is most definitely the untyped lambda calculus.
+The lambda terms in C++ must adhere to polymorphism in many cases which has some unknown but large blowup in compilation time.
+In fact polymorphism is commonly the root of blowup in typing.
+
+ML which implemented Hindley-Milner was believed to have linear complexity before shown to be exponential.
+As it will turn out, Hindley-Milner also suffers an explosive worst case induced by a pathological input fueled by polymorphism.
+
+\begin{lemma}
+    Hindley-Milner typing is worst case $O(2^n)$.
+\end{lemma}
+\begin{proof}
+    aoeu
+\end{proof}
 
 \end{document}
