@@ -239,6 +239,7 @@ object Operations {
         val (c1, f) = fresh(ctx)
         val newEnv = extend(env, head, Scheme(Set.empty, f))
         val (c2, s2, innerT) = inferFun(c1, sub, newEnv, tl, b)
+        println(s"Type vars = ${s2.size}")
         (c2, s2, Sub.substitute[Type](TypeArrow(f, innerT), s2))
     }
 

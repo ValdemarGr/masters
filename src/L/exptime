@@ -1,0 +1,10 @@
+
+fun dup a f = f a a;
+fun one z = dup z;
+fun two z = one (one z);
+fun three z = two (two z);
+fun id x = x;
+fun out z = three id z;
+
+fun main =
+    4;

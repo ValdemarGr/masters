@@ -517,6 +517,8 @@ This representation is convenient for the \textbf{Gen} rule.
 	\caption{Algorithm W}
 	\label{fig:dmrules}
 \end{figure}
+
+In the language $L$ functions \texttt{fun} translate to let expressions while \texttt{let} translates to abstraction and application.
 \subsection{Recursion}
 
 \section{The cost of expressiveness}
@@ -533,10 +535,44 @@ ML which implemented Hindley-Milner was believed to have linear complexity befor
 As it will turn out, Hindley-Milner also suffers an explosive worst case induced by a pathological input fueled by polymorphism.
 
 \begin{lemma}
-    Hindley-Milner typing is worst case $O(2^n)$.
+    Hindley-Milner typing is worst case $O(c^n)$.
 \end{lemma}
 \begin{proof}
-    aoeu
+    The basis of the blowup stems from the introduced fresh type variables in the polymorphic let inference rule.
+    If the amount of type variables can be shown to be exponential the running time must be at least the same by operations such as subsection set combination and unification.
+\begin{lstlisting}[language=ML,caption={Nested pair},label={lst:pairproof},mathescape=true]
+fun dup a f = f a a;
+fun deep x = dup (dup (dup ($\dots$ x)));
+\end{lstlisting}
+    \autoref{lst:pairproof} builds a large function signature for \texttt{deep}.
+    The innermost \texttt{pair} invocation will have it's signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$.
+    The second innermost \texttt{pair} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
+    Naively one might judge \autoref{lst:pairproof} to run in $O(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
+    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the amount introduced type variables would be $O(n)$.
+\begin{lstlisting}[language=ML,caption={Nested pairs with different type variables},label={lst:pairproofexp},mathescape=true]
+fun dup a f = f a a;
+fun one z = dup z;
+fun two z = one (one z);
+fun three z = two (two z);
+$\dots$
+\end{lstlisting}
+    The trick to induce an exponential running time is with the pathological program in \autoref{lst:pairproofexp}.
+    The type of \texttt{dup} is $a \rightarrow (a \rightarrow a \rightarrow \tau) \rightarrow \tau$.
+    The type of \texttt{one} is $z_1 \rightarrow (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1$.
+
+    The type of \texttt{two} is a bit more complicated; first solve the inner application by introducing the fresh variable $\tau_3$ and let the right side be $z_2$.
+    \[
+        \textit{unify}(z_1 \rightarrow (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1, z_2 \rightarrow \tau_3) = \{ z_2 \mapsto z_1, \tau_3 \mapsto (a \rightarrow a \rightarrow b) \rightarrow b \}
+    \]
+    Furthermore solve the outer application with the fresh variable $\tau_4$.
+    \begin{align}
+        &\textit{unify}(z_1 \rightarrow (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1, (a \rightarrow a \rightarrow b) \rightarrow b \rightarrow \tau_4)\\
+        &= \{ z_1 \mapsto (a \rightarrow a \rightarrow b) \rightarrow b, \tau_4 \mapsto (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1 \}\tag*{}
+    \end{align}
+    $z_2 \rightarrow ((((z_2 \rightarrow z_2 \rightarrow \gamma_3) \rightarrow \gamma_3) \rightarrow ((z_2 \rightarrow z_2 \rightarrow \gamma_4) \rightarrow \gamma_4) \rightarrow \gamma_2) \rightarrow \gamma_2)$.
+
+    Observe that the polymorphic function $f$ kk
+
 \end{proof}
 
 \end{document}
