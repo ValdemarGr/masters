@@ -1,10 +1,11 @@
 
-fun dup a f = f a a;
-fun one z = dup z;
-fun two z = one (one z);
-fun three z = two (two z);
-fun id x = x;
-fun out z = three id z;
+fun tuple a b f = f a b;
+fun one = tuple tuple tuple;
+fun two = tuple one one;
+fun three = tuple two two;
+fun four = tuple three three;
+fun five = tuple four four;
+fun six = tuple five five;
 
 fun main =
     4;

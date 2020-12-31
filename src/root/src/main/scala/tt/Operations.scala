@@ -68,7 +68,7 @@ object Operations {
         val (nc, nt) = fresh(c)
         nc -> (m + (n -> nt))
     }
-    println(s"instantiate sub map is $sub for scheme $s")
+    //println(s"instantiate sub map is $sub for scheme $s")
     val o = Sub.substitute(s.t, sub)
     (c2, o)
   }
@@ -195,7 +195,7 @@ object Operations {
             val subOt = Sub.substitute(ot, s2)
             val un = unify(subOt, t2)
             val l = unrollArr(t2).last
-            println(s"applying $ps to $name creates substitution set ${dot(un, dot(s2, sub))} and type $l by pre unification $subOt and $t2 and env $env")
+            //println(s"applying $ps to $name creates substitution set ${dot(un, dot(s2, sub))} and type $l by pre unification $subOt and $t2 and env $env")
             (c2, dot(un, dot(s2, sub)), Sub.substitute[Type](l, un))
         }
       case If(expr, fst, snd) =>
@@ -239,8 +239,13 @@ object Operations {
         val (c1, f) = fresh(ctx)
         val newEnv = extend(env, head, Scheme(Set.empty, f))
         val (c2, s2, innerT) = inferFun(c1, sub, newEnv, tl, b)
-        println(s"Type vars = ${s2.size}")
         (c2, s2, Sub.substitute[Type](TypeArrow(f, innerT), s2))
+    }
+
+    def countTypes(t: Type): Int = t match {
+      case TypeArrow(lh, rh) => countTypes(lh) + countTypes(rh)
+      case TypeVar(typename) => 1
+      case TypeAtom(a) => 1
     }
 
   def inferTypeConstructor(tps: Set[Identifier], name: Identifier, tt: List[TypeParam]): Type = tt match {
@@ -278,7 +283,11 @@ object Operations {
       val (c1, s1, t1) = inferFun(ctx, sub, env, params.map(_.id), body)
       val gen = generalize(env, t1)
       val eo = extend(env, varname, gen)
-      println(s"fun $varname produced substitution set $s1, type $t1 and current env is $eo")
+      println(s"########## $varname ##########")
+      println(s"substitution set $s1\ntype $t1\ncurrent env is $eo")
+      println(s"Type vars = ${c1.varnameCounter}")
+      println(s"Type vars in sub = ${s1.map{ case (_, t) => countTypes(t) + 1}.sum}")
+      println(s"########## $varname ##########")
       (c1, s1, eo)
     case _ => ???
   }

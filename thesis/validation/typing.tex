@@ -465,6 +465,9 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 An important implementation detail which should be noted is that of the polymorphic type.
 Polymorphic types can be regarded as being a pair of bound types and monotype.
 This representation is convenient for the \textbf{Gen} rule.
+
+Moreover an additional adjustment must be made before allowing the implementation of an inference algorithm.
+The \textbf{Inst} rule has slightly different semantics.
 \begin{remark}
     The Damas-Milner algorithm W is the most popular inference algorithm for Hindley-Milner.
     Though it remains the most popular, it has some interesting competitors.
@@ -550,29 +553,64 @@ fun deep x = dup (dup (dup ($\dots$ x)));
     Naively one might judge \autoref{lst:pairproof} to run in $O(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
     If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the amount introduced type variables would be $O(n)$.
 \begin{lstlisting}[language=ML,caption={Nested pairs with different type variables},label={lst:pairproofexp},mathescape=true]
-fun dup a f = f a a;
-fun one z = dup z;
-fun two z = one (one z);
-fun three z = two (two z);
+fun tuple a b f = f a b;
+fun one = tuple tuple tuple;
+fun two = tuple one one;
+fun three = tuple two two;
 $\dots$
 \end{lstlisting}
     The trick to induce an exponential running time is with the pathological program in \autoref{lst:pairproofexp}.
-    The type of \texttt{dup} is $a \rightarrow (a \rightarrow a \rightarrow \tau) \rightarrow \tau$.
-    The type of \texttt{one} is $z_1 \rightarrow (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1$.
-
-    The type of \texttt{two} is a bit more complicated; first solve the inner application by introducing the fresh variable $\tau_3$ and let the right side be $z_2$.
-    \[
-        \textit{unify}(z_1 \rightarrow (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1, z_2 \rightarrow \tau_3) = \{ z_2 \mapsto z_1, \tau_3 \mapsto (a \rightarrow a \rightarrow b) \rightarrow b \}
-    \]
-    Furthermore solve the outer application with the fresh variable $\tau_4$.
+    By allowing \texttt{tuple} to be polymorphic and have having $c > 1$ polymorphic parameters, every time \texttt{tuple} is instantiated it will contain only fresh variables.
+    The type of \texttt{tuple} is $a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c$.
+    Clearly this looks very much like \autoref{lst:pairproof} but has the subtle difference of letting the parameters \texttt{a} and \texttt{b} be polymorphic and introducing every ''step`` as a polymorphic let expression.
+    The return type of \texttt{one} (the type of \texttt{f}) is displayed in \autoref{eq:instexp}.
     \begin{align}
-        &\textit{unify}(z_1 \rightarrow (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1, (a \rightarrow a \rightarrow b) \rightarrow b \rightarrow \tau_4)\\
-        &= \{ z_1 \mapsto (a \rightarrow a \rightarrow b) \rightarrow b, \tau_4 \mapsto (z_1 \rightarrow z_1 \rightarrow \gamma_1) \rightarrow \gamma_1 \}\tag*{}
+        \textit{inst}(a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c) \rightarrow \textit{inst}(a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c) \rightarrow \gamma \rightarrow \gamma.
+        \label{eq:instexp}
     \end{align}
-    $z_2 \rightarrow ((((z_2 \rightarrow z_2 \rightarrow \gamma_3) \rightarrow \gamma_3) \rightarrow ((z_2 \rightarrow z_2 \rightarrow \gamma_4) \rightarrow \gamma_4) \rightarrow \gamma_2) \rightarrow \gamma_2)$.
-
-    Observe that the polymorphic function $f$ kk
-
+    The first and second instantiations will contain different type variable such that they are not structurally equivalent \autoref{eq:afterinstexp}.
+    \begin{align}
+        (\tau \rightarrow \mu \rightarrow (\tau \rightarrow \mu \rightarrow \phi) \rightarrow \phi) \rightarrow (\varphi \rightarrow \zeta \rightarrow (\varphi \rightarrow \zeta \rightarrow \delta) \rightarrow \delta) \rightarrow \gamma \rightarrow \gamma.
+        \label{eq:afterinstexp}
+    \end{align}
 \end{proof}
+Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (\autoref{lst:appedix:bigexp}).
+\autoref{fig:expplot} shows the relationship between the program in $L$, the theoretical time and an exp fit of data from $L$.
+\begin{figure}[ht]
+    \centering
+\begin{tikzpicture}
+    \begin{axis}[
+        legend pos= north west
+        ]
+       \addplot[
+            domain=1:6,
+            samples=100,
+            color=red
+        ]{exp(x)};
+        \addlegendentry{$2^n$}
+
+        \addplot[
+            color=blue,
+            mark=square
+        ]
+        coordinates {
+(1,14)  (2,32)  (3,66) (4,132) (5,262) (6,520)
+        };
+        \addlegendentry{actual}
+
+        \addplot[
+            color=green,
+            mark=triangle
+        ]
+        coordinates {
+(1,47)  (2,78) (3,128) (4,211) (5,347) (6,570)
+        };
+        \addlegendentry{fitted}
+
+   \end{axis} 
+\end{tikzpicture}
+    \caption{Plot of type variables in Hindley-Milner type systems}
+    \label{fig:expplot}
+\end{figure}
 
 \end{document}
