@@ -132,7 +132,7 @@ let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
 \end{lstlisting}
     The type for \texttt{fst} is $\forall A \forall B . A \rightarrow B \rightarrow A$.
 
-    Note that a naive typing would look something like $\forall A  . A \rightarrow (\forall B . B \rightarrow A)$ but rank-2 polymorphism is not typable in Hindley-Milner.
+    Note that a naive typing could look like $\forall A  . A \rightarrow (\forall B . B \rightarrow A)$ but rank-2 polymorphism is not typable in Hindley-Milner.
     An important realization is the context from where the type analysis is made.
     If type analysis is made from within \texttt{f} the type of \texttt{f} becomes $\forall B . B \rightarrow A$ and the type variable $A$ is free.
 \end{exmp}
@@ -523,16 +523,29 @@ The \textbf{Inst} rule has slightly different semantics.
 
 In the language $L$ functions \texttt{fun} translate to let expressions while \texttt{let} translates to abstraction and application.
 \subsection{Recursion}
+Recursion is a trivial matter once the primitives of the Hindley-Milner type system have been introduced.
+Recall that in \autoref{sec:lamrec} recursion (along with mutual recursion) was shown to be implementable by introducing functions to their own scope, the same is true for types.
+Allowing recursive functions in Hindley-Milner type inference systems is a matter of letting the function be present in the environment when inferring the function's own body.
+\begin{exmp}
+If the function \texttt{f} defined in \autoref{lst:recplus1} were to be typed it would need to be introduced as an unknown type to the environment before typing the body of \texttt{f}.
+\begin{lstlisting}[language=ML,caption={Recursive function},label={lst:recplus1},mathescape=true]
+fun f x = (f x) + 1;
+\end{lstlisting}
+Let $\Gamma = \{ \texttt{f} : \forall \tau . \tau, \texttt{x} : \forall \mu . \mu \}$.
+From the application \texttt{f x} the unification \texttt{unify}$(\tau, \gamma \rightarrow \mu) = \{ \tau \mapsto \mu \rightarrow \gamma \}$ must be performed, and the resulting type for the expression is $\gamma$.
+The addition operation forces \texttt{unify}$(\texttt{Int}, \gamma) = \{ \gamma \mapsto \texttt{Int} \}$.
+Finally the application of the addition function $+: \texttt{Int} \rightarrow \texttt{Int} \rightarrow \texttt{Int}$ and the two expressions \texttt{f x} and $1$ such that the resulting expression type is \texttt{Int}.
+
+\end{exmp}
 
 \section{The cost of expressiveness}
-Modern languages with strong type systems tend to be notoriously slow to type.
+Modern languages with strong type systems tend to be notoriously slow to type on pathelogical inputs.
 In fact many languages with strong type systems provide type systems expressive enough to be turing complete.
-Though languages with strong type systems can be slow it is most commonly observed from pathological inputs.
 
 In the construction of the compiler for $L$ one target was the C++ language.
 An instance of a pathological input for the C++ type checker is most definitely the untyped lambda calculus.
 The lambda terms in C++ must adhere to polymorphism in many cases which has some unknown but large blowup in compilation time.
-In fact polymorphism is commonly the root of blowup in typing.
+In fact type polymorphism is commonly the root of blowup in typing.
 
 ML which implemented Hindley-Milner was believed to have linear complexity before shown to be exponential.
 As it will turn out, Hindley-Milner also suffers an explosive worst case induced by a pathological input fueled by polymorphism.

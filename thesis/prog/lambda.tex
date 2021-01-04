@@ -118,6 +118,7 @@ fun f =
 \end{lstlisting}
 
 \subsection{Recursion}
+\label{sec:lamrec}
 %Complexity - ``The state or quality of being intricate or complicated''
 %\\\\
 \noindent Reductions in mathematics and computer science are one of the principal methods used for developing beautiful equations and algorithms.
@@ -177,8 +178,8 @@ Languages with functions and support binding functions to parameters, can implem
 
 Implementing mutual recursion is an interesting case of lambda lifting and recursion in untyped lambda calculus.
 \begin{lstlisting}[language=ML,caption={Mutual recursion},label={lst:mutrec}]
-fun g = f;
-fun f = g;
+fun g x = f x;
+fun f x = g x;
 \end{lstlisting}
 Notice in \autoref{lst:mutrec} that $g$ requires $f$ to be lifted and $f$ requires $g$ to be lifted.
 If a translation ``pessimistically'' lifts all definitions from the above scope, then all required references exist in lexical scope.
