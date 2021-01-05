@@ -97,7 +97,7 @@ This does not necessarily include \textit{all} types since the \textbf{Gen} rule
 
 \end{remark}
 A principal component of typing in Hindley-Milner is the \textit{environment}.
-The environment $\Gamma$ is a set of pairs of variable and type (\autoref{eq:env}).
+The environment $\Gamma$ is a set of pairs of variable names and polytype (\autoref{eq:env}).
 $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can adhere to the type $\sigma$.
 \begin{remark}
     \label{remark:judgpoly}
@@ -520,8 +520,15 @@ The \textbf{Inst} rule has slightly different semantics.
 	\caption{Algorithm W}
 	\label{fig:dmrules}
 \end{figure}
-
+Another interesting addition introduced by algorithm W in \autoref{fig:dmrules} is \textit{inst}.
+\textit{inst} naturally follows from the \textbf{Inst} rule in \autoref{fig:hmrules} but has a slightly different behaviour.
+The \textit{inst} function does not specify types anymore but simply makes unification possible.
+\[
+    \textit{inst}(\sigma) = \{ \, a \,\,|\,\, \forall a \,\,|\,\, a \notin \textit{free}(\sigma) \, \}
+\]
+\begin{remark}
 In the language $L$ functions \texttt{fun} translate to let expressions while \texttt{let} translates to abstraction and application.
+\end{remark}
 \subsection{Recursion}
 Recursion is a trivial matter once the primitives of the Hindley-Milner type system have been introduced.
 Recall that in \autoref{sec:lamrec} recursion (along with mutual recursion) was shown to be implementable by introducing functions to their own scope, the same is true for types.
