@@ -523,9 +523,36 @@ The \textbf{Inst} rule has slightly different semantics.
 Another interesting addition introduced by algorithm W in \autoref{fig:dmrules} is \textit{inst}.
 \textit{inst} naturally follows from the \textbf{Inst} rule in \autoref{fig:hmrules} but has a slightly different behaviour.
 The \textit{inst} function does not specify types anymore but simply makes unification possible.
-\[
-    \textit{inst}(\sigma) = \{ \, a \,\,|\,\, \forall a \,\,|\,\, a \notin \textit{free}(\sigma) \, \}
-\]
+\begin{align}
+    &\textit{inst}(\sigma) = \{ \, a \mapsto \textit{fresh} \,\,|\,\, a \notin \textit{free}(\sigma) \, \}\sigma
+    \label{eq:inst}
+\end{align}
+\textit{inst} (\autoref{eq:inst}) maps all bound type variables to fresh type variables in the polytype $\sigma$.
+\begin{exmp}
+    Performing some type analysis on \autoref{lst:polyid} yields a very rich example of why \textit{inst} is necessary.
+\begin{lstlisting}[language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
+fun id x = x;
+fun doubleid x = id (id x);
+\end{lstlisting}
+    After inferring \texttt{id} the environment will contain id $\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a) \}$.
+    Typing the function \texttt{doubleid} without the use of \textit{inst}, start with the introduced parameter \texttt{x} and then the innermost expression \texttt{id x}. 
+\begin{align}
+    &\textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma) = \{ \tau \} \tag{\textbf{Abs} intro \texttt{x} : $\tau$ - \theequation}\\
+    &\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{x}, \forall \tau . \tau) \}\\
+    &\textit{unify}(a \rightarrow a, \tau \rightarrow \mu) = \textit{unify}(\{ a \mapsto \tau \}a, \{ a \mapsto \tau \}\mu) \cdot \{ a \mapsto \tau \}\\
+    &= \{ \tau \mapsto \mu \} \cdot \{ a \mapsto \tau \}\\
+    &= \{ \tau \mapsto \mu, a \mapsto \mu \}
+    \label{eq:unifyres}
+\end{align}
+    This example might not look compromising but a minor change such that the inner expression becomes \texttt{id (x + 1)} maps \texttt{x} to \texttt{Int} thus constrains \texttt{id} to only work on the type \texttt{Int} which is in violation with the outer application of \texttt{id}.
+    The apparent problem is that in \autoref{eq:unifyres} \texttt{id} is generalized within its domain but specialized within \texttt{doubleid}.
+    By instatiating quantified types when they are needed cases such as this can be avoided.
+    \begin{align}
+        &\textit{unify}(\textit{inst}(\forall a . a \rightarrow a), \textit{inst}(\forall \tau . \tau \rightarrow \mu))\\
+        & = \textit{unify}(\gamma \rightarrow \gamma, \varphi \rightarrow \mu)\\
+        & = \{ \varphi \mapsto \mu, \gamma \mapsto \mu \}
+    \end{align}
+\end{exmp}
 \begin{remark}
 In the language $L$ functions \texttt{fun} translate to let expressions while \texttt{let} translates to abstraction and application.
 \end{remark}
