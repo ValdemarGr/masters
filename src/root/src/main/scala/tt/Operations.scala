@@ -226,7 +226,7 @@ object Operations {
     }
 
   def dot(s1: Substitution, s2: Substitution): Substitution =
-    (s2 ++ s1).mapValues(x => Sub.substitute(x, s1))
+    s2.mapValues(x => Sub.substitute(x, s1)) ++ s1
 
   def inferFun(ctx: Context,
                sub: Substitution,

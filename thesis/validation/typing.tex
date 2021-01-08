@@ -379,16 +379,12 @@ A substitution written $S T$ where $T$ is an arbitrary component of Hindley-Miln
 Substitution sets can also be combined $S_1 \cdot S_2$ with well defined-semantics.
 The combination of substitution sets is a key component for the correctness of the Damas-Milner inference algorithm.
 \begin{align}
-    S_1 \cdot S_2 = \{ (a \mapsto S_1\tau) \,\,|\,\, (a \mapsto \tau) \in (S_2 \cup_. S_1) \}
+    S_1 \cdot S_2 = \{ (a \mapsto S_1\tau) \,\,|\,\, (a \mapsto \tau) \in S_2) \} \cup S_1
     \label{eq:combination}
 \end{align}
-The $\cup_.$ operator is distinct in the type variable and is left-biased (\autoref{eq:cupdot}).
-\begin{align}
-    S_1 \cup_. S_2 = S_1 \cup \{ (a \mapsto \tau) \,\,|\,\, (a \mapsto \tau) \in S_2 \,\,|\,\, (a, *) \notin S_1 \}
-    \label{eq:cupdot}
-\end{align}
 \begin{remark}
-By the substitution set combination operator transitive and circular substitutions cannot occur since type variables in $S_1$ will inherit all the mappings from $S_2$ and substitute ones that exist in both.
+By the substitution set combination operator transitive and circular substitutions cannot occur since type variables in $S_1$ will inherit all the mappings from $S_2$ by union.
+Trasitivity is avoided by substituting all instances of type variables values (the mapped to type variables) in $S_2$ with ones that occur in $S_1$.
 The properties ensured by the combination semantics also induce the property of idempotence.
 This property is enforced by the Damas-Milner Algorithm W inference rules.
 \end{remark}
@@ -503,7 +499,7 @@ The \textbf{Inst} rule has slightly different semantics.
 		\vspace{-0.7cm}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \tau_1, S_1 \,\,\,\, \tau_3 = \textit{fresh}$}
-			\AxiomC{$S_1 \Gamma \vdash e_2 : \tau_2, S_2 \,\,\,\, S_2 = \textit{mgu}(S_2 \tau_1, \tau_2 \rightarrow \tau_3)$}
+			\AxiomC{$S_1 \Gamma \vdash e_2 : \tau_2, S_2 \,\,\,\, S_3 = \textit{mgu}(S_2 \tau_1, \tau_2 \rightarrow \tau_3)$}
 			\BinaryInfC{$\Gamma \vdash e_1 e_2 : S_2 \tau_3, S_3 \cdot S_2 \cdot S_1$}
 		\end{prooftree}
 		\endminipage\hfill\vspace{0.8cm}
@@ -520,6 +516,9 @@ The \textbf{Inst} rule has slightly different semantics.
 	\caption{Algorithm W}
 	\label{fig:dmrules}
 \end{figure}
+\begin{remark}
+In the language $L$ a function \texttt{fun} translates to a let expressions while \texttt{let} translates to abstraction and application.
+\end{remark}
 Another interesting addition introduced by algorithm W in \autoref{fig:dmrules} is \textit{inst}.
 \textit{inst} naturally follows from the \textbf{Inst} rule in \autoref{fig:hmrules} but has a slightly different behaviour.
 The \textit{inst} function does not specify types anymore but simply makes unification possible.
@@ -532,30 +531,46 @@ The \textit{inst} function does not specify types anymore but simply makes unifi
     Performing some type analysis on \autoref{lst:polyid} yields a very rich example of why \textit{inst} is necessary.
 \begin{lstlisting}[language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
 fun id x = x;
-fun doubleid x = id (id x);
+fun ap x f = f x;
+fun doubleid x = id (id (x + 1));
 \end{lstlisting}
-    After inferring \texttt{id} the environment will contain id $\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a) \}$.
-    Typing the function \texttt{doubleid} without the use of \textit{inst}, start with the introduced parameter \texttt{x} and then the innermost expression \texttt{id x}. 
+    After inferring \texttt{id} and \texttt{ap} the environment will contain id $\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta)\}$.
+    Typing the function \texttt{doubleid} without the use of \textit{inst}, start with the introduced parameter \texttt{x} and then the innermost expression \texttt{id (x + 1)}. 
 \begin{align}
-    &\textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma) = \{ \tau \} \tag{\textbf{Abs} intro \texttt{x} : $\tau$ - \theequation}\\
-    &\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{x}, \forall \tau . \tau) \}\\
-    &\textit{unify}(a \rightarrow a, \tau \rightarrow \mu) = \textit{unify}(\{ a \mapsto \tau \}a, \{ a \mapsto \tau \}\mu) \cdot \{ a \mapsto \tau \}\\
-    &= \{ \tau \mapsto \mu \} \cdot \{ a \mapsto \tau \}\\
-    &= \{ \tau \mapsto \mu, a \mapsto \mu \}
+    &\textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma) = \{ \tau \} \tag{\textbf{Abs} intro \texttt{x} : $\tau$ }\\
+    &\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta), (\texttt{x}, \forall \tau . \tau) \}\\
+    &\textit{unify}(\tau, \texttt{Int}) = \{ \tau \mapsto \texttt{Int} \}\\
+    &\textit{unify}(a \rightarrow a, \texttt{Int} \rightarrow \mu) = \textit{unify}(\{ a \mapsto \texttt{Int} \}a, \{ a \mapsto \texttt{Int} \}\mu) \cdot \{ a \mapsto \texttt{Int} \}\\
+    &= \{ \mu \mapsto \texttt{Int} \} \cdot \{ a \mapsto \texttt{Int} \} \tag*{}\\
+    &= \{ \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}
     \label{eq:unifyres}
 \end{align}
-    This example might not look compromising but a minor change such that the inner expression becomes \texttt{id (x + 1)} maps \texttt{x} to \texttt{Int} thus constrains \texttt{id} to only work on the type \texttt{Int} which is in violation with the outer application of \texttt{id}.
-    The apparent problem is that in \autoref{eq:unifyres} \texttt{id} is generalized within its domain but specialized within \texttt{doubleid}.
-    By instatiating quantified types when they are needed cases such as this can be avoided.
+    This example might not look compromising but a minor change such that the body of \texttt{doubleid} becomes \texttt{id (ap (id (x + 1)))} yields an interesting problem.
+    In the case of introducing \texttt{ap} the two type instances for \texttt{id} must be different (\texttt{id} must be introduced with different type variables) to retain it's polymorphic properties.
+    The following steps are performed when inferring this new body.
+\begin{align}
+    &\textit{unify}(\gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta, \texttt{Int} \rightarrow \delta) \tag{\texttt{ap (id (x + 1))} }\\
+    & = \{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \tag*{}\\
+    &\{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \cdot \{ \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag{\textbf{App} $S_3 \cdot S_2$ }\\
+    & = \{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}\\
+    &\textit{unify}(a \rightarrow a, ((\texttt{Int} \rightarrow \beta) \rightarrow \beta) \rightarrow \theta) \tag{\texttt{id (ap (id (x + 1)))} }\\
+    &= \textit{unify}(
+     \{ a \mapsto  (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} a,
+     \{ a \mapsto  (\texttt{Int} \rightarrow \beta) \rightarrow \beta\} \theta
+    ) \cdot \{ a \mapsto  (\texttt{Int} \rightarrow \beta) \rightarrow \beta\} \tag*{}\\
+    &= \{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \theta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \cdot \{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta\} \tag*{}\\
+    &= \{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \theta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \tag*{}\\
+    &\{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \theta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \cdot \tag{\textbf{App} $S_3 \cdot S_2$ }\\
+    &\cdot \{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}
+\end{align}
+    The apparent problem is that \texttt{id} is specialized within the whole of \texttt{doubleid}.
+    By instantiating quantified types when they are needed cases such as this can be avoided (it also makes the algorithm correct).
     \begin{align}
         &\textit{unify}(\textit{inst}(\forall a . a \rightarrow a), \textit{inst}(\forall \tau . \tau \rightarrow \mu))\\
-        & = \textit{unify}(\gamma \rightarrow \gamma, \varphi \rightarrow \mu)\\
-        & = \{ \varphi \mapsto \mu, \gamma \mapsto \mu \}
+        & = \textit{unify}(\gamma \rightarrow \gamma, \varphi \rightarrow \mu) \tag*{}\\
+        & = \{ \varphi \mapsto \mu, \gamma \mapsto \mu \} \tag*{}
     \end{align}
 \end{exmp}
-\begin{remark}
-In the language $L$ functions \texttt{fun} translate to let expressions while \texttt{let} translates to abstraction and application.
-\end{remark}
 \subsection{Recursion}
 Recursion is a trivial matter once the primitives of the Hindley-Milner type system have been introduced.
 Recall that in \autoref{sec:lamrec} recursion (along with mutual recursion) was shown to be implementable by introducing functions to their own scope, the same is true for types.
