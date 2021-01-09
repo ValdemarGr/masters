@@ -563,6 +563,7 @@ fun doubleid x = id (id (x + 1));
     &\{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \theta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \cdot \tag{\textbf{App} $S_3 \cdot S_2$ }\\
     &\cdot \{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}
 \end{align}
+    Clearly $a$ cannot map to two types which cannot be unified which is a violation of the type system.
     The apparent problem is that \texttt{id} is specialized within the whole of \texttt{doubleid}.
     By instantiating quantified types when they are needed cases such as this can be avoided (it also makes the algorithm correct).
     \begin{align}
@@ -588,7 +589,7 @@ Finally the application of the addition function $+: \texttt{Int} \rightarrow \t
 \end{exmp}
 
 \section{The cost of expressiveness}
-Modern languages with strong type systems tend to be notoriously slow to type on pathelogical inputs.
+Modern languages with strong type systems tend to be notoriously slow to type on pathological inputs.
 In fact many languages with strong type systems provide type systems expressive enough to be turing complete.
 
 In the construction of the compiler for $L$ one target was the C++ language.
@@ -596,7 +597,7 @@ An instance of a pathological input for the C++ type checker is most definitely 
 The lambda terms in C++ must adhere to polymorphism in many cases which has some unknown but large blowup in compilation time.
 In fact type polymorphism is commonly the root of blowup in typing.
 
-ML which implemented Hindley-Milner was believed to have linear complexity before shown to be exponential.
+ML which implemented Hindley-Milner was believed to have linear complexity before shown to be exponential along with other problematic complexity findings~\cite{mairson1989deciding}.
 As it will turn out, Hindley-Milner also suffers an explosive worst case induced by a pathological input fueled by polymorphism.
 
 \begin{lemma}
