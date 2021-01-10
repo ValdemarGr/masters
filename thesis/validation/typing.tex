@@ -61,41 +61,46 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 \end{align}
 Polymorphic types either take the shape of a type variable or introduce a type which all types $a$ adhere to. 
 This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only bound type variables.
+All types adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
+The concept of adherence in types is commonly called \textit{subtyping}.
+Every subtype is a \textit{at least} an implementation of it's supertype.
+Since this concept can be difficult to grasp from just text, observe \autoref{fig:polytree}.
+\begin{figure}[ht]
+    \centering
+        \begin{tikzpicture}
+            \node[draw=none] (sigma) {$\sigma$};
+
+            \node[draw=none, below = of sigma] (top) {$\top$};
+
+            \node[draw=none, below = of top] (tv) {$\tau$};
+            \node[draw=none, left = of tv] (arr) {$\tau_1 \rightarrow \tau_2$};
+            \node[draw=none, right = of tv] (tc) {$C \tau_1 \dots \tau_n$};
+
+            \node[draw=none, below = of tv] (bot) {$\bot$};
+
+            \path [->] (sigma) edge node[left] {} (top);
+
+            \path [->] (top) edge node[left] {} (arr);
+            \path [->] (top) edge node[left] {} (tv);
+            \path [->] (top) edge node[left] {} (tc);
+
+            \path [->] (tv) edge node[left] {} (bot);
+            \path [->] (arr) edge node[left] {} (bot);
+            \path [->] (tc) edge node[left] {} (bot);
+        \end{tikzpicture}
+    \caption{The type hierarchy of Hindley-Milner.}
+    \label{fig:polytree}
+\end{figure}
+Note that $\sigma$ is controversial to introduce to the type hierarchy and has only been so to illustrate the point of subtyping.
+$\sigma$ is but a mechanism to prove type systems, $\sigma$ is never a specific type.
 \begin{remark}
-    All types adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
-    The concept of adherence in types is commonly called \textit{subtyping}.
-    Every subtype is a \textit{at least} an implementation of it's supertype.
-    Since this concept can be difficult to grasp from just text, observe \autoref{fig:polytree}.
-    \begin{figure}[ht]
-        \centering
-            \begin{tikzpicture}
-                \node[draw=none] (sigma) {$\sigma$};
-
-                \node[draw=none, below = of sigma] (top) {$\top$};
-
-                \node[draw=none, below = of top] (tv) {$\tau$};
-                \node[draw=none, left = of tv] (arr) {$\tau_1 \rightarrow \tau_2$};
-                \node[draw=none, right = of tv] (tc) {$C \tau_1 \dots \tau_n$};
-
-                \node[draw=none, below = of tv] (bot) {$\bot$};
-
-                \path [->] (sigma) edge node[left] {} (top);
-
-                \path [->] (top) edge node[left] {} (arr);
-                \path [->] (top) edge node[left] {} (tv);
-                \path [->] (top) edge node[left] {} (tc);
-
-                \path [->] (tv) edge node[left] {} (bot);
-                \path [->] (arr) edge node[left] {} (bot);
-                \path [->] (tc) edge node[left] {} (bot);
-            \end{tikzpicture}
-        \caption{The type hierarchy of Hindley-Milner.}
-        \label{fig:polytree}
-    \end{figure}
-    Note that $\sigma$ is controversial to introduce to the type hierarchy and has only been so to illustrate the point of subtyping.
-    $\sigma$ is but a mechanism to prove type systems, $\sigma$ is never a specific type.
-
+    \label{remark:polyimpl}
+An important implementation detail which should be noted is that of the polymorphic type.
+Polymorphic types can be regarded as being a pair of bound types and monotype.
+Instead of keeping track of what types cannot occur, keeping track of the ones than can occur simplifies the implementation.
+This representation is convenient for the \textbf{Gen} rule.
 \end{remark}
+
 A principal component of typing in Hindley-Milner is the \textit{environment}.
 The environment $\Gamma$ is a set of pairs of variable names and polytype (\autoref{eq:env}).
 $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can adhere to the type $\sigma$.
@@ -111,6 +116,7 @@ $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given
 \end{align}
 
 Like in the untyped lambda calculus, types also have notions of free and bound type variables.
+Bound type variables are ones that explicitly have been introduced to the type system by either let or abstraction in the context of some expression.
 Type variables are bound when they have been introduced by a quantification or exist in the environment.
 \begin{align}
 	 & \textit{free}(a) = \{ a \}                                                              \\
@@ -120,8 +126,6 @@ Type variables are bound when they have been introduced by a quantification or e
 	 & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     
 	 %& \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma)
 \end{align}
-Free and bound type variables are a vital distinction for type analysis since \textbf{Gen} in \autoref{fig:hmrules} may only generalize over bound type variables.
-The variables which may appear in a quantification have an important role in \autoref{eq:substitution}, since only free variables may be substituted.
 \begin{exmp}
 Consider the type for the function \texttt{fst} in \autoref{lst:fstimpl}.
 \begin{lstlisting}[language=ML,caption={First function},label={lst:fstimplbad},mathescape=true]
@@ -134,8 +138,27 @@ let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
 
     Note that a naive typing could look like $\forall A  . A \rightarrow (\forall B . B \rightarrow A)$ but rank-2 polymorphism is not typable in Hindley-Milner.
     An important realization is the context from where the type analysis is made.
-    If type analysis is made from within \texttt{f} the type of \texttt{f} becomes $\forall B . B \rightarrow A$ and the type variable $A$ is free.
+    If type analysis is made from within the bounded context of \texttt{f} the type of \texttt{f} becomes $\forall B . B \rightarrow A$ and the type variable $A$ is free.
 \end{exmp}
+The variables which may appear in a quantification have an important role in \autoref{eq:substitution}, since only free variables may be substituted.
+Free variables are also a core part of generalizing a type for inference algorithms (\autoref{subsec:algw}).
+When modelling polymorphic types with a technique such as \autoref{remark:polyimpl} finding the set of bound variables is trivial.
+\begin{align}
+    & \textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma)
+\end{align}
+When generalizing a type $\tau$ all types which do not occur in $\Gamma$ must be quantified.
+\begin{exmp}
+\begin{gather}
+    \Gamma = \{ (\textit{x}, \gamma) \} \label{eq:monoeq}\\
+\begin{align}
+    \textit{bound}(\tau \rightarrow \gamma) &= \{\tau , \gamma\} - \textit{free}(\Gamma)\\
+    &= \{\tau , \gamma\} - \{ \gamma \} = \{ \tau \}\tag*{}
+\end{align}
+\end{gather}
+Clearly the only bound type variable in the context of $\tau \rightarrow \gamma$ is $\tau$ such that may become $\forall \tau. \tau \rightarrow \gamma$ in the instance that the type is represents a polymorphic let expression.
+    Note that $\texttt{x:}\gamma$ in \autoref{eq:monoeq} does not contain $\gamma$ as a quantified type since \textbf{Abs} only introduces monomorphic types (\autoref{fig:hmrules}).
+\end{exmp}
+
 \section{Hindley-Milner}
 With the now introduced primitives, the Hindley-Milner type system is but a set of inference rules composed by said primitives.
 \begin{figure}[ht]
@@ -340,6 +363,7 @@ In \autoref{lst:idfunlamabs2} \texttt{id} cannot adhere to polymorphism by \text
 
 
 \subsection{Damas-Milner Algorithm W}
+\label{subsec:algw}
 Typing rules are by themselves not that useful since they need all type information declared ahead of checking, inference attempts to guess types such that the rules are satisfied.
 Type inference is the technique of automatically deriving types, of which there exist many algorithms.
 One of the most common inference algorithms that produce typings which the Hindley-Milner rules accept is the Damas-Milner Algorithm W inference algorithm~\cite{damas1984type,damas1982principal}.
@@ -458,12 +482,6 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
         %If any future rules need the type variable $\tau_1$ and $\tau_1 \mapsto \tau_2$ is introduced to the substitution set, the substitution rules in \autoref{fig:hmrules} will substitute the type.
     %\end{case}
 %\end{proof}
-An important implementation detail which should be noted is that of the polymorphic type.
-Polymorphic types can be regarded as being a pair of bound types and monotype.
-This representation is convenient for the \textbf{Gen} rule.
-
-Moreover an additional adjustment must be made before allowing the implementation of an inference algorithm.
-The \textbf{Inst} rule has slightly different semantics.
 \begin{remark}
     The Damas-Milner algorithm W is the most popular inference algorithm for Hindley-Milner.
     Though it remains the most popular, it has some interesting competitors.
@@ -521,12 +539,13 @@ In the language $L$ a function \texttt{fun} translates to a let expressions whil
 \end{remark}
 Another interesting addition introduced by algorithm W in \autoref{fig:dmrules} is \textit{inst}.
 \textit{inst} naturally follows from the \textbf{Inst} rule in \autoref{fig:hmrules} but has a slightly different behaviour.
-The \textit{inst} function does not specify types anymore but simply makes unification possible.
+The \textit{inst} function does not specify types anymore but simply makes unification of polymorphic types possible.
 \begin{align}
     &\textit{inst}(\sigma) = \{ \, a \mapsto \textit{fresh} \,\,|\,\, a \notin \textit{free}(\sigma) \, \}\sigma
     \label{eq:inst}
 \end{align}
 \textit{inst} (\autoref{eq:inst}) maps all bound type variables to fresh type variables in the polytype $\sigma$.
+\textit{inst} is an important component to allow polymorphic types to remain polymorphic since no bound type variables may be substituted.
 \begin{exmp}
     Performing some type analysis on \autoref{lst:polyid} yields a very rich example of why \textit{inst} is necessary.
 \begin{lstlisting}[language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
