@@ -518,7 +518,7 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \tau_1, S_1 \,\,\,\, \tau_3 = \textit{fresh}$}
 			\AxiomC{$S_1 \Gamma \vdash e_2 : \tau_2, S_2 \,\,\,\, S_3 = \textit{mgu}(S_2 \tau_1, \tau_2 \rightarrow \tau_3)$}
-			\BinaryInfC{$\Gamma \vdash e_1 e_2 : S_2 \tau_3, S_3 \cdot S_2 \cdot S_1$}
+			\BinaryInfC{$\Gamma \vdash e_1 e_2 : S_3 \tau_3, S_3 \cdot S_2 \cdot S_1$}
 		\end{prooftree}
 		\endminipage\hfill\vspace{0.8cm}
 
@@ -606,6 +606,56 @@ The addition operation forces \texttt{unify}$(\texttt{Int}, \gamma) = \{ \gamma 
 Finally the application of the addition function $+: \texttt{Int} \rightarrow \texttt{Int} \rightarrow \texttt{Int}$ and the two expressions \texttt{f x} and $1$ such that the resulting expression type is \texttt{Int}.
 
 \end{exmp}
+
+\subsection{Additional language features}
+In addition to the rules in \autoref{fig:dmrules} many other ergonomic features can easily be modelled once the framework has been understood.
+One of the most crucial features of languages are that of decision.
+\begin{lstlisting}[language=ML,caption={ADT implementation of decision},label={lst:adtdecision},mathescape=true]
+type Boolean = 
+    | BFalse
+    | BTrue
+;
+let b = BFalse;
+fun double x = x + x;
+b (0) (double 10);
+\end{lstlisting}
+Decision can be implemented in a variety of ways such as in \autoref{lst:adtdecision} by the use of algebraic data structures aligning very much with Church Booleans~\cite{church1985calculi}.
+\begin{figure}[ht]
+	\begin{mdframed}[style=bigbox]
+        \begin{subfigure}[b]{1\textwidth}
+            \begin{prooftree}
+                \AxiomC{$\Gamma \vdash e_2 : \tau_2, S_2 \,\,\, \tau_4 = \textit{fresh} \,\,\, \Gamma, S_4 = \textit{mgu}(S_1'\cdot S_2 \cdot S_3 \tau_2, \tau_4)$}
+            \end{prooftree}
+            \caption{}
+            \label{subfig:pt1}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.33\textwidth}
+            \begin{prooftree}
+                \AxiomC{$\Gamma \vdash e_1 : \tau_1, S_1 \,\, S_1' = \textit{mgu}(\texttt{Bool}, \tau_1)$}
+            \end{prooftree}
+            \caption{}
+            \label{subfig:pt0}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.66\textwidth}
+            \begin{prooftree}
+                \AxiomC{$\Gamma \vdash e_3 : \tau_3, S_3 \,\,\, \Gamma, S_5 = \textit{mgu}(S_4 \cdot S_1'\cdot S_2 \cdot S_3 \tau_3, S_4 \tau_4)$}
+            \end{prooftree}
+            \caption{}
+            \label{subfig:pt2}
+        \end{subfigure}
+        \begin{prooftree}
+                \AxiomC{\ref{subfig:pt0}}
+                    \AxiomC{\ref{subfig:pt1}}
+                    \AxiomC{\ref{subfig:pt2}}
+                \BinaryInfC{$\Gamma, S_6 \,\,\, S_6 = S_5 \cdot S_4 \cdot S_1'\cdot S_2 \cdot S_3$}
+            \BinaryInfC{$\Gamma \vdash \texttt{if } e_1 \texttt{ then } e_2 \texttt{ else } e_3: S_6\tau_4, S_6$}
+        \end{prooftree}
+	\end{mdframed}
+	\caption{Decision}
+	\label{fig:decision}
+\end{figure}
+Rather decision can be implemented by more conventional methods than combinator logic by introducing more inference rules as in \autoref{fig:decision}.
+Additional language syntax features can in most cases be implemented as decision can.
 
 \section{The cost of expressiveness}
 Modern languages with strong type systems tend to be notoriously slow to type on pathological inputs.
