@@ -37,8 +37,9 @@ The implementation of call by name can become quite troublesome and therefore in
 
 The call by need semantics introduces the same lazy evaluation semantics as the call by name strategy but with one extra detail named \textit{sharing}.
 In \autoref{lst:callbyname} \texttt{force x} is performed twice which may be an expensive operation.
-Under call by need all non side-effectful operations' results are saved for later use like techniques such as dynamic programming.
+Under call by need all non side-effectful operations' results are saved for later use similar to techniques such as dynamic programming.
 \begin{figure}
+    \begin{mdframed}[style=style2]
     \centering
     \begin{subfigure}[b]{0.33\textwidth}
         \centering
@@ -82,11 +83,29 @@ Under call by need all non side-effectful operations' results are saved for late
         \caption{The expression tree for \texttt{double}}
         \label{sub:eval:double}
     \end{subfigure}
+    \end{mdframed}
     \caption{}
     \label{fig:evalexpr}
 \end{figure}
 To understand this better observe the expression tree for \autoref{lst:callbyname} in \autoref{fig:evalexpr}.
 Clearly the right and left branches in \autoref{sub:eval:double} are identical thus they may be memoized such that the forcing of \texttt{x} only occurs once.
 More generally if the execution environment supports lazy evaluation, once an expression has been forced it is remembered if that branch is executed again.
+
+\section{Runtime environments}
+Now that the untyped lambda calculus has been introduced, implemented and validated efficiently the question of execution naturally follows.
+There exists many different well understood strategies to implement an execution environment for the untyped lambda calculus.
+
+One of the most prominent techniques for evaluating functional programs is that of \textit{combinator graphs reductions}.
+\begin{align}
+    x \label{eq:comb:x}\\
+    F \label{eq:comb:F}\\
+    Y E \label{eq:comb:app}
+\end{align}
+There are three types of terms in combinator logic; the variable much like the lambda calculus (\autoref{eq:comb:x}), application (\autoref{eq:comb:app}) and the combinator (\autoref{eq:comb:F}).
+The SKI calculus is a very simple set of combinators which are powerful enough to be turing complete and translate to and from the lambda calculus.
+In SKI $F = S \,\,|\,\, $
+Formally a combinator is a function that has no free variables.
+More specifically the combinators
+
 
 \end{document}
