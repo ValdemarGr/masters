@@ -27,6 +27,18 @@
 \theoremstyle{case}
 \newtheorem{case}{Case}
 
+\newenvironment{pcases}[0]{
+    \setcounter{case}{0}
+    \begin{list}{}{}
+}{\end{list}}
+
+\newcommand{\pcase}[1]{
+    \item \begin{case}
+            #1
+    \end{case}
+}
+
+
 \mdfdefinestyle{style1}{leftmargin=-0.5cm,rightmargin=-0.5cm,skipbelow=1cm,skipabove=1cm,
    innertopmargin=0pt}
 \mdfdefinestyle{style2}{leftmargin=-0.5cm,rightmargin=-0.5cm,skipbelow=1cm,skipabove=1cm,

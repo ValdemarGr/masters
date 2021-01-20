@@ -94,8 +94,12 @@ More generally if the execution environment supports lazy evaluation, once an ex
 \section{Runtime environments}
 Now that the untyped lambda calculus has been introduced, implemented and validated efficiently the question of execution naturally follows.
 There exists many different well understood strategies to implement an execution environment for the untyped lambda calculus.
+Naively it may seem straightforward to evaluate the untyped lambda calculus mechanically by $\beta$-reductions but a problem arises when implementing an interpreter for application.
+When applying the term $f x$ in $\lambda f . \lambda x . f x$ such that $f[? := x]$ where $?$ is the parameter name of $f$ it should become clear why a naive strategy is not enough since the parameters of $f$ are anonymous.
 
+\subsection{Combinator reducers}
 One of the most prominent techniques for evaluating functional programs is that of \textit{combinator graphs reductions}.
+Formally a combinator is a function that has no free variables which is convenient since the problem of figuring out what a parameter name is never arises.
 \begin{align}
     x \label{eq:comb:x}\\
     F \label{eq:comb:F}\\
@@ -103,9 +107,55 @@ One of the most prominent techniques for evaluating functional programs is that 
 \end{align}
 There are three types of terms in combinator logic; the variable much like the lambda calculus (\autoref{eq:comb:x}), application (\autoref{eq:comb:app}) and the combinator (\autoref{eq:comb:F}).
 The SKI calculus is a very simple set of combinators which are powerful enough to be turing complete and translate to and from the lambda calculus.
-In SKI $F = S \,\,|\,\, $
-Formally a combinator is a function that has no free variables.
-More specifically the combinators
+In SKI $F ::= S \,\,|\,\, K \,\,|\,\, I$ where the equivalent lambda calculus combinators for $S = \lambda x . \lambda y . \lambda z . x z (y z)$, $K = \lambda x . \lambda y . x$ and $I = \lambda x . x$.
+Evaluating an SKI program is a straightforward reduction where $F'_F$ denotes combinator $F'$ has been partially applied with combinator $F$.
+\begin{exmp}
+    \begin{align}
+        &SKSI\\
+        = &KI(SI)\tag*{}\\
+        = &K_I(SI)\tag*{}\\
+        = &I\tag*{}
+    \end{align}
+\end{exmp}
 
+The algorithm for converting a lambda calculus program into a SKI combinator program is a straightforward mechanical one.
+The evaluation context is always an abstraction $\lambda x . E$ thus translation of $E$ will also always be an abstraction.
+\begin{pcases}
+    \pcase{$E = x$ then rewrite $\lambda x . E$ to $I$.}
+    \pcase{$E = y$ where $y$ is a variable then rewrite $\lambda x . y$ to $Ky$.}
+    \pcase{$E = Y E$ then rewrite $\lambda x . Y E$ to $S(\lambda x . Y)(\lambda x . E)$ since applying some $y$ must lambda lift $y$ as a parameter named $x$ to both $Y$ and $E$ such that the lifted expression becomes $((\lambda x . Y)y)((\lambda x . E)y) = S(\lambda x . Y)(\lambda x . E)y$.
+    Then recurse in both branches.
+    }
+    \pcase{$E = \lambda y . E'$ rewrite $E'$ and then rewrite the expression.}
+\end{pcases}
+When translating the untyped lambda calculus to SKI the ''magic`` variable names $\zeta, \kappa$ and $\iota$ are used as placeholder functions for the SKI combinators since the translation requires a lambda calculus form.
+When the translation has been completed then replace $\zeta \mapsto S, \kappa \mapsto K, \iota \mapsto I$.
+\subsection{Combinator translation growth}
+\begin{align}
+    &\lambda f_1 . (\lambda f_2 . f_1 f_2) (\lambda f_2 . f_1 f_2)\\
+    =&\zeta(\lambda f_1 . (\lambda f_2 . f_1 f_2))(\lambda f_1 . (\lambda f_2 . f_1 f_2))\tag*{}\\
+    =&\zeta(\lambda f_1 . \zeta(\lambda f_2 . f_1)(\lambda f_2 . f_2))(\lambda f_1 . \zeta(\lambda f_2 . f_1)(\lambda f_2 . f_2))\tag*{}\\
+    =&\zeta(\lambda f_1 . \zeta(\kappa f_1)(\iota))(\lambda f_1 . \zeta(\kappa f_1)(\iota))\tag*{}\\
+    =&\zeta(\zeta(\lambda f_1 . \zeta (\kappa f_1))(\lambda f_1 . \iota))(\zeta(\lambda f_1 . \zeta (\kappa f_1))(\lambda f_1 . \iota))\tag*{}\\
+    =&\zeta(\zeta(\zeta(\lambda f_1 . \zeta)(\lambda f_1 . \kappa f_1))(\kappa\iota))(\zeta(\zeta(\lambda f_1 . \zeta)(\lambda f_1 . \kappa f_1))(\kappa\iota))\tag*{}\\
+    =&\zeta(\zeta(\zeta(\kappa \zeta)(\zeta (\lambda f_1 . \kappa) (\lambda f_1 . f_1)))(\kappa\iota))(\zeta(\zeta(\kappa \zeta)(\zeta (\lambda f_1 . \kappa) (\lambda f_1 . f_1)))(\kappa\iota))\tag*{}\\
+    =&\zeta(\zeta(\zeta(\kappa \zeta)(\zeta (\kappa \kappa) (\iota)))(\kappa\iota))(\zeta(\zeta(\kappa \zeta)(\zeta (\kappa \kappa) (\iota)))(\kappa\iota))\tag*{}\\
+    =&S(S(S(K S)(S (K K) (I)))(KI))(S(S(K S)(S (K K) (I)))(KI))\tag*{}
+\end{align}
+
+\subsection{Beta reductions with De Bruijn indices}
+Beta reductions with De Bruijn indices~\cite{de1972lambda} is another more straightforward method of evaluating the untyped lambda calculus.
+De Bruijn indices is a representation of lambda calculus which deals with variables based on the scope ''distance`` instead of variable names.
+\begin{lstlisting}[language=ML,caption={Add as De Bruijn},label={lst:adddebru},mathescape=true]
+let add = ($\lambda$($\lambda$ 2 1))
+\end{lstlisting}
+Consider the De Bruijn form of \autoref{lst:add} where \texttt{2} is the index of \texttt{a} and \texttt{1} is the index of \texttt{b}.
+More generally all variable occurrences are replaced with the distance to the abstraction which introduced them.
+The use of De Bruijn indices allow anonymous naming of parameters thus imply a method of solving the application problem when directly interpreting the untyped lambda calculus.
+A minor but important detail when 
+\begin{align}
+    &(\lambda x . ((\lambda f. \lambda x. f x)(\lambda z . z))x)''0`` \rightarrow\\
+    &
+\end{align}
 
 \end{document}
