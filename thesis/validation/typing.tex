@@ -60,8 +60,8 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 	\label{eq:poly}
 \end{align}
 Polymorphic types either take the shape of a type variable or introduce a type which all types $a$ adhere to. 
-This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only bound type variables.
-All types adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
+This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only type variables that are not free.
+Many types may adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
 The concept of adherence in types is commonly called \textit{subtyping}.
 Every subtype is a \textit{at least} an implementation of it's supertype.
 Since this concept can be difficult to grasp from just text, observe \autoref{fig:polytree}.
@@ -103,7 +103,7 @@ This representation is convenient for the \textbf{Gen} rule.
 
 A principal component of typing in Hindley-Milner is the \textit{environment}.
 The environment $\Gamma$ is a set of pairs of variable names and polytype (\autoref{eq:env}).
-$\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can adhere to the type $\sigma$.
+$\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can take the type $\sigma$.
 \begin{remark}
     \label{remark:judgpoly}
     Judging a type does not necessarily mean that the judged type is the only type that $x$ may take, it states that it is one \textit{possible} type that $x$ may take.
@@ -155,12 +155,18 @@ When generalizing a type $\tau$ all types which do not occur in $\Gamma$ must be
     &= \{\tau , \gamma\} - \{ \gamma \} = \{ \tau \}\tag*{}
 \end{align}
 \end{gather}
-Clearly the only bound type variable in the context of $\tau \rightarrow \gamma$ is $\tau$ such that may become $\forall \tau. \tau \rightarrow \gamma$ in the instance that the type is represents a polymorphic let expression.
-    Note that $\texttt{x:}\gamma$ in \autoref{eq:monoeq} does not contain $\gamma$ as a quantified type since \textbf{Abs} only introduces monomorphic types (\autoref{fig:hmrules}).
+Clearly the only bound type variable in the context of $\tau \rightarrow \gamma$ is $\tau$ such that it may become $\forall \tau. \tau \rightarrow \gamma$ in the instance that the type represents a polymorphic let expression.
+    Note that $\texttt{x:}\gamma$ in \autoref{eq:monoeq} does not contain $\gamma$ as a quantified type since it has been introduced by an abstraction and \textbf{Abs} only introduces monomorphic types (\autoref{fig:hmrules}).
+    An interesting observation is that there can only exist one implementation of the above type system if $\tau \rightarrow \gamma$ is to be introduced by a polymorphic let expression which is displayed in \autoref{lst:theoremsforfree}~\cite{wadler1989theorems}.
+\begin{lstlisting}[language=ML,caption={Implementation of type state},label={lst:theoremsforfree},mathescape=true]
+$\lambda$x.
+    let z = ($\lambda$y.x) in
+    $\dots$
+\end{lstlisting}
 \end{exmp}
 
 \section{Hindley-Milner}
-With the now introduced primitives, the Hindley-Milner type system is but a set of inference rules composed by said primitives.
+With the now introduced primitives, the Hindley-Milner type system is but a set of rules composed by said primitives.
 \begin{figure}[ht]
 	\begin{mdframed}
 		\minipage{0.49\textwidth}
@@ -580,7 +586,7 @@ fun doubleid x = id (id (x + 1));
     &= \{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \theta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \cdot \{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta\} \tag*{}\\
     &= \{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \theta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \tag*{}\\
     &\{ a \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \theta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta \} \cdot \tag{\textbf{App} $S_3 \cdot S_2$ }\\
-    &\cdot \{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}
+    &\{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}
 \end{align}
     Clearly $a$ cannot map to two types which cannot be unified which is a violation of the type system.
     The apparent problem is that \texttt{id} is specialized within the whole of \texttt{doubleid}.

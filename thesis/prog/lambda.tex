@@ -13,12 +13,13 @@ The untyped lambda calculus is a simple tangible language of just three terms.
   &Y E
   \label{lc:lang:app}
 \end{align}
-The first term is that of a \textit{variable} (\autoref{lc:lang:app}).
+\autoref{lc:lang:app} displays a lambda \textit{abstraction} which essentially is a function that states ``given some $x$ compute $E$'' where $E$ is another one of the three terms where $x$ may occur.
+The \textit{variable} (\autoref{sc:lang:var}) is a reference to some value introduced by an abstraction.
+The first term is that of a \textit{variable} (\autoref{lc:lang:var}).
 A variable is a reference to another lambda abstraction.
 \autoref{lc:lang:abs} shows a lambda \textit{abstraction}, which contains a \textit{bound} variable $x$ and another lambda term $E$.
-A bound variable is one explicitly parameterized in the abstraction.
-In traditional programming languages bound variables are parameters to a function, whereas \textit{free} variables are variables that exist outside of the function scope.
-It is easy to see that variables are either free or bound.
+In lambda calculus there is also the notion of \textit{context} which simply means where in a lambda expression something is computed.
+Context is important when discussing \textit{free} and \textit{bound} variables as whether a variable is free or bound is decided by the context.
 Free varables are determined by \autoref{eq:freevarvar}, \autoref{eq:freevarabs} and \autoref{eq:freevarapp}.
 \begin{align}
     \label{eq:freevarvar}
@@ -28,26 +29,35 @@ Free varables are determined by \autoref{eq:freevarvar}, \autoref{eq:freevarabs}
     \label{eq:freevarapp}
     &Free(Y E) = Free(Y) \cup Free(E)
 \end{align}
-Finally, in \autoref{lc:lang:app}, \textit{application}.
+\begin{exmp}
+    \begin{align}
+        \lambda x . \lambda y . x\label{eq:freebound}
+    \end{align}
+    In \autoref{eq:freebound} $x$ can appear both free and bound based on the context.
+    If the context is $\lambda y . x$ then $x$ appears free but given the whole expression $x$ appears bound.
+\end{exmp}
+
+In \autoref{lc:lang:app} the \textit{application} term is displayed.
 An application of two terms can be interpreted as substituting the variable in the left abstraction $Y$ with the right term $E$.
-It is also common to introduce the \textit{let binding} to lambda calculus, which will be done when introducing typing in \autoref{sec:typing}.
+It is also common to introduce the \textit{let binding} to lambda calculus, which will be further discussed when introducing typing in \autoref{sec:typing}.
 
 \begin{exmp}
 \label{ex:application}
 Let $Y$ be $\lambda x . T$ and $E$ be $z$, then $Y E$ is $(\lambda x . T) z$.
-Furtermore, substituteing $x$ for $E$, such that $Y$ becomes $T[x := E]$.
-Since $E = z$, substitute $E$ for $z$, such that $T[x := z]$, read as ``Every instance of $x$ in $T$, should be substituted by $z$''.
+Furtermore, substituteing $x$ for $E$ such that $Y$ becomes $T[x := E]$.
+Since $E = z$ then substitute $E$ for $z$ such that $T[x := z]$ read as ``Every instance of $x$ in $T$ should be substituted by $z$''.
 \end{exmp}
 \begin{remark}
 Substituting lambda terms is a popular method of evaluateing lambda calculus programs.
-    Languages like Miranda, Clean and general purpose evaluation programs like the G-machine \autoref{needscitation}, implement \textit{graph rewriting}, which will be introduced in \autoref{sec:graphrewriting}
+Languages like Miranda, Clean and general purpose evaluation programs like the G-machine \autoref{needscitation} implement \textit{combinator graph rewriting} which is similar and will be introduced in \autoref{sec:graphrewriting}
 \end{remark}
 
-The untyped lambda calculus is in fact turing complete; any algorithm that can be evaluated by a computer can be encoded in the untyped lambda calculus.
+A remarkable fact about th untyped lambda calculus is that it is in fact turing complete; any algorithm that can be evaluated by a computer can be encoded in the untyped lambda calculus.
 The turing completeness of the untyped lambda calculus can be realized by modelling numerics, boolean logic and recursion with the \textit{Y-combitator}.
-Church encoding, is the encoding of numerics, arithmetic expressions and boolean logic~\cite{church1985calculi}.
+Church encoding is the encoding of numerics, arithmetic expressions and boolean logic~\cite{church1985calculi}.
+Church encoding may prove the power of the untyped lambda calculus but has terrible running time for numerics since to represent some $n \in \mathbb{Z}$ it requires $n$ applications.
 For the remainder of the dissertation, ordinary arithmetic expressions are written in traditional mathematics.
-The expressiveness and simplicity of lambda calculus, makes it an exellent language to transpile to, which in fact, is a common technique.
+The expressiveness and simplicity of lambda calculus makes it an excellent language to transpile to, which is a common technique.
 
 \section{Translation to lambda calculus}
 High level languages associated with lambda calculus are often also very close to it.
