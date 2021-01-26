@@ -131,8 +131,34 @@ The evaluation context is always an abstraction $\lambda x . E$ thus translation
 When translating the untyped lambda calculus to SKI the ''magic`` variable names $\zeta, \kappa$ and $\iota$ are used as placeholder functions for the SKI combinators since the translation requires a lambda calculus form.
 When the translation has been completed then replace $\zeta \mapsto S, \kappa \mapsto K, \iota \mapsto I$.
 \subsection{Combinator translation growth}
+The growth factor is in terms of SKI combinators to lambda calculus terms.
+\begin{lemma}
+    The SKI calculus increases the computational complexity to $O(n^2)$
+\end{lemma}
+\begin{proof}
+\begin{pcases}
+    \pcase{\label{eval:case:1} Rewriting $\lambda x . x$ to $I$ is a reduction of one.}
+    \pcase{\label{eval:case:2} Rewriting $\lambda x . y$ to $Ky$ is equivalent in terms of size.}
+    \pcase{Rewriting $\lambda x . YE$ to $S(\lambda x . Y)(\lambda x . E)$ is the interesting case.
+        To induce the worst running time \autoref{eval:case:1} must be avoided.
+        If $x \notin \textit{Free}(Y)$ and $x \notin \textit{Free}(E)$ then for every terminal term in $Y$ and $E$ \autoref{eval:case:2} is the only applicable rewrite rule which means that an at least equal size is guaranteed.
+        Furthermore observe that by introducing unused parameters one can add one $K$ term to \textit{every} terminal case.
+        Observe the instance $\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1)$ where the two unused parameters are used to add $K$ terms to all terminal cases in \autoref{eq:eval:red2} such that the amount of extra K terms minus the I becomes $\text{variablereferences} * (\text{unusedabstractions} - 1) = 3*(3-1)$.
+        \begin{gather}
+            S(S(KKI)(KKI))(KKI)\label{eq:eval:red2}
+        \end{gather}
+        Now let the amount of variable references be $n$ and the unused abstractions also be $n$ clearly $O(n * (n - 1)) = O(n^2)$
+    }
+    \pcase{Rewriting $\lambda x . E'$ is not a traslation rule so the cost is based on what $E'$ becomes.}
+\end{pcases}
+\end{proof}
+
+In some cases computational complexity measures are very much purely academical and so is the analysis of the translated SKI calculus on a pathological input.
+This is not to say that the running time is always linear is practice as a simple program that deliberately avoids the worst case still produces larger output.
+\begin{exmp}
+    Observe the size of \autoref{eq:eval:comp1} in comparison to \autoref{eq:evaltime}.
 \begin{align}
-    &\lambda f_1 . \lambda f_2 . f_1 f_2\\
+    &\lambda f_1 . \lambda f_2 . f_1 f_2 \label{eq:eval:comp1}\\
     =&\lambda f_1 . \zeta(\lambda f_2 . f_1)(\lambda f_2 . f_2) \tag*{} \\
     =&\lambda f_1 . (\zeta(\kappa f_1))(\iota) \tag*{} \\
     =&\zeta (\lambda f_1 . \zeta (\kappa f_1)) (\lambda f_1 . \iota) \tag*{} \\
@@ -141,30 +167,9 @@ When the translation has been completed then replace $\zeta \mapsto S, \kappa \m
     =&\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\iota))) (\kappa \iota) \tag*{} \\
     =&S (S (K S) (S (K K) (I))) (K I) \tag*{}
 \end{align}
-\begin{align}
-    &\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_2) f_3\\
-    =&\lambda f_1 . \lambda f_2 . \zeta (\lambda f_3 . f_1 f_2) (\lambda f_3 . f_3)\\
-    =&\lambda f_1 . \lambda f_2 . \zeta (\zeta (\lambda f_3 . f_1) (\lambda f_3 . f_2)) (\iota)\\
-    =&\lambda f_1 . \lambda f_2 . (\zeta (\zeta (\kappa f_1) (\kappa f_2))) \iota\\
-    =&\lambda f_1 . \zeta (\lambda f_2 . \zeta (\zeta (\kappa f_1) (\kappa f_2))) (\lambda f_2 . \iota)\\
-    =&\lambda f_1 . \zeta (\zeta (\lambda f_2 . \zeta) (\lambda f_2 . (\zeta (\kappa f_1)) (\kappa f_2))) (\lambda f_2 . \iota)\\
-    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\lambda f_2 . \zeta (\kappa f_1)) (\lambda f_2 . \kappa f_2))) (\lambda f_2 . \iota)\\
-    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\lambda f_2 . \zeta) (\lambda f_2 . \kappa f_1)) (\zeta (\lambda f_2 . \kappa) (\lambda f_2 . f_2 )))) (\kappa \iota)\\
-    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) (\zeta (\lambda f_2 . \kappa) (\lambda f_2 . f_1))) (\zeta (\kappa \kappa) (\iota)))) (\kappa \iota)\\
-    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\kappa f_1))) (\zeta (\kappa \kappa) (\iota)))) (\kappa \iota)\\
-    =&\lambda f_1 . (\zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\kappa f_1))) (\zeta (\kappa \kappa) (\iota))))) (\kappa \iota)\\
-\end{align}
-\begin{align}
-    &\lambda f_1 . (\lambda f_2 . f_1 f_2) (\lambda f_2 . f_1 f_2)\\
-    =&\zeta(\lambda f_1 . (\lambda f_2 . f_1 f_2))(\lambda f_1 . (\lambda f_2 . f_1 f_2))\tag*{}\\
-    =&\zeta(\lambda f_1 . \zeta(\lambda f_2 . f_1)(\lambda f_2 . f_2))(\lambda f_1 . \zeta(\lambda f_2 . f_1)(\lambda f_2 . f_2))\tag*{}\\
-    =&\zeta(\lambda f_1 . \zeta(\kappa f_1)(\iota))(\lambda f_1 . \zeta(\kappa f_1)(\iota))\tag*{}\\
-    =&\zeta(\zeta(\lambda f_1 . \zeta (\kappa f_1))(\lambda f_1 . \iota))(\zeta(\lambda f_1 . \zeta (\kappa f_1))(\lambda f_1 . \iota))\tag*{}\\
-    =&\zeta(\zeta(\zeta(\lambda f_1 . \zeta)(\lambda f_1 . \kappa f_1))(\kappa\iota))(\zeta(\zeta(\lambda f_1 . \zeta)(\lambda f_1 . \kappa f_1))(\kappa\iota))\tag*{}\\
-    =&\zeta(\zeta(\zeta(\kappa \zeta)(\zeta (\lambda f_1 . \kappa) (\lambda f_1 . f_1)))(\kappa\iota))(\zeta(\zeta(\kappa \zeta)(\zeta (\lambda f_1 . \kappa) (\lambda f_1 . f_1)))(\kappa\iota))\tag*{}\\
-    =&\zeta(\zeta(\zeta(\kappa \zeta)(\zeta (\kappa \kappa) (\iota)))(\kappa\iota))(\zeta(\zeta(\kappa \zeta)(\zeta (\kappa \kappa) (\iota)))(\kappa\iota))\tag*{}\\
-    =&S(S(S(K S)(S (K K) (I)))(KI))(S(S(K S)(S (K K) (I)))(KI))\tag*{}
-\end{align}
+\end{exmp}
+
+Though the running time 
 
 \subsection{Beta reductions with De Bruijn indices}
 Beta reductions with De Bruijn indices~\cite{de1972lambda} is another more straightforward method of evaluating the untyped lambda calculus.

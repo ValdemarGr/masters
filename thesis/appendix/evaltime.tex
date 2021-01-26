@@ -1,0 +1,43 @@
+
+\documentclass[11pt,oneside,a4paper]{report}
+
+\begin{document}
+\begin{align}
+    &\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_2) f_3 \label{eq:evaltime}\\
+    =&\lambda f_1 . \lambda f_2 . \zeta (\lambda f_3 . f_1 f_2) (\lambda f_3 . f_3) \tag*{} \\
+    =&\lambda f_1 . \lambda f_2 . \zeta (\zeta (\lambda f_3 . f_1) (\lambda f_3 . f_2)) (\iota) \tag*{} \\
+    =&\lambda f_1 . \lambda f_2 . (\zeta (\zeta (\kappa f_1) (\kappa f_2))) \iota \tag*{} \\
+    =&\lambda f_1 . \zeta (\lambda f_2 . \zeta (\zeta (\kappa f_1) (\kappa f_2))) (\lambda f_2 . \iota) \tag*{} \\
+    =&\lambda f_1 . \zeta (\zeta (\lambda f_2 . \zeta) (\lambda f_2 . (\zeta (\kappa f_1)) (\kappa f_2))) (\lambda f_2 . \iota) \tag*{} \\
+    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\lambda f_2 . \zeta (\kappa f_1)) (\lambda f_2 . \kappa f_2))) (\lambda f_2 . \iota) \tag*{} \\
+    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\lambda f_2 . \zeta) (\lambda f_2 . \kappa f_1)) (\zeta (\lambda f_2 . \kappa) (\lambda f_2 . f_2 )))) (\kappa \iota) \tag*{} \\
+    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) (\zeta (\lambda f_2 . \kappa) (\lambda f_2 . f_1))) (\zeta (\kappa \kappa) (\iota)))) (\kappa \iota) \tag*{} \\
+    =&\lambda f_1 . \zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\kappa f_1))) (\zeta (\kappa \kappa) (\iota)))) (\kappa \iota) \tag*{} \\
+    =&\lambda f_1 . (\zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\kappa f_1))) (\zeta (\kappa \kappa) (\iota))))) (\kappa \iota) \tag*{} \\
+    =&\zeta ((\lambda f_1 . \zeta) (\lambda f_1 . (\zeta (\kappa \zeta)) (\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\kappa f_1))) (\zeta (\kappa \kappa) (\iota))))) (\lambda f_1 . \kappa \iota) \tag*{} \\
+    =&\zeta ((\kappa \zeta) (\zeta (\lambda f_1 . \zeta (\kappa \zeta)) (\lambda f_1 . (\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\kappa f_1)))) (\zeta (\kappa \kappa) (\iota))))) (\zeta (\lambda f_1 . \kappa) (\lambda f_1 . \iota)) \tag*{} \\
+    =&\zeta ((\kappa \zeta) (\zeta ((\lambda f_1 . \zeta) (\lambda f_1 . \kappa \zeta)) (\zeta (\lambda f_1 .\zeta (\zeta (\kappa \zeta) (\zeta (\kappa \kappa) (\kappa f_1)))) (\lambda f_1 . (\zeta (\kappa \kappa)) (\iota))))) (\zeta (\kappa \kappa) (\kappa \iota)) \tag*{} \\
+    =&\zeta  \tag*{} \\
+    &((\kappa \zeta) (\zeta ((\kappa \zeta) (\zeta (\lambda f_1 . \kappa) (\lambda f_1 . \zeta))) (\zeta (\zeta (\lambda f_1 . \zeta) (\lambda f_1 . (\zeta (\kappa \zeta)) (\zeta (\kappa \kappa) (\kappa f_1)))) (\zeta (\lambda f_1 . \zeta (\kappa \kappa)) (\lambda f_1 . \iota))))) \tag*{} \\
+    &(\zeta (\kappa \kappa) (\kappa \iota)) \tag*{} \\
+    =&\zeta  \tag*{} \\
+    &((\kappa \zeta) (\zeta ((\kappa \zeta) (\zeta (\kappa \kappa) (\kappa \zeta))) (\zeta (\zeta (\kappa \zeta) (\zeta (\lambda f_1 . \zeta (\kappa \zeta)) (\lambda f_1 . (\zeta (\kappa \kappa)) (\kappa f_1)))) (\zeta (\zeta (\kappa \zeta) ((\kappa \kappa) (\kappa \kappa))) (\kappa \iota))))) \tag*{} \\
+    &(\zeta (\kappa \kappa) (\kappa \iota)) \tag*{} \\
+    =&\zeta  \tag*{} \\
+    &((\kappa \zeta) (\zeta ((\kappa \zeta) (\zeta (\kappa \kappa) (\kappa \zeta))) (\zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\lambda f_1 . \zeta) (\lambda f_1 . \kappa \zeta)) \tag*{} \\
+    &(\zeta (\lambda f_1 . \zeta (\kappa \kappa)) (\lambda f_1 . \kappa f_1)))) (\zeta (\zeta (\kappa \zeta) ((\kappa \kappa) (\kappa \kappa))) (\kappa \iota))))) \tag*{} \\
+    &(\zeta (\kappa \kappa) (\kappa \iota)) \tag*{} \\
+    =&\zeta  \tag*{} \\
+    &((\kappa \zeta) (\zeta ((\kappa \zeta) (\zeta (\kappa \kappa) (\kappa \zeta))) (\zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) ((\kappa \kappa) (\kappa \zeta))) \tag*{} \\
+    &(\zeta (\zeta (\lambda f_1 . \zeta) (\lambda f_1 . \kappa \kappa)) (\zeta (\lambda f_1 . \kappa) (\lambda f_1 . f_1))))) (\zeta (\zeta (\kappa \zeta) ((\kappa \kappa) (\kappa \kappa))) (\kappa \iota))))) \tag*{} \\
+    &(\zeta (\kappa \kappa) (\kappa \iota)) \tag*{} \\
+    =&\zeta  \tag*{} \\
+    &((\kappa \zeta) (\zeta ((\kappa \zeta) (\zeta (\kappa \kappa) (\kappa \zeta))) (\zeta (\zeta (\kappa \zeta) (\zeta (\zeta (\kappa \zeta) ((\kappa \kappa) (\kappa \zeta))) \tag*{} \\
+    &(\zeta (\zeta (\kappa \zeta) ((\kappa \kappa) (\kappa \kappa))) (\zeta (\kappa \kappa) (\iota))))) (\zeta (\zeta (\kappa \zeta) ((\kappa \kappa) (\kappa \kappa))) (\kappa \iota))))) \tag*{} \\
+    &(\zeta (\kappa \kappa) (\kappa \iota)) \tag*{} \\
+    =&S  \tag*{} \\
+    &((K S) (S ((K S) (S (K K) (K S))) (S (S (K S) (S (S (K S) ((K K) (K S))) \tag*{} \\
+    &(S (S (K S) ((K K) (K K))) (S (K K) (I))))) (S (S (K S) ((K K) (K K))) (K I))))) \tag*{} \\
+    &(S (K K) (K I)) \tag*{} \\
+\end{align}
+\end{document}
