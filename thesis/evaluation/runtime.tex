@@ -169,9 +169,11 @@ This is not to say that the running time is always linear is practice as a simpl
 \end{align}
 \end{exmp}
 
-Though the running time 
-
 \subsection{Beta reductions with De Bruijn indices}
+$\beta$-reductions on the untyped lambda calculus is another method of evaluating a program.
+The techniques required to correctly evaluate a program are a bit more complicated than the SKI calculus but are rewarding in the performance.
+In $(\lambda f . \lambda x . \lambda y. \texttt{ let } a = f x \texttt{ in } a + y)(\lambda y . y) \,\, 10 \,\, 20$ when evaluating $f x$ where the substitution is $[f \mapsto \lambda y . y, x \mapsto 10, y \mapsto 20]$ there must be taken great care that $x$ is mapped to $y$ in $\lambda y . y$.
+
 Beta reductions with De Bruijn indices~\cite{de1972lambda} is another more straightforward method of evaluating the untyped lambda calculus.
 De Bruijn indices is a representation of lambda calculus which deals with variables based on the scope ''distance`` instead of variable names.
 \begin{lstlisting}[language=ML,caption={Add as De Bruijn},label={lst:adddebru},mathescape=true]
