@@ -155,6 +155,7 @@ The growth factor is in terms of SKI combinators to lambda calculus terms.
 
 In some cases computational complexity measures are very much purely academical and so is the analysis of the translated SKI calculus on a pathological input.
 This is not to say that the running time is always linear is practice as a simple program that deliberately avoids the worst case still produces larger output.
+In the case of SKI observe that the applications $f_1 f_1 \dots f_1$ can in fact be changed to $f_1 f_2 \dots f_n$ since for every $f_k$ where $0 < k \leq n$ there are $n - 1$ parameters that induce a K combinator.
 \begin{exmp}
     Observe the size of \autoref{eq:eval:comp1} in comparison to \autoref{eq:evaltime}.
 \begin{align}
