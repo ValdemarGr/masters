@@ -39,6 +39,11 @@
     \end{case}
 }
 
+\newcommand{\eqtag}[1]{
+    \stepcounter{equation}
+    \tag{\theequation \hspace*{0.1cm} - #1}
+}
+
 
 \mdfdefinestyle{style1}{leftmargin=-0.5cm,rightmargin=-0.5cm,skipbelow=1cm,skipabove=1cm,
    innertopmargin=0pt}
