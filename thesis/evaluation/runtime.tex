@@ -185,12 +185,10 @@ The techniques required to correctly evaluate a program are a bit more complicat
 \end{lstlisting}
 When evaluating \autoref{lst:problemprog} it should become clear why a naive evaluation strategy becomes insufficient.
 If \autoref{lst:problemprog} was evaluated naively the expression $\lambda\texttt{x.}$ on line 2 would leak into the substitution mapping of $\lambda\texttt{x.x}$ on line 7.
-Furthermore if no precaution are taken in $\lambda\texttt{x.g x}$ then $\lambda\texttt{g.}$ on line 4 will leak into the substitution mapping. 
+Furthermore if no precautions are taken in $\lambda\texttt{x.g x}$ then $\lambda\texttt{g.}$ on line 4 will leak into the substitution mapping. 
 More generally closures must be bound to abstractions and applications must substitute the variable name and restore the context when completed.
 In the expression $x g$ the substitutions from $x$ may never persist outside of the scope of the body of $x$.
 
-The problem of solving closures becomes significantly easier when either applying De Bruijn indices (\autoref{todo}) or persistent data structures (\autoref{todo}) to the problem.
-Applying De Bruijn indices has additional advantages that have an impact on the method of evaluating, to keep the context in the domain of named variables persistent data structures will be the focus.
 When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
 Letting the substitution mapping be 
 $\{ \texttt{x} \mapsto (\lambda \texttt{x.g x}, \{ \texttt{g} \mapsto (\lambda \texttt{x.x}, \emptyset)) \}, \texttt{g} \mapsto (\lambda \texttt{x.x}, \emptyset)\}$
@@ -204,15 +202,19 @@ the space complexity may seem to grow by $O(n^3)$ (\autoref{eq:evalruntimewrong}
     = \,\,\,& O \left( \frac{1}{6}n + \frac{1}{2}n^2 + \frac{1}{3}n^3 \right)\tag{Faulhaber}\\
     = \,\,\,& O \left( n^3 \right)\tag*{}
 \end{align}
-Since persistence is guaranteed all pointers are simply pointers to previous states of the substitution mapping.
-
+Observe that the introduction of a context is based on free variables in closures and can in fact be avoided at the cost of compilation time by simply making all variables unique.
+Let \autoref{eq:eval:comp} be a program translated from \autoref{eq:eval:nocomp}.
+\begin{align}
+    &(\lambda x . \texttt{ let } f = \lambda y . \lambda x . x \texttt{ in } x) \label{eq:eval:nocomp}\\
+    &(\lambda x_1 . \texttt{ let } x_2 = \lambda x_3 . \lambda x_4 . x_4 \texttt{ in } x_1)\label{eq:eval:comp}
+\end{align}
 The method of storing substitutions warrants the question of evaluation strategy since eagerly replacing the mapped to expressions implies call by value (\autoref{eq:eval:eagereval}).
 If one were to keep the initially proposed semantics the result would be call by name (\autoref{eq:eval:name}).
 In the hybrid approach forcing a term rewrites the mapped to value (\autoref{eq:eval:need}).
 \begin{align}
     &\{ \texttt{x} \mapsto \texttt{y} \} \cdot \{ \texttt{y} \mapsto 5 \} \rightarrow \{ \texttt{x} \mapsto 5, \texttt{y} \mapsto 5 \} \label{eq:eval:eagereval} \eqtag{Call by value}\\
     &\{ \texttt{x} \mapsto \texttt{y} \} \cdot \{ \texttt{y} \mapsto 5 \} \rightarrow \{ \texttt{x} \mapsto \texttt{y}, \texttt{y} \mapsto 5 \} \label{eq:eval:name} \eqtag{Call by name}\\
-    &\textit{force}(\texttt{f}, \{ \texttt{f} \mapsto \lambda \texttt{x.x}, \texttt{z} \mapsto \texttt{f 0} \}) = \{ \texttt{f} \mapsto \lambda \texttt{x.x}, \texttt{z} \mapsto 0 \} \label{eq:eval:need} \eqtag{Call by need}
+    &\textit{force}(\texttt{z}, \{ \texttt{f} \mapsto \lambda \texttt{x.x}, \texttt{z} \mapsto \texttt{f 0} \}) = \{ \texttt{f} \mapsto \lambda \texttt{x.x}, \texttt{z} \mapsto 0 \} \label{eq:eval:need} \eqtag{Call by need}
 \end{align}
 One may also have an interpreter that supports multiple strategies at once by simply specifying what type of strategy should be applied to every term.
 Evaluating a program is a matter of entering through some expression and continually reading terms and applying substitutions until said expression has been evaluated regardless of evaluation strategy. 
@@ -221,7 +223,7 @@ The algorithm for evaluating the untyped lambda calculus is similar to Algorithm
 \begin{figure}[ht]
     \begin{mdframed}[style=style1]
         \vspace*{0.4cm}
-        \begin{subfigure}[b]{0.40\textwidth}
+        \begin{subfigure}[b]{0.30\textwidth}
             \begin{prooftree}
                 \AxiomC{$e$}
                 \RightLabel{Terminal}
@@ -230,12 +232,12 @@ The algorithm for evaluating the untyped lambda calculus is similar to Algorithm
             \label{eq:prooftree:terminal}
             \caption{}
         \end{subfigure}
-        \begin{subfigure}[b]{0.59\textwidth}
+        \begin{subfigure}[b]{0.69\textwidth}
             \begin{prooftree}
-                \AxiomC{$S \cdot \{ x \mapsto e_2 \},e'_1$}
-                \AxiomC{$Se_1 \equiv \lambda x . e'_1$}
+                \AxiomC{$S,\lambda x . e_1$}
+                \AxiomC{$S \cdot \{ x \mapsto e_2 \},e_1 $}
                 \RightLabel{App}
-                \BinaryInfC{$S,e_1 e_2$}
+                \BinaryInfC{$S,e_3$}
             \end{prooftree}   
             \label{eq:prooftree:ref}
             \caption{}
