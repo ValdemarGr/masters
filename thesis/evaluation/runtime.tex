@@ -170,9 +170,10 @@ In the case of SKI observe that the applications $f_1 f_1 \dots f_1$ can in fact
 \end{align}
 \end{exmp}
 
-\subsection{Beta reductions and De Bruijn indices}
-$\beta$-reductions on the untyped lambda calculus is another method of evaluating a program.
+\subsection{Reduction strategies}
+Reductions in the context of the lambda calculus are a small set of well-defined rules for rewriting such that a program is evaluated.
 The techniques required to correctly evaluate a program are a bit more complicated than the SKI calculus but are rewarding in the performance.
+The substitution mapping set is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
 %In $(\lambda f . \lambda x . \lambda y. \texttt{ let } a = f x \texttt{ in } a + y)(\lambda y . y) \,\, 10 \,\, 20$ when evaluating $f x$ where the substitution are $[f \mapsto \lambda y . y, x \mapsto 10, y \mapsto 20]$ there must be taken great care that $x$ is mapped to $y$ in $\lambda y . y$.
 \begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
 ($\lambda$g.
@@ -187,7 +188,33 @@ When evaluating \autoref{lst:problemprog} it should become clear why a naive eva
 If \autoref{lst:problemprog} was evaluated naively the expression $\lambda\texttt{x.}$ on line 2 would leak into the substitution mapping of $\lambda\texttt{x.x}$ on line 7.
 Furthermore if no precautions are taken in $\lambda\texttt{x.g x}$ then $\lambda\texttt{g.}$ on line 4 will leak into the substitution mapping. 
 More generally closures must be bound to abstractions and applications must substitute the variable name and restore the context when completed.
-In the expression $x g$ the substitutions from $x$ may never persist outside of the scope of the body of $x$.
+In the expression \texttt{x g} the substitutions from \texttt{x} may never persist outside of the scope of the body of \texttt{x}.
+
+The first step to evaluate the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
+Let $\lambda x . ((\lambda x . x) x)$ be a term where a collision between the two $x$'s causes trouble, the $\alpha$-conversion can be $\lambda y . ((\lambda x . x) y)$ since $y$ and $x$ have been introduced by separate abstractions.
+$\alpha$-conversions are solve some critical problems such as closures and recursion when evaluating the lambda calculus.
+$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a strict superset of the substitution mapping when entering.
+More formally $\textit{eval}: \lambda \times S \rightarrow \lambda \times S$ where $\lambda$ is a lambda term and $(\lambda',S') = eval(\lambda, S)$ where $S \subseteq S'$.
+\begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
+let f = ($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1)) in
+f f 10
+\end{lstlisting}
+A strong guarantee that can be made by tuning the evaluation strategy that is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
+An algorithm can be implemented that just picks a new variable name from any infinite domain and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
+\begin{remark}
+The $\alpha$-conversion algorithm should drop the conversion mapping once it leaves the abstraction that introduced the conversion rule for that variable and restore the set introduced before it.
+Such semantics ensure that expressions such as \texttt{f f x} are properly converted since \texttt{x}'s naming in ``this'' instantiation of \texttt{f} must be restored in a call by need environment.
+\end{remark}
+Let \texttt{($\lambda$g.$\lambda$y.if (y = 0) y else g g (y - 1))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
+It should become clear that an $\alpha$-conversion algorithm must also follow the reduction order or else one can force terrible runtime by creating useless terms which are never executed but are converted.
+
+Evaluation strategies (\autoref{tbd}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
+A \textit{redex} is a reducible expression in the context of some set of reduction rules.
+The two interesting evaluation orders are \textit{applicative order} and \textit{normal order}~\cite{sestoft2002demonstrating}.
+Applicative order specifies that the parameters of some application should always be evaluated first, e.g. call by value.
+Normal order specifies that the leftmost outermost term should be evaluated first which yields the call by name strategy.
+Call by need is a bit more tricky since it requires more than a particular evaluation order to implement~\cite{levy1988sharing}.
+
 
 When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
 Letting the substitution mapping be 
