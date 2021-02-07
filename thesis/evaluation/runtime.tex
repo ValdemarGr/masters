@@ -174,7 +174,7 @@ $\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1) \in P_3$ and in fact fo
 \end{align}
 \end{exmp}
 It should become clear that many programs suffer from this consequence such as \texttt{let add = ($\lambda$x.$\lambda$y.(+ x) y)} $\in P_2$ where the program is written in prefix notation.
-Translating the lambda calculus into the SKI calculus does indeed increase the size significantly but does not warrant a write off entirely.
+Translating the lambda calculus into the SKI-expressions does indeed increase the size significantly but does not warrant a write off entirely.
 More advanced techniques exist to translate the lambda calculus to SKI in linear time with the introduction of more complicated combinators~\cite{kiselyov2018lambda}.
 
 \subsection{Reduction strategies}
@@ -201,7 +201,7 @@ The first step to evaluate the lambda calculus is applying \textit{$\alpha$-conv
 Let $\lambda x . ((\lambda x . x) x)$ be a term where a collision between the two $x$'s causes trouble, the $\alpha$-conversion can be $\lambda y . ((\lambda x . x) y)$ since $y$ and $x$ have been introduced by separate abstractions.
 $\alpha$-conversions are solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 $\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a strict superset of the substitution mapping when entering.
-More formally $\textit{eval}: \lambda \times S \rightarrow \lambda \times S$ where $\lambda$ is a lambda term and $(\lambda',S') = eval(\lambda, S)$ where $S \subseteq S'$.
+More formally $\textit{eval}: \Lambda \times S \rightarrow \Lambda \times S$ where $S$ is the domain of substitution mappings and $\Lambda$ is in the domain of lambda expressions such that  $(\lambda',s') = eval(\lambda, s)$ always implies $s \subseteq s'$.
 \begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
 let f = ($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1)) in
 f f 10
@@ -214,7 +214,7 @@ Such semantics ensure that expressions such as \texttt{f f x} are properly conve
 The implementation of this property is not of importance but can simply be implemented by either suspending \texttt{x} with the current scope's $\alpha$-conversion mapping or pairing every term with an $\alpha$-conversion mapping.
 \end{remark}
 Let \texttt{($\lambda$g.$\lambda$y.if (y = 0) y else g g (y - 1))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
-It should become clear that an $\alpha$-conversion algorithm must also follow the reduction order or else one can force terrible runtime by creating purposeless terms which are never executed but are converted.
+It should become clear that an $\alpha$-conversion algorithm must also follow the reduction order or else one can force terrible runtime in a call by name (or need) environment by creating purposeless terms which are never executed but are converted.
 
 Evaluation strategies (\autoref{tbd}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
 A \textit{redex} is a reducible expression in the context of some set of reduction rules.
