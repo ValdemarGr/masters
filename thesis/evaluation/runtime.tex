@@ -223,14 +223,133 @@ Applicative order specifies that the parameters of some application should alway
 Normal order specifies that the leftmost outermost term should be evaluated first which yields the call by name strategy.
 Call by need is a bit more tricky since it requires more than a particular evaluation order to implement~\cite{levy1988sharing}.
 Essentially one can achieve call by need by reducing constant expressions in the substitution mapping whenever they are forced.
+Substitutions can be rewritten when a variable \texttt{x} which has an accompanying substitution mapping of the form $\{ \dots, \texttt{x} \mapsto (\lambda\texttt{y}.\dots) \texttt{z} \}$ such that the substituted to value is reduced.
+When two substitutions are combined one should always choose the most reduced of the two, which is trivial since it becomes a matter of picking the ''newest`` version of the substituted value.
+
+An evaluation written $S, \alpha, e \rightarrow e'$ means $e$ evaluates to $e'$ under some substitution mapping $S$ and $\alpha$-conversion mapping $\alpha$.
+$Sx$ means that variable $x$ is replaced with whatever the substitution map maps $x$ to if $x \in S$ otherwise $Sx = x$, the same operation counts for $\alpha$.
+In a call by value environment $\alpha x$ can eagerly convert since the value must be evaluated eagerly.
+In a call by name (or need) environment $\alpha x$ should remain suspended until needed.
+%An implementation (\autoref{lst:cbn}) of the call by name reduction algorithm \autoref{fig:cbn} can easily be extended with call by need by the aforementioned modifications.
+%\begin{remark}
+    %In the implementation the \texttt{Map} constructor is the usual implementation of the Map data structure.
+    %Also the implementation is generalized in that it does not describe operations such as addition or whether it is a call by need or name environment.
+%\end{remark}
+%\begin{lstlisting}[language=ML,caption={Implementation of call by name},label={lst:cbn},mathescape=true]
+%type Three a b c =
+    %| Triple a b c;
+%type Term =
+    %| Abstraction Int Term
+    %| Var Int 
+    %| Application Term Term
+%;
+
+%fun reduceApp S alpha e1 e2 =
+    %match e1 ->
+        %| Abstraction x e' ->
+            %let newvar = newvar in
+            %let newS = 
+                %Map newvar (apply alpha e2) in
+            %let S2 = union S newS in
+            %let newA =
+                %Map x newvar in
+            %let alpha2 = union alpha newA in
+            %reduce newS newA e1
+        %| e' -> match (reduce S alpha e')
+            %| Triple S' alpha' e'' ->
+                %let Sn = union S S' in
+                %let alphan = union alpha alpha' in
+                %let en = Application e'' e2
+                %reduce Sn alphan en
+
+%fun reduce S alpha e =
+    %match e 
+        %| Abstraction x e' -> 
+            %reduce S alpha e'
+        %| Var x -> match (find x S) 
+            %| Just e' -> Triple S alpha e'
+            %| Nothing -> Triple S alpha x
+        %| Application e1 e2 -> 
+            %reduceApp S alpha e1 e2
+%\end{lstlisting}
+\begin{figure}[ht]
+    \begin{mdframed}[style=bigbox]
+        \vspace*{0.4cm}
+        \begin{subfigure}[b]{0.30\textwidth}
+            \begin{prooftree}
+                \AxiomC{}
+                \RightLabel{Var}
+                \UnaryInfC{$S, \alpha, x \rightarrow \alpha x$}
+            \end{prooftree}   
+            \label{eq:prooftree:ident}
+            \caption{}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.69\textwidth}
+            \begin{prooftree}
+                \AxiomC{$S,\alpha,e \rightarrow e'$}
+                \RightLabel{Abs}
+                \UnaryInfC{$S,\alpha,(\lambda x.e) \rightarrow (\lambda x.e')$}
+            \end{prooftree}   
+            \label{eq:prooftree:ref}
+            \caption{}
+        \end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
+            \begin{prooftree}
+                \AxiomC{$S,\alpha,S \alpha x \rightarrow e$}
+                \AxiomC{$S \alpha x \not\equiv \alpha x$}
+                \RightLabel{Share}
+                \BinaryInfC{$S \cup \{ \alpha x \mapsto e \}, \alpha, x \rightarrow e$}
+            \end{prooftree}   
+            \label{eq:prooftree:ref}
+            \caption{}
+        \end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
+            \begin{prooftree}
+                \AxiomC{$S_1,\alpha_1,e_1 \rightarrow (\lambda x . e)$}
+                \AxiomC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\alpha_2 \cup [ x \mapsto \gamma ],e \rightarrow e' \,\,\, \gamma = \texttt{newvar}$}
+                \RightLabel{App}
+                \BinaryInfC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\alpha_1 \cup \alpha_2 \cup [x \mapsto \gamma],(e_1 \,\, e_2) \rightarrow e'$}
+            \end{prooftree}   
+            \label{eq:prooftree:ref}
+            \caption{}
+        \end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
+            \begin{prooftree}
+                \AxiomC{$S,\alpha,e_1 \rightarrow e_1' \not\equiv (\lambda x . e)$}
+                \RightLabel{App (Reduce left first)}
+                \UnaryInfC{$S, \alpha,(e_1 \,\, e_2) \rightarrow (e_1' \,\, e_2)$}
+            \end{prooftree}   
+            \label{eq:prooftree:ref}
+            \caption{}
+        \end{subfigure}
+    \end{mdframed}
+    \caption{}
+    \label{fig:cbn}
+\end{figure}
+
+\begin{exmp}
+Consider the following program which duplicates an object.
 \begin{lstlisting}[language=ML,caption={Object duplication},label={lst:objdup},mathescape=true]
-let o = ($\lambda$i.i) 0 in
 let d = ($\lambda$f.$\lambda$x.f x x) in
-d ($\lambda$z.$\lambda$y.z + y) o
+d ($\lambda$z.$\lambda$y.z + y) (($\lambda$i.i) 0)
 \end{lstlisting}
+The evaluation of \autoref{lst:objdup} can be seen in \autoref{eq:objdup}.
 \begin{align}
-    &(\lambda o)((\lambda i . i) 0)
+    \label{eq:objdup}
+    &\texttt{g s s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0} \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}]\\
+    \rightarrow &(\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y})\texttt{ s s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0} \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}]\tag*{}\\
+    \rightarrow &(\lambda \texttt{y}.\texttt{z + y})\texttt{ s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto s \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}]\tag*{}\\
+    \rightarrow &\texttt{c + q }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto \texttt{s}, \texttt{q} \mapsto \texttt{s}\}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}, \texttt{y} \mapsto \texttt{q}]\tag*{}\\
+    \rightarrow &\texttt{+ s q }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto \texttt{s}, \texttt{q} \mapsto \texttt{s}\}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}, \texttt{y} \mapsto \texttt{q}]\tag*{}\\
+    \rightarrow &\texttt{+ force(s) q }\{ \dots \}[\dots]\tag*{}\\
+    \rightarrow &\texttt{+ force(}(\lambda\texttt{i}.\texttt{i})0\texttt{) q } \{ \dots \}[\dots]\tag*{}\\
+    \rightarrow &\texttt{+ force(0) q }\{ \dots \}[\dots]\tag*{}\\
+    \rightarrow &\texttt{+ 0 q }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
+    \rightarrow &\texttt{+ 0 s }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
+    \rightarrow &\texttt{+ 0 0 }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
+    \rightarrow &\texttt{0 }\{ \dots, s \mapsto 0 \}\tag*{}
 \end{align}
+\end{exmp}
 
 %When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
 %Letting the substitution mapping be 
@@ -262,56 +381,56 @@ d ($\lambda$z.$\lambda$y.z + y) o
 %One may also have an interpreter that supports multiple strategies at once by simply specifying what type of strategy should be applied to every term.
 %Evaluating a program is a matter of entering through some expression and continually reading terms and applying substitutions until said expression has been evaluated regardless of evaluation strategy. 
 
-The algorithm for evaluating the untyped lambda calculus is similar to Algorithm W (\autoref{fig:dmrules}) and can be seen in.
-\begin{figure}[ht]
-    \begin{mdframed}[style=style1]
-        \vspace*{0.4cm}
-        \begin{subfigure}[b]{0.30\textwidth}
-            \begin{prooftree}
-                \AxiomC{$e$}
-                \RightLabel{Terminal}
-                \UnaryInfC{$\emptyset ,e$}
-            \end{prooftree}   
-            \label{eq:prooftree:terminal}
-            \caption{}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.69\textwidth}
-            \begin{prooftree}
-                \AxiomC{$S,\lambda x . e_1$}
-                \AxiomC{$S \cdot \{ x \mapsto e_2 \},e_1 $}
-                \RightLabel{App}
-                \BinaryInfC{$S,e_3$}
-            \end{prooftree}   
-            \label{eq:prooftree:ref}
-            \caption{}
-        \end{subfigure}
-        \begin{subfigure}[b]{1\textwidth}
-            \begin{prooftree}
-                \AxiomC{$S \cdot \{ x \mapsto e_1 \},e_2$}
-                \RightLabel{Let}
-                \UnaryInfC{$S,\texttt{ let } x = e_1 \texttt{ in } e_2$}
-            \end{prooftree}   
-            \label{eq:prooftree:ref}
-            \caption{}
-        \end{subfigure}
+%The algorithm for evaluating the untyped lambda calculus is similar to Algorithm W (\autoref{fig:dmrules}) and can be seen in.
+%\begin{figure}[ht]
+    %\begin{mdframed}[style=style1]
+        %\vspace*{0.4cm}
+        %\begin{subfigure}[b]{0.30\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{$e$}
+                %\RightLabel{Terminal}
+                %\UnaryInfC{$\emptyset ,e$}
+            %\end{prooftree}   
+            %\label{eq:prooftree:terminal}
+            %\caption{}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{0.69\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{$S,\lambda x . e_1$}
+                %\AxiomC{$S \cdot \{ x \mapsto e_2 \},e_1 $}
+                %\RightLabel{App}
+                %\BinaryInfC{$S,e_3$}
+            %\end{prooftree}   
+            %\label{eq:prooftree:ref}
+            %\caption{}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{1\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{$S \cdot \{ x \mapsto e_1 \},e_2$}
+                %\RightLabel{Let}
+                %\UnaryInfC{$S,\texttt{ let } x = e_1 \texttt{ in } e_2$}
+            %\end{prooftree}   
+            %\label{eq:prooftree:ref}
+            %\caption{}
+        %\end{subfigure}
 
-    \end{mdframed}
+    %\end{mdframed}
     
-\end{figure}
+%\end{figure}
 
-Consider the De Bruijn form of \autoref{lst:add} where \texttt{2} is the index of \texttt{a} and \texttt{1} is the index of \texttt{b}.
-Beta reductions with De Bruijn indices~\cite{de1972lambda} is another more straightforward method of evaluating the untyped lambda calculus.
-De Bruijn indices is a representation of lambda calculus which deals with variables based on the scope ''distance`` instead of variable names.
-\begin{lstlisting}[language=ML,caption={Add as De Bruijn},label={lst:adddebru},mathescape=true]
-let add = ($\lambda$($\lambda$ 2 1))
-\end{lstlisting}
-Consider the De Bruijn form of \autoref{lst:add} where \texttt{2} is the index of \texttt{a} and \texttt{1} is the index of \texttt{b}.
-More generally all variable occurrences are replaced with the distance to the abstraction which introduced them.
-The use of De Bruijn indices allow anonymous naming of parameters thus imply a method of solving the application problem when directly interpreting the untyped lambda calculus.
-A minor but important detail when 
-\begin{align}
-    &(\lambda x . ((\lambda f. \lambda x. f x)(\lambda z . z))x)''0`` \rightarrow\\
-    &
-\end{align}
+%Consider the De Bruijn form of \autoref{lst:add} where \texttt{2} is the index of \texttt{a} and \texttt{1} is the index of \texttt{b}.
+%Beta reductions with De Bruijn indices~\cite{de1972lambda} is another more straightforward method of evaluating the untyped lambda calculus.
+%De Bruijn indices is a representation of lambda calculus which deals with variables based on the scope ''distance`` instead of variable names.
+%\begin{lstlisting}[language=ML,caption={Add as De Bruijn},label={lst:adddebru},mathescape=true]
+%let add = ($\lambda$($\lambda$ 2 1))
+%\end{lstlisting}
+%Consider the De Bruijn form of \autoref{lst:add} where \texttt{2} is the index of \texttt{a} and \texttt{1} is the index of \texttt{b}.
+%More generally all variable occurrences are replaced with the distance to the abstraction which introduced them.
+%The use of De Bruijn indices allow anonymous naming of parameters thus imply a method of solving the application problem when directly interpreting the untyped lambda calculus.
+%A minor but important detail when 
+%\begin{align}
+    %&(\lambda x . ((\lambda f. \lambda x. f x)(\lambda z . z))x)''0`` \rightarrow\\
+    %&
+%\end{align}
 
 \end{document}
