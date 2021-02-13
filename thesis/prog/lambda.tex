@@ -3,7 +3,7 @@
 \begin{document}
 \clearpage
 \section{Untyped lambda calculus}\label{sec:lc}
-The \textit{untyped lambda calculus} is a model of computation, developed by Alanzo Church\cite{church1936unsolvable}.
+The \textit{untyped lambda calculus} is a model of computation developed by Alanzo Church\cite{church1936unsolvable}.
 The untyped lambda calculus is a simple tangible language of just three terms.
 \begin{align}
   &x
@@ -13,12 +13,10 @@ The untyped lambda calculus is a simple tangible language of just three terms.
   &Y E
   \label{lc:lang:app}
 \end{align}
-\autoref{lc:lang:app} displays a lambda \textit{abstraction} which essentially is a function that states ``given some $x$ compute $E$'' where $E$ is another one of the three terms where $x$ may occur.
-The \textit{variable} (\autoref{sc:lang:var}) is a reference to some value introduced by an abstraction.
-The first term is that of a \textit{variable} (\autoref{lc:lang:var}).
+\autoref{lc:lang:abs} displays a lambda \textit{abstraction} which essentially is a function that states ``given some $x$ compute $E$'' where $E$ is another one of the three terms in which $x$ may occur.
+The \textit{variable} (\autoref{lc:lang:var}) is a reference to some value introduced by an abstraction.
 A variable is a reference to another lambda abstraction.
-\autoref{lc:lang:abs} shows a lambda \textit{abstraction}, which contains a \textit{bound} variable $x$ and another lambda term $E$.
-In lambda calculus there is also the notion of \textit{context} which simply means where in a lambda expression something is computed.
+In the untyped lambda calculus there is also the notion of \textit{context} which simply means where in a lambda expression something is computed.
 Context is important when discussing \textit{free} and \textit{bound} variables as whether a variable is free or bound is decided by the context.
 Free varables are determined by \autoref{eq:freevarvar}, \autoref{eq:freevarabs} and \autoref{eq:freevarapp}.
 \begin{align}
@@ -39,86 +37,83 @@ Free varables are determined by \autoref{eq:freevarvar}, \autoref{eq:freevarabs}
 
 In \autoref{lc:lang:app} the \textit{application} term is displayed.
 An application of two terms can be interpreted as substituting the variable in the left abstraction $Y$ with the right term $E$.
-It is also common to introduce the \textit{let binding} to lambda calculus, which will be further discussed when introducing typing in \autoref{sec:typing}.
+It is also common to introduce the \textit{let binding} to the untyped lambda calculus which will be further discussed when introducing typing in \autoref{sec:types}.
 
 \begin{exmp}
 \label{ex:application}
-Let $Y$ be $\lambda x . T$ and $E$ be $z$, then $Y E$ is $(\lambda x . T) z$.
-Furtermore, substituteing $x$ for $E$ such that $Y$ becomes $T[x := E]$.
+Let $Y$ be $\lambda x . T$ and $E$ be $z$ then $Y E$ is $(\lambda x . T) z$.
+Furtermore substituteing $x$ for $E$ such that $Y$ becomes $T[x := E]$.
 Since $E = z$ then substitute $E$ for $z$ such that $T[x := z]$ read as ``Every instance of $x$ in $T$ should be substituted by $z$''.
 \end{exmp}
 \begin{remark}
 Substituting lambda terms is a popular method of evaluateing lambda calculus programs.
-Languages like Miranda, Clean and general purpose evaluation programs like the G-machine \autoref{needscitation} implement \textit{combinator graph rewriting} which is similar and will be introduced in \autoref{sec:graphrewriting}
+Languages like Miranda Clean and general purpose evaluation programs like the G-machine implement \textit{combinator graph rewriting} which is similar and will be introduced in \autoref{sec:comb}.
 \end{remark}
 
-A remarkable fact about th untyped lambda calculus is that it is in fact turing complete; any algorithm that can be evaluated by a computer can be encoded in the untyped lambda calculus.
+A remarkable fact about the untyped lambda calculus is that it is turing complete; any algorithm that can be evaluated by a computer can be encoded in the untyped lambda calculus.
 The turing completeness of the untyped lambda calculus can be realized by modelling numerics, boolean logic and recursion with the \textit{Y-combitator}.
 Church encoding is the encoding of numerics, arithmetic expressions and boolean logic~\cite{church1985calculi}.
 Church encoding may prove the power of the untyped lambda calculus but has terrible running time for numerics since to represent some $n \in \mathbb{Z}$ it requires $n$ applications.
-For the remainder of the dissertation, ordinary arithmetic expressions are written in traditional mathematics.
-The expressiveness and simplicity of lambda calculus makes it an excellent language to transpile to, which is a common technique.
+For the remainder of the dissertation ordinary arithmetic expressions are written in traditional mathematics.
+The simplicity of lambda calculus makes it an excellent language to transpile to which is a common technique.
 
 \section{Translation to lambda calculus}
 High level languages associated with lambda calculus are often also very close to it.
 The $L$ language is very close to the untyped lambda calculus.
-See two equivalent programs, \autoref{lc:add} and \autoref{lst:add}, that both add an $a$ and a $b$.
-\begin{align}
-(\lambda add . E)(\lambda a . (\lambda b . a + b))
-\label{lc:add}
-\end{align}
-\begin{CenteredBox}
-    
-\end{CenteredBox}
-\begin{lstlisting}[language=ML,caption={Add function},label={lst:add}]
+See two equivalent programs \autoref{lc:add} and \autoref{lst:add} that both add an \texttt{a} and a \texttt{b}.
+\begin{lstlisting}[language=ML,caption={Add function in lambda calculus},label={lc:add},mathescape=true]
+($\lambda$add.E)($\lambda$a.$\lambda$b.a + b)
+\end{lstlisting}
+\begin{lstlisting}[language=ML,caption={Add function in L},label={lst:add}]
 fun add a b = a + b;
 \end{lstlisting}
 Notice that in \autoref{lc:add} the term $E$ is left undefined, $E$ is ``the rest of the program in this scope''.
-If the program was to apply $1$ and $2$ to add, directly below in the high level representation (\autoref{lst:addapp}) the lambda calculus equivalent would look like \autoref{lc:addapp}.
-\begin{align}
-    (\lambda add . add \,\, 1 \,\, 2)(\lambda a . (\lambda b . a + b))
-\label{lc:addapp}
-\end{align}
+If the program were to apply $1$ and $2$ to add the resulting program in L would be \autoref{lst:addapp} and in the untyped lambda calculus it would be \autoref{lc:addapp}.
+\begin{lstlisting}[language=ML,caption={Add function in lambda calculus},label={lc:addapp},mathescape=true]
+($\lambda$add.add 1 2)($\lambda$a.$\lambda$b.a + b)
+\end{lstlisting}
 \begin{lstlisting}[language=ML,caption={Add function applied},label={lst:addapp}]
 fun add a b = a + b;
 add 1 2;
 \end{lstlisting}
 
 \subsection{Scoping}\label{scoping}
-Notice that \autoref{lc:add}, must bind the function name ``outside the rest of the program'' or more formally in an outer scope.
-In a traditional program such as \autoref{lst:traditional}, functions must be explicitly named to translate as in the above example.
+Notice that \autoref{lc:add} must bind the function name ``outside the rest of the program'' or more formally in an outer scope.
+In a traditional program such as \autoref{lst:traditional} functions must be explicitly named to translate as in the above example.
 \begin{lstlisting}[language=ML,caption={A traditional program},label={lst:traditional}]
 fun add a b = a + b;
 fun sub a b = a - b;
 sub (add 10 20) 5;
 \end{lstlisting}
-\begin{lstlisting}[language=ML,caption={An order dependant program},label={lst:orddep}]
+\begin{lstlisting}[language=ML,caption={An order dependent program},label={lst:orddep}]
 fun sub a b = add a (0 - b);
 fun add a b = a + b;
 sub (add 10 20) 5;
 \end{lstlisting}
-Notice that there are several problems, such as, the order of which functions are defined may alter whether the program is correct or not.
-For instance, the program defined in \autoref{lst:orddep} would not translate correct, it would translate to \autoref{lc:orddep}.
-The definition of $sub$, or rather, the applied lambda abstraction, is missing a reference to the $add$ function.
-\begin{align}
-(\lambda sub . (\lambda add . (sub \,\, (add \,\, 10 \,\, 20) \,\, 5)) \,\, (\lambda a . (\lambda b . a + b))) \,\, (\lambda a . (\lambda b . add \,\, a (0 - b)))
-\label{lc:orddep}
-\end{align}
+Notice that there are several problems such as the order of which functions are defined may alter whether the program is correct or not.
+For instance the program defined in \autoref{lst:orddep} would not translate into a valid program, it would translate into \autoref{lc:orddep}.
+The definition of \texttt{sub} is missing a reference to the \texttt{add} function.
+\begin{lstlisting}[language=ML,caption={Add function in lambda calculus},label={lc:orddep},mathescape=true]
+($\lambda$sub.$\lambda$add. sub (add 10 20) 5) 
+    ($\lambda$a.$\lambda$b.a + b) 
+    ($\lambda$a.$\lambda$b.add a (0 - b))
+\end{lstlisting}
 
-\textit{lambda lifting} is a technique where free variables (\autoref{sec:lc}), are explicitly parameterized~\cite{johnsson1985lambda}.
+\textit{lambda lifting} is a technique where free variables (\autoref{sec:lc}) are explicitly parameterized~\cite{johnsson1985lambda}.
 %A free variable, is a variable in respect to some function $f$ that is referenced from within $f$, but defined outside. 
-This is exactly the problem in \autoref{lc:orddep}, which has the lambda lifted solution \autoref{lc:ordfix}.
-\begin{align}
-(\lambda sub . (\lambda add . (sub \,\, add \,\, (add \,\, 10 \,\, 20) \,\, 5)) \,\, (\lambda a . (\lambda b . a + b))) \,\, (\lambda add .(\lambda a . (\lambda b . add \,\, a (0 - b))))
-\label{lc:ordfix}
-\end{align}
-As it will turn out, this will also enables complicated behaviour, such as \textit{mutual recursion}.
+This is exactly the problem in \autoref{lc:orddep} which has the lambda lifted solution \autoref{lc:ordfix}.
+\begin{lstlisting}[language=ML,caption={Order dependent},label={lc:ordfix},mathescape=true]
+($\lambda$sub.$\lambda$add. sub  add (add 10 20) 5) 
+    ($\lambda$a.$\lambda$b.a + b) 
+    ($\lambda$add.$\lambda$a.$\lambda$b.add a (0 - b))
+\end{lstlisting}
+As it will turn out this will also enables complicated behaviour such as \textit{mutual recursion}.
 
-Moreover, lambda lifting also conforms to ``traditional'' scoping rules.
-\textit{Variable shadowing} occurs when there exists $1 < $ reachable variables of the same name, but the ``nearest'', in regard to scope distance is chosen.
-Effectively, other variables than the one chosen, are \textit{shadowed}.
+Moreover lambda lifting also conforms to ``traditional'' scoping rules.
+\textit{Variable shadowing} occurs when there exists $1 < $ reachable variables of the same name but the ``nearest'' in regard to scope distance is chosen.
+Effectively other variables than the one chosen are \textit{shadowed}.
 Variable shadowing is an implied side-effect of using using lambda calculus.
-Convince yourself that the function $f$ in \autoref{lst:scoping}, yields $12$.
+The function \texttt{f} in \autoref{lst:scoping} yields \texttt{12}.
 \begin{lstlisting}[language=ML,caption={Scoping rules in programming languages},label={lst:scoping}]
 let x = 22;
 let a = 10;
@@ -139,48 +134,48 @@ fun f n =
   else if (n == 2) n + ((n - 1) + (n - 2))
   ...
 \end{lstlisting}
-\autoref{lst:infprog} defines a function $f$, that in fact is infinite.
-Looking at the untyped lambda calculus, there are not any of the three term types that define infinite functions or abstractions, at first glance.
-Instead of writing an infinite function, the question is rather, how can a reduction be peformed on this function, such that it can evaluate \textit{any} case of $n$?
+\autoref{lst:infprog} defines a function \texttt{f} that in fact is infinite.
+In the untyped lambda calculus there are not any of the three term types that define infinite functions or abstractions, at first glance.
+Instead of writing an infinite function the question is rather how can a reduction be performed on this function such that it can evaluate \textit{any} case of \texttt{n}?
 \begin{lstlisting}[language=ML,caption={Recursive program},label={lst:recprog}]
 fun f n = 
   if (n == 0) n
   else n + (f (n - 1))
 \end{lstlisting}
-\autoref{lst:recprog} defines a recursive variant of $f$, it is a product of the reduction in \autoref{eq:fred}.
+\autoref{lst:recprog} defines a recursive variant of \texttt{f} it is a product of the reduction in \autoref{eq:fred}.
 \begin{align}
     n + (n - 1) \dots + 0 = \sum_{k = 0}^n k
     \label{eq:fred}
 \end{align}
-But since the untyped lambda calculus is turing complete, or rather, if one were to show it were,
-it must also realize algorithms that are recursive or include loops, the two of which are equivalent in expressiveness.
-\begin{align}
-    (\lambda f . E) (\lambda n . \texttt{if} (n == 0) (n) (n + (f (n - 1))))
-    \label{eq:naiverec}
-\end{align}
-The naive implementation of a recursive variant, will yield an unsolvable problem, in fact, an infinite problem.
-In \autoref{eq:naiverec}, when $f$ is applied recursively, it must be referenced.
-How can $f$ be referenced, if it is ``being constructed''?
-Substituting $f$ with its implementation in \autoref{eq:naiverecdepth}, will yield the same problem again, but at one level deeper.
-\begin{align}
-    (\lambda f . E) (\lambda n . \texttt{if} (n == 0) (n) (n + ((\lambda n . \texttt{if} (n == 0) (n) (n + (f (n - 1)))) (n - 1))))
-    \label{eq:naiverecdepth}
-\end{align}
-One could say, that the problem is now recursive.
-Recall that lambda lifting (\autoref{scoping}), is the technique of explicitly parameterizing outside references.
-Convince yourself that $f$ lives in the scope above its own body, such that, when referenceing $f$ from within $f$, $f$ should be parameterized as in \autoref{lst:erec}, translating to \autoref{eq:erec}.
+Since the untyped lambda calculus is turing complete or rather if one were to show it were it must also realize algorithms that are recursive or include loops (the two of which are equivalent in expressiveness).
+\begin{lstlisting}[language=ML,caption={Recursive function},label={eq:naiverec},mathescape=true]
+($\lambda$f.E) ($\lambda$n.if (n == 0) (n) (n + (f (n - 1))))
+\end{lstlisting}
+The naive implementation of a recursive variant will yield an unsolvable problem which in fact is an infinite problem.
+In \autoref{eq:naiverec} when \texttt{f} is applied recursively it must be referenced while it is ``being constructed''.
+Substituting $f$ with its implementation in \autoref{eq:naiverecdepth} will yield the same problem again but at one level deeper.
+The \texttt{if} function takes a condition, the body in case of the condition being true and the body in case of the condition being false.
+\begin{lstlisting}[language=ML,caption={Recursive function f substituted},label={eq:naiverecdepth},mathescape=true]
+($\lambda$f.E) 
+($\lambda$n.if (n == 0) (n) (n + (
+    ($\lambda$n.if (n == 0) (n) (n + (f (n - 1))))
+    (n - 1)
+)))
+\end{lstlisting}
+One could say that the problem is now recursive.
+Recall that lambda lifting (\autoref{scoping}) is the technique of explicitly parameterizing outside references.
+Convince yourself that \texttt{f} lives in the scope above its own body such that when referencing \texttt{f} from within \texttt{f}, \texttt{f} should be parameterized as in \autoref{lst:erec} such that it translates to \autoref{eq:erec}.
 \begin{lstlisting}[language=ML,caption={Explicitly passing recursive function},label={lst:erec}]
 fun f f n = 
   if (n == 0) n
   else n + (f f (n - 1))
 \end{lstlisting}
-\begin{align}
-    (\lambda f . E) (\lambda f . (\lambda n . \texttt{if} (n == 0) (n) (n + (f \,\, f \,\, (n - 1)))))
-    \label{eq:erec}
-\end{align}
-The initial invocation of $f$, must involve $f$, such that it becomes $f \,\, f \,\, n$.
-The \textit{Y-combinator}, an implementation of a fixed-point combinator, in \autoref{eq:ycomb} is the key to realize that the untyped lambda calculus can implement recursion.
-Languages with functions and support binding functions to parameters, can implement recursion with the Y-combinator.
+\begin{lstlisting}[language=ML,caption={Explicitly passing recursive function in the lambda calculus},label={eq:erec},mathescape=true]
+($\lambda$f.E)($\lambda$f.$\lambda$n. if (n == 0) (n) (n + (f f (n - 1))))
+\end{lstlisting}
+The initial invocation of \texttt{f} must involve \texttt{f} such that it becomes \texttt{f f n}.
+The \textit{Y-combinator} an implementation of a fixed-point combinator in \autoref{eq:ycomb} is the key to realize that the untyped lambda calculus can implement recursion.
+Languages with functions and support binding functions to parameters can implement recursion with the Y-combinator.
 \begin{align}
     \lambda f . (\lambda x . f (x x)) (\lambda x . f (x x))
     \label{eq:ycomb}
@@ -191,11 +186,11 @@ Implementing mutual recursion is an interesting case of lambda lifting and recur
 fun g x = f x;
 fun f x = g x;
 \end{lstlisting}
-Notice in \autoref{lst:mutrec} that $g$ requires $f$ to be lifted and $f$ requires $g$ to be lifted.
-If a translation ``pessimistically'' lifts all definitions from the above scope, then all required references exist in lexical scope.
+Notice in \autoref{lst:mutrec} that \texttt{g} requires \texttt{f} to be lifted and \texttt{f} requires \texttt{g} to be lifted.
+If a translation ``pessimistically'' lifts all definitions from the above scope then all required references exist in lexical scope.
 \\\\
-Languages have diffirent methods of introducing recursion, some of which have very different implications, especially when considering types.
-For instance, OCaml has the \texttt{let rec} binding, to introduce recursive definitions.
+Languages have different methods of introducing recursion some of which have very different implications especially when considering types.
+For instance OCaml has the \texttt{let rec} binding to introduce recursive definitions.
 The \texttt{rec} keyword indicates to the compiler that the binding should be able to ``see itself'' (\autoref{typing}).
 
 

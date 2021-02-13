@@ -98,6 +98,7 @@ Naively it may seem straightforward to evaluate the untyped lambda calculus mech
 %When applying the term $f x$ in $\lambda f . \lambda x . f x$ such that $f[? := x]$ where $?$ is the parameter name of $f$ it should become clear why a naive strategy is not enough since the parameters of $f$ are anonymous.
 
 \subsection{Combinator reducers}
+\label{sec:comb}
 One of the most prominent techniques for evaluating functional programs is that of \textit{combinator graphs reductions}.
 Formally a combinator is a function that has no free variables which is convenient since the problem of figuring out closures and parameter substitutions in applications never arises.
 \begin{align}
@@ -175,7 +176,7 @@ $\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1) \in P_3$ and in fact fo
 \end{exmp}
 It should become clear that many programs suffer from this consequence such as \texttt{let add = ($\lambda$x.$\lambda$y.(+ x) y)} $\in P_2$ where the program is written in prefix notation.
 Translating the lambda calculus into the SKI-expressions does indeed increase the size significantly but does not warrant a write off entirely.
-More advanced techniques exist to translate the lambda calculus to SKI in linear time with the introduction of more complicated combinators~\cite{kiselyov2018lambda}.
+More advanced techniques exist to translate the lambda calculus to linearly sized SKI-expressions with the introduction of more complicated combinators~\cite{kiselyov2018lambda}.
 
 \subsection{Reduction strategies}
 Reductions in the context of the lambda calculus are a small set of well-defined rules for rewriting such that a program is evaluated.
