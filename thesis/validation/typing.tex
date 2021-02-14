@@ -677,7 +677,7 @@ ML which implemented Hindley-Milner was believed to have linear complexity befor
 As it will turn out, Hindley-Milner also suffers an explosive worst case induced by a pathological input fueled by polymorphism.
 
 \begin{lemma}
-    Hindley-Milner typing is worst case $O(c^n)$.
+    There exists a family of programs which are typable in Hindley-Milner and produce $\Omega(2^n)$ unique type variables.
 \end{lemma}
 \begin{proof}
     The basis of the blowup stems from the introduced fresh type variables in the polymorphic let inference rule.
@@ -689,8 +689,8 @@ fun deep x = dup (dup (dup ($\dots$ x)));
     \autoref{lst:pairproof} builds a large function signature for \texttt{deep}.
     The innermost \texttt{pair} invocation will have it's signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$.
     The second innermost \texttt{pair} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
-    Naively one might judge \autoref{lst:pairproof} to run in $O(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
-    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the amount introduced type variables would be $O(n)$.
+    Naively one might judge \autoref{lst:pairproof} to run in $\Omega(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
+    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the amount introduced type variables would be $\Omega(n)$.
 \begin{lstlisting}[language=ML,caption={Nested pairs with different type variables},label={lst:pairproofexp},mathescape=true]
 fun tuple a b f = f a b;
 fun one = tuple tuple tuple;
@@ -699,7 +699,7 @@ fun three = tuple two two;
 $\dots$
 \end{lstlisting}
     The trick to induce an exponential running time is with the pathological program in \autoref{lst:pairproofexp}.
-    By allowing \texttt{tuple} to be polymorphic and have having $c > 1$ polymorphic parameters, every time \texttt{tuple} is instantiated it will contain only fresh variables.
+    By allowing \texttt{tuple} to be polymorphic and have having $2$ polymorphic parameters, every time \texttt{tuple} is instantiated it will contain only fresh variables.
     The type of \texttt{tuple} is $a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c$.
     Clearly this looks very much like \autoref{lst:pairproof} but has the subtle difference of letting the parameters \texttt{a} and \texttt{b} be polymorphic and introducing every ''step`` as a polymorphic let expression.
     The return type of \texttt{one} (the type of \texttt{f}) is displayed in \autoref{eq:instexp}.
@@ -713,6 +713,8 @@ $\dots$
         \label{eq:afterinstexp}
     \end{align}
 \end{proof}
+An interesting observation is that by increasing the amount of polymorphic parameters to some $c$ the number of type variables becomes $\Omega(c^n)$.
+This observation does not have any significatn impact since $\Omega(n^n) \in \text{EXPTIME}$ and $\Omega(2^n) \in \text{EXPTIME}$.
 Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (\autoref{lst:appedix:bigexp}).
 \autoref{fig:expplot} shows the relationship between the program in $L$, the theoretical time and an exp fit of data from $L$.
 \begin{figure}[ht]

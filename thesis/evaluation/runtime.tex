@@ -310,7 +310,7 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
                 \AxiomC{$S_1,\alpha_1,e_1 \rightarrow (\lambda x . e)$}
                 \AxiomC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\alpha_2 \cup [ x \mapsto \gamma ],e \rightarrow e' \,\,\, \gamma = \texttt{newvar}$}
                 \RightLabel{App}
-                \BinaryInfC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\emptyset,(e_1 \,\, e_2) \rightarrow e'$}
+                \BinaryInfC{$S_1 \cup S_2,\emptyset,(e_1 \,\, e_2) \rightarrow e'$}
             \end{prooftree}   
             \label{eq:prooftree:ref}
             \caption{}
@@ -352,6 +352,14 @@ The evaluation of \autoref{lst:objdup} can be seen in \autoref{eq:objdup}.
     \rightarrow &\texttt{0 }\{ \dots, s \mapsto 0 \}\tag*{}
 \end{align}
 \end{exmp}
+
+\subsubsection{Garbage collection}
+Garbage collection in purely function languages is a bit of a controversial topic since there exists no resources to release.
+But adding mappings from lambda terms to variables without any subtractions will lead to an ever increasing substitution mapping size.
+When performing reductions one might desire to garbage collect the substitution mapping once it contains useless substitutions.
+Fortunately the task of collecting garbage is quite easy since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
+When some algorithm with garbage collection evaluates some abstraction term \texttt{$\lambda$x.E}$,S,[\texttt{x} \mapsto \gamma]$, the algorithm should remove the introduced variable \texttt{x} by inspecting the $\alpha$-conversion mapping such that the substitution mapping becomes $S\backslash \gamma$.
+
 
 %When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
 %Letting the substitution mapping be 
