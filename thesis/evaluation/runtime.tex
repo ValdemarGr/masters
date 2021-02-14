@@ -3,6 +3,7 @@
 \begin{document}
 
 \section{Evaluation strategies}
+\label{sec:es}
 When evaluating the untyped lambda calculus one has to choose an evaluation strategy.
 The choice of evaluation strategy has a large impact on aspects such as complexity guarantees.
 Such strategies are \textit{call by value}, \textit{call by name} and \textit{call by need}.
@@ -210,14 +211,14 @@ f f 10
 A strong guarantee that can be made by tuning the evaluation strategy that is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
 An algorithm can be implemented that just picks a new variable name from any infinite domain and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
 \begin{remark}
-The $\alpha$-conversion algorithm should drop the conversion mapping once it leaves the abstraction that introduced the conversion rule for that variable and restore the set introduced before it.
+The $\alpha$-conversion algorithm should drop the conversion mapping once it leaves the abstraction that introduced the $\alpha$-conversion rule for that variable and restore the $\alpha$-convertion introduced before it.
 Such semantics ensure that expressions such as \texttt{f f x} are properly converted since \texttt{x}'s naming in ``this'' instantiation of \texttt{f} must be restored in a call by need environment.
 The implementation of this property is not of importance but can simply be implemented by either suspending \texttt{x} with the current scope's $\alpha$-conversion mapping or pairing every term with an $\alpha$-conversion mapping.
 \end{remark}
 Let \texttt{($\lambda$g.$\lambda$y.if (y = 0) y else g g (y - 1))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
 It should become clear that an $\alpha$-conversion algorithm must also follow the reduction order or else one can force terrible runtime in a call by name (or need) environment by creating purposeless terms which are never executed but are converted.
 
-Evaluation strategies (\autoref{tbd}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
+Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
 A \textit{redex} is a reducible expression in the context of some set of reduction rules.
 The two interesting evaluation orders are \textit{applicative order} and \textit{normal order}~\cite{sestoft2002demonstrating}.
 Applicative order specifies that the parameters of some application should always be evaluated first, e.g. call by value.
@@ -309,7 +310,7 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
                 \AxiomC{$S_1,\alpha_1,e_1 \rightarrow (\lambda x . e)$}
                 \AxiomC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\alpha_2 \cup [ x \mapsto \gamma ],e \rightarrow e' \,\,\, \gamma = \texttt{newvar}$}
                 \RightLabel{App}
-                \BinaryInfC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\alpha_1 \cup \alpha_2 \cup [x \mapsto \gamma],(e_1 \,\, e_2) \rightarrow e'$}
+                \BinaryInfC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\emptyset,(e_1 \,\, e_2) \rightarrow e'$}
             \end{prooftree}   
             \label{eq:prooftree:ref}
             \caption{}
@@ -324,10 +325,10 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
             \caption{}
         \end{subfigure}
     \end{mdframed}
-    \caption{}
+    \caption{Reduction rules for the call by need lambda calculus}
     \label{fig:cbn}
 \end{figure}
-
+\clearpage
 \begin{exmp}
 Consider the following program which duplicates an object.
 \begin{lstlisting}[language=ML,caption={Object duplication},label={lst:objdup},mathescape=true]
