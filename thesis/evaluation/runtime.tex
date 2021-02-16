@@ -281,7 +281,7 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
             \begin{prooftree}
                 \AxiomC{}
                 \RightLabel{Var}
-                \UnaryInfC{$S, \alpha, x \rightarrow \alpha x$}
+                \UnaryInfC{$S, \alpha, x \rightarrow S \alpha x$}
             \end{prooftree}   
             \label{eq:prooftree:ident}
             \caption{}
@@ -310,7 +310,7 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
                 \AxiomC{$S_1,\alpha_1,e_1 \rightarrow (\lambda x . e)$}
                 \AxiomC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\alpha_2 \cup [ x \mapsto \gamma ],e \rightarrow e' \,\,\, \gamma = \texttt{newvar}$}
                 \RightLabel{App}
-                \BinaryInfC{$S_1 \cup S_2,\emptyset,(e_1 \,\, e_2) \rightarrow e'$}
+                \BinaryInfC{$S_1 \cup S_2,\alpha_1 \cup \alpha_2,(e_1 \,\, e_2) \rightarrow e'$}
             \end{prooftree}   
             \label{eq:prooftree:ref}
             \caption{}

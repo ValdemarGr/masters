@@ -243,7 +243,7 @@ Let polymorphism is exemplified in \autoref{exmp:letpoly}.
 
 \begin{exmp}
 \label{exmp:letpoly}
-Throughout this example $(x, z)$ is the pair of the variables $x$ and $z$.
+Throughout this example the convenient syntax $(x, z)$ is the pair of the variables $x$ and $z$ which can be implemented by algebraic data structures or a combinator.
 
 The identity function is a common example to illustrate type systems (\autoref{lst:idfun}).
 \begin{lstlisting}[language=ML,caption={Identity function in $L$},label={lst:idfun}]
@@ -544,6 +544,7 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 \begin{remark}
 In the language $L$ a function \texttt{fun} translates to a let expressions while \texttt{let} translates to abstraction and application.
 \end{remark}
+\subsection{Instantiation}
 Another interesting addition introduced by algorithm W in \autoref{fig:dmrules} is \textit{inst}.
 \textit{inst} naturally follows from the \textbf{Inst} rule in \autoref{fig:hmrules} but has a slightly different behaviour.
 The \textit{inst} function does not specify types anymore but simply makes unification of polymorphic types possible.
@@ -663,6 +664,15 @@ Decision can be implemented in a variety of ways such as in \autoref{lst:adtdeci
 \end{figure}
 Rather decision can be implemented by more conventional methods than combinator logic by introducing more inference rules as in \autoref{fig:decision}.
 Additional language syntax features can in most cases be implemented as decision can.
+\subsection{Algebraic data structures}
+To implement rules for algebraic data structures one must first decide on what the type of an algebraic data structure is.
+If algebraic data structures were implemented as in \autoref{sec:adt} the type of an algebraic data structure like Boolean in \autoref{lst:adtdecision} would be \texttt{a -> a -> a} since \texttt{BFalse} and \texttt{BTrue} must have a handler each.
+Implementing algebraic data structures by this method does not introduce anything to the inference algorithm since every algebraic data structure becomes a function.
+It is more common to introduce algebraic data structures as new type constructor types since such an implementation yields descriptive errors in comparison to generated function types.
+Fortunately type constructors are trivial to model in Hindley-Milner since a type constructor categorically is a type lambda and type lambdas in Hindley-Milner are simply quantified types.
+\autoref{lst:listadt} introduces the type constructor \texttt{a $\rightarrow$ List a} with value constructors \texttt{Cons: $\forall$a.a $\rightarrow$ List a $\rightarrow$ List a} and \texttt{Nil: $\forall$a.List a}.
+For instance let some program be \texttt{Cons 1 (Cons 2 Nil)} such that inference becomes a matter of first unifying the type of \texttt{Cons} and \texttt{$\forall$a.Int $\rightarrow$ List a $\rightarrow \tau_1$} using the application rule and then unifying \texttt{$\forall$a.Int $\rightarrow \tau_1 \rightarrow \tau_2$} with \texttt{Cons} again by application.
+
 
 \section{The cost of expressiveness}
 Modern languages with strong type systems tend to be notoriously slow to type on pathological inputs.
