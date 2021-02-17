@@ -40,51 +40,79 @@ The call by need strategy introduces \textit{lazy evaluation} semantics which is
 In \autoref{lst:callbyname} \texttt{force x} is computed twice which may be an expensive operation.
 Under call by need all non results are saved for later use similar to techniques such as dynamic programming.
 \begin{figure}
-    \begin{mdframed}[style=style2]
     \centering
     \begin{subfigure}[b]{0.33\textwidth}
         \centering
-    \begin{tikzpicture}
-        \node[circle, draw=black] (force) {\texttt{force}};
+        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.3cm and 0.3cm]
+                \node[circle, draw=black] (app1) {\texttt{app}};
+                    \node[circle, draw=black, below right = of app1] (force) {\texttt{force}};
+                    \path[-] (app1) edge node[left] {} (force);
 
-        \node[circle, draw=black, below = of force] (double) {\texttt{double}};
+                    \node[circle, draw=black, below left = of app1] (app2) {\texttt{app}};
+                    \path[-] (app1) edge node[left] {} (app2);
+                        \node[circle, draw=red, below left = of app2] (value) {\texttt{value}};
+                        \path[-] (app2) edge node[left] {} (value);
+                        \node[circle, draw=black, below right = of app2] (double) {\texttt{double}};
+                        \path[-] (app2) edge node[left] {} (double);
 
-        \node[circle, draw=black, below = of double] (value) {\texttt{value}};
-
-        \path[->] (force) edge node[left] {} (double);
-        \path[->] (double) edge node[left] {} (value);
-    \end{tikzpicture}
+                \node[draw,scale=1.3,fill=none,rectangle,fit=(app1)(value)(force)](fstB){};
+        \end{tikzpicture}
         \caption{The last expression of the program.}
         \label{sub:eval:main}
     \end{subfigure}
     \begin{subfigure}[b]{0.66\textwidth}
         \centering
-    \begin{tikzpicture}
-        \node[circle, draw=black] (lamx) {$\lambda \texttt{x}$};
+        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.3cm and 0.3cm]
+                \node[circle, draw=black] (lamx) {\texttt{$\lambda$x}};
+                    \node[circle, draw=black, below = of lamx] (lamu) {\texttt{$\lambda$unit}};
+                    \path[-] (lamx) edge node[left] {} (lamu);
+                        \node[circle, draw=black, below = of lamu] (app1) {\texttt{app}};
+                        \path[-] (lamu) edge node[left] {} (app1);
+                            \node[circle, draw=black, below right = of app1] (app2) {\texttt{app}};
+                            \path[-] (app1) edge node[left] {} (app2);
+                                \node[circle, draw=black, below right = of app2] (x1) {\texttt{x}};
+                                \path[-] (app2) edge node[left] {} (x1);
+                                \node[circle, draw=black, below = of app2] (force1) {\texttt{force}};
+                                \path[-] (app2) edge node[left] {} (force1);
 
-        \node[circle, draw=black, below = of lamx] (lamunit) {$\lambda \texttt{unit}$};
+                            \node[circle, draw=black, below left = of app1] (app4) {\texttt{app}};
+                            \path[-] (app1) edge node[left] {} (app4);
+                                \node[circle, draw=black, below left = of app4] (add) {\texttt{+}};
+                                \path[-] (app4) edge node[left] {} (add);
 
-        \node[circle, draw=black, below = of lamunit] (addition) {$+$};
+                                \node[circle, draw=black, below right = of app4] (app3) {\texttt{app}};
+                                \path[-] (app4) edge node[left] {} (app3);
+                                    \node[circle, draw=black, below = of app3] (x2) {\texttt{x}};
+                                    \path[-] (app3) edge node[left] {} (x2);
+                                    \node[circle, draw=black, below left = of app3] (force2) {\texttt{force}};
+                                    \path[-] (app3) edge node[left] {} (force2);
+                \node[draw,scale=1.3,fill=none,rectangle,fit=(lamx)(force2)(x1)(add)](fstB){};
+        \end{tikzpicture}
+    %\begin{tikzpicture}
+        %\node[circle, draw=black] (lamx) {$\lambda \texttt{x}$};
 
-        \node[circle, draw=black, below left = of addition] (force1) {\texttt{force}};
-        \node[circle, draw=black, below = of force1] (x1) {\texttt{x}};
+        %\node[circle, draw=black, below = of lamx] (lamunit) {$\lambda \texttt{unit}$};
+
+        %\node[circle, draw=black, below = of lamunit] (addition) {$+$};
+
+        %\node[circle, draw=black, below left = of addition] (force1) {\texttt{force}};
+        %\node[circle, draw=black, below = of force1] (x1) {\texttt{x}};
         
-        \node[circle, draw=black, below right = of addition] (force2) {\texttt{force}};
-        \node[circle, draw=black, below = of force2] (x2) {\texttt{x}};
+        %\node[circle, draw=black, below right = of addition] (force2) {\texttt{force}};
+        %\node[circle, draw=black, below = of force2] (x2) {\texttt{x}};
 
-        \path[->] (lamx) edge node[left] {} (lamunit);
-        \path[->] (lamunit) edge node[left] {} (addition);
+        %\path[->] (lamx) edge node[left] {} (lamunit);
+        %\path[->] (lamunit) edge node[left] {} (addition);
 
-        \path[->] (addition) edge node[left] {} (force1);
-        \path[->] (addition) edge node[left] {} (force2);
+        %\path[->] (addition) edge node[left] {} (force1);
+        %\path[->] (addition) edge node[left] {} (force2);
 
-        \path[->] (force1) edge node[left] {} (x1);
-        \path[->] (force2) edge node[left] {} (x2);
-    \end{tikzpicture}
+        %\path[->] (force1) edge node[left] {} (x1);
+        %\path[->] (force2) edge node[left] {} (x2);
+    %\end{tikzpicture}
         \caption{The expression tree for \texttt{double}}
         \label{sub:eval:double}
     \end{subfigure}
-    \end{mdframed}
     \caption{}
     \label{fig:evalexpr}
 \end{figure}
@@ -223,7 +251,7 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \centering
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
-        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
                 \node[circle, draw=black] (app1) {\texttt{app}};
                     \node[circle, draw=black, below right = of app1] (var1) {\texttt{10}};
                     \path[-] (app1) edge node[left] {} (var1);
@@ -246,7 +274,7 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
-        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
                 \node[circle, draw=black] (app1) {\texttt{app}};
                     \node[circle, draw=black, below right = of app1] (var1) {\texttt{10}};
                     \path[-] (app1) edge node[left] {} (var1);
@@ -286,7 +314,7 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     %\tikz[overlay,remember picture]{\draw [->] (fstP) -- (fstP-|sndP);}
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
-        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
                                 \node[circle, draw=black, below = of lam2] (app3) {\texttt{app}};
                                     \node[circle, draw=black, below left = of app3] (app4) {\texttt{app}};
                                     \path[-] (app3) edge node[left] {} (app4);
@@ -311,7 +339,7 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
-        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
                 \node[circle, draw=blue] (app1) {\texttt{app}};
                     \node[circle, draw=black, below right = of app1] (var1) {\texttt{x - 1}};
                     \path[-] (app1) edge node[left] {} (var1);
