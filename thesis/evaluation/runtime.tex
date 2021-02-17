@@ -200,24 +200,156 @@ More generally closures must be bound to abstractions and applications must subs
 In the expression \texttt{x g} the substitutions from \texttt{x} may never persist outside of the scope of the body of \texttt{x}.
 
 The first step to evaluate the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
+The $\alpha$-conversion mapping written $[x_1 \mapsto \gamma_1, x_2 \mapsto \gamma_2 \dots , x_n \mapsto \gamma_n]$ states that for some $x_k$ where $1 \leq k \leq n$ all variables $v$ where $v = x_k$ should be renamed to $\gamma_k$.
 Let $\lambda x . ((\lambda x . x) x)$ be a term where a collision between the two $x$'s causes trouble, the $\alpha$-conversion can be $\lambda y . ((\lambda x . x) y)$ since $y$ and $x$ have been introduced by separate abstractions.
 $\alpha$-conversions are solve some critical problems such as closures and recursion when evaluating the lambda calculus.
-$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a strict superset of the substitution mapping when entering.
+$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
 More formally $\textit{eval}: \Lambda \times S \rightarrow \Lambda \times S$ where $S$ is the domain of substitution mappings and $\Lambda$ is in the domain of lambda expressions such that  $(\lambda',s') = eval(\lambda, s)$ always implies $s \subseteq s'$.
 \begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
-let f = ($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1)) in
+let f = ($\lambda$f'.$\lambda$x.
+    if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
 f f 10
 \end{lstlisting}
-A strong guarantee that can be made by tuning the evaluation strategy that is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
-An algorithm can be implemented that just picks a new variable name from any infinite domain and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
-\begin{remark}
-The $\alpha$-conversion algorithm should drop the conversion mapping once it leaves the abstraction that introduced the $\alpha$-conversion rule for that variable and restore the $\alpha$-convertion introduced before it.
-Such semantics ensure that expressions such as \texttt{f f x} are properly converted since \texttt{x}'s naming in ``this'' instantiation of \texttt{f} must be restored in a call by need environment.
-The implementation of this property is not of importance but can simply be implemented by either suspending \texttt{x} with the current scope's $\alpha$-conversion mapping or pairing every term with an $\alpha$-conversion mapping.
-\end{remark}
-Let \texttt{($\lambda$g.$\lambda$y.if (y = 0) y else g g (y - 1))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
+A strong guarantee that can be made by tuning the evaluation strategy which is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
+An algorithm can be implemented that picks a new variable name from any infinite domain when an abstraction has had a value applied to it and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
+The algorithm should also introduce the applied value to the substitution set through the alpha converted name.
+Let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
 It should become clear that an $\alpha$-conversion algorithm must also follow the reduction order or else one can force terrible runtime in a call by name (or need) environment by creating purposeless terms which are never executed but are converted.
+In a call by need or call by name environment one must suspend the conversion until it is needed; let $\alpha E$ denote the $\alpha$-conversion for some conversion mapping $\alpha$ on a lambda expression $E$ which either eagerly or lazily $\alpha$-converts $E$ dependent on the evaluation strategy.
+In \autoref{subfig:red4} the application which contains \texttt{$\lambda$f'} and \texttt{f'} as children (the purple node) must $\alpha$-convert \texttt{f'} in ``this scope''.
+If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \{ \gamma \mapsto \texttt{f'} \}, \alpha = [ \texttt{f'} \mapsto \gamma ]$.
 
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                \node[circle, draw=black] (app1) {\texttt{app}};
+                    \node[circle, draw=black, below right = of app1] (var1) {\texttt{10}};
+                    \path[-] (app1) edge node[left] {} (var1);
+
+                    \node[circle, draw=black, below left = of app1] (app2) {\texttt{app}};
+                    \path[-] (app1) edge node[left] {} (app2);
+                        \node[circle, draw=red, below left = of app2] (f1) {\texttt{f}};
+                        \path[-] (app2) edge node[left] {} (f1);
+                        \node[circle, draw=black, below right = of app2] (f2) {\texttt{f}};
+                        \path[-] (app2) edge node[left] {} (f2);
+
+                \node[draw,scale=1.3,fill=none,rectangle,fit=(app1)(f1)(var1)](fstB){};
+                \path (fstB.north east) -- (fstB.south east) coordinate[midway] (fstP);
+        \end{tikzpicture}
+        \caption{
+            \\
+            \texttt{$S_1 = \{ \gamma_1 \mapsto $($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1))}\\
+            \texttt{$\alpha_1 = [ \texttt{f} \mapsto \gamma_1 ]$}
+        }
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                \node[circle, draw=black] (app1) {\texttt{app}};
+                    \node[circle, draw=black, below right = of app1] (var1) {\texttt{10}};
+                    \path[-] (app1) edge node[left] {} (var1);
+
+                    \node[circle, draw=black, below left = of app1] (app2) {\texttt{app}};
+                    \path[-] (app1) edge node[left] {} (app2);
+                        \node[circle, draw=red, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
+                        \path[-] (app2) edge node[left] {} (lam1);
+                            \node[circle, draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
+                            \path[-] (lam1) edge node[left] {} (lam2);
+                                \node[circle, draw=black, below = of lam2] (app3) {\texttt{app}};
+                                \path[-] (lam2) edge node[left] {} (app3);
+                                    \node[circle, draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    \path[-] (app3) edge node[left] {} (app4);
+                                        \node[circle, draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        \path[-] (app4) edge node[left] {} (app5);
+                                            \node[circle, draw=black, below left = of app5] (if) {\texttt{if}};
+                                            \path[-] (app5) edge node[left] {} (if);
+                                            \node[circle, draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            \path[-] (app5) edge node[left] {} (ifc);
+                                        \node[circle, draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        \path[-] (app4) edge node[left] {} (ift);
+                                    \node[circle, draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ((x - 1) + (x - 1))}};
+                                    \path[-] (app3) edge node[left] {} (iff);
+                        \node[circle, draw=black, below right = of app2] (f2) {\texttt{f}};
+                        \path[-] (app2) edge node[left] {} (f2);
+
+                \node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](sndB){};
+                %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
+            \end{tikzpicture}
+            \caption{
+                \\
+                \texttt{$S_2 = S_1$}\\
+                \texttt{$\alpha_2 = \alpha_1$}
+            }
+    \end{subfigure}
+    %\tikz[overlay,remember picture]{\draw [->] (fstP) -- (fstP-|sndP);}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                                \node[circle, draw=black, below = of lam2] (app3) {\texttt{app}};
+                                    \node[circle, draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    \path[-] (app3) edge node[left] {} (app4);
+                                        \node[circle, draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        \path[-] (app4) edge node[left] {} (app5);
+                                            \node[circle, draw=black, below left = of app5] (if) {\texttt{if}};
+                                            \path[-] (app5) edge node[left] {} (if);
+                                            \node[circle, draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            \path[-] (app5) edge node[left] {} (ifc);
+                                        \node[circle, draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        \path[-] (app4) edge node[left] {} (ift);
+                                    \node[circle, draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
+                                    \path[-] (app3) edge node[left] {} (iff);
+                \node[draw,fill=none,scale=1.3,rectangle,fit=(app3)(if)(ifc)(iff)](fouB){};
+                %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
+            \end{tikzpicture}
+            \caption{
+                \\
+                \texttt{$S_3 = S_2 \cup \{ \gamma_2 \mapsto S_2\gamma_1, \gamma_3 \mapsto 10 \}$}\\
+                \texttt{$\alpha_3 = \alpha_2 \cup [\texttt{f'} \mapsto \gamma_2, \texttt{x} \mapsto \gamma_3]$}
+            }
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \begin{tikzpicture}[remember picture, scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                \node[circle, draw=blue] (app1) {\texttt{app}};
+                    \node[circle, draw=black, below right = of app1] (var1) {\texttt{x - 1}};
+                    \path[-] (app1) edge node[left] {} (var1);
+
+                    \node[circle, draw=purple, below left = of app1] (app2) {\texttt{app}};
+                    \path[-] (app1) edge node[left] {} (app2);
+                        \node[circle, draw=black, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
+                        \path[-] (app2) edge node[left] {} (lam1);
+                            \node[circle, draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
+                            \path[-] (lam1) edge node[left] {} (lam2);
+                                \node[circle, draw=black, below = of lam2] (app3) {\texttt{app}};
+                                \path[-] (lam2) edge node[left] {} (app3);
+                                    \node[circle, draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    \path[-] (app3) edge node[left] {} (app4);
+                                        \node[circle, draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        \path[-] (app4) edge node[left] {} (app5);
+                                            \node[circle, draw=black, below left = of app5] (if) {\texttt{if}};
+                                            \path[-] (app5) edge node[left] {} (if);
+                                            \node[circle, draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            \path[-] (app5) edge node[left] {} (ifc);
+                                        \node[circle, draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        \path[-] (app4) edge node[left] {} (ift);
+                                    \node[circle, draw=black, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
+                                    \path[-] (app3) edge node[left] {} (iff);
+                        \node[circle, draw=black, below right = of app2] (f2) {\texttt{f'}};
+                        \path[-] (app2) edge node[left] {} (f2);
+                \node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](fouB){};
+                %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
+            \end{tikzpicture}
+            \caption{
+                \\
+                \texttt{$S_4 = S_3$}\\
+                \texttt{$\alpha_4 = \alpha_3$}
+            }
+            \label{subfig:red4}
+    \end{subfigure}
+\end{figure}
+%\tikz[overlay,remember picture]{\draw[-latex,thick] (fstB) -- (fstB-|sndB) node[midway,below,text width=0.5cm]{};} 
 Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
 A \textit{redex} is a reducible expression in the context of some set of reduction rules.
 The two interesting evaluation orders are \textit{applicative order} and \textit{normal order}~\cite{sestoft2002demonstrating}.
@@ -225,13 +357,26 @@ Applicative order specifies that the parameters of some application should alway
 Normal order specifies that the leftmost outermost term should be evaluated first which yields the call by name strategy.
 Call by need is a bit more tricky since it requires more than a particular evaluation order to implement~\cite{levy1988sharing}.
 Essentially one can achieve call by need by reducing constant expressions in the substitution mapping whenever they are forced.
-Substitutions can be rewritten when a variable \texttt{x} which has an accompanying substitution mapping of the form $\{ \dots, \texttt{x} \mapsto (\lambda\texttt{y}.\dots) \texttt{z} \}$ such that the substituted to value is reduced.
+Substitutions can be rewritten when a variable \texttt{x} maps to an application such that for some substitution mapping of the form $\{ \dots, \texttt{x} \mapsto Y E \}$ then the substituted to value is reduced.
 When two substitutions are combined one should always choose the most reduced of the two, which is trivial since it becomes a matter of picking the ''newest`` version of the substituted value.
+An important observation which is discussed in~\cite{levy1988sharing} is that of \textit{object} duplication.
+Objects are the substituted to values which are also lambda terms.
+The term object is used to emphasize the uniqueness of applications.
+A problem when sharing evaluation in the substitution set is that of transitive substitutions.
+Transitive substitutions are not expressible since that causes non-linear evaluation times on some inputs.
+Naturally when new mappings are introduced the mapped to values can be duplicated instead such that instead of $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto \gamma_1 \}$ then $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ which naively violates call by need.
+Instead $E$ can be labelled with some name $a$ when found in the evaluation process such that when some value with the label $a$ is evaluated then all duplications of $E$ can share the computed result.
+This becomes quite troublesome in practice so therefore in $L$ when some object $E$ is discovered it is declared as a mutable pointer by the interpreter (or natively if implemented in a lazy language) such that all duplications effectively point to the same object.
+\begin{remark}
+    The mutable implementation also implies a simple implementation for parallel evaluation since mutation becomes a matter of locking $E$.
+    In the labelled sharing strategy the evaluation algorithm cannot evaluate objects in parallel.
+    If an implementation of the labelled sharing strategy were to evaluate $k$ duplications of $E$ in parallel, then $E$ would be evaluated $k$ times since the sharing strategy builds upon an immutable labelling ``cache'' visiting terms sequentially.
+\end{remark}
 
 An evaluation written $S, \alpha, e \rightarrow e'$ means $e$ evaluates to $e'$ under some substitution mapping $S$ and $\alpha$-conversion mapping $\alpha$.
 $Sx$ means that variable $x$ is replaced with whatever the substitution map maps $x$ to if $x \in S$ otherwise $Sx = x$, the same operation counts for $\alpha$.
 In a call by value environment $\alpha x$ can eagerly convert since the value must be evaluated eagerly.
-In a call by name (or need) environment $\alpha x$ should remain suspended until needed.
+In a call by name (or need) environment $\alpha x$ should remain suspended until needed like discussed in this section.
 %An implementation (\autoref{lst:cbn}) of the call by name reduction algorithm \autoref{fig:cbn} can easily be extended with call by need by the aforementioned modifications.
 %\begin{remark}
     %In the implementation the \texttt{Map} constructor is the usual implementation of the Map data structure.
@@ -358,7 +503,7 @@ Garbage collection in purely function languages is a bit of a controversial topi
 But adding mappings from lambda terms to variables without any subtractions will lead to an ever increasing substitution mapping size.
 When performing reductions one might desire to garbage collect the substitution mapping once it contains useless substitutions.
 Fortunately the task of collecting garbage is quite easy since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
-When some algorithm with garbage collection evaluates some abstraction term \texttt{$\lambda$x.E}$,S,[\texttt{x} \mapsto \gamma]$, the algorithm should remove the introduced variable \texttt{x} by inspecting the $\alpha$-conversion mapping such that the substitution mapping becomes $S\backslash \gamma$.
+When some algorithm with garbage collection evaluates some abstraction term \texttt{$\lambda$x.E}$,S,[\texttt{x} \mapsto \gamma]$, the algorithm should remove the introduced variable \texttt{x} by inspecting the $\alpha$-conversion mapping such that the substitution mapping becomes $S\backslash \{ \gamma \}$.
 
 
 %When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
