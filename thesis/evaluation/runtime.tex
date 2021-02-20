@@ -38,7 +38,7 @@ The implementation of call by name can become quite troublesome and therefore in
 
 The call by need strategy introduces \textit{lazy evaluation} semantics which is the same as call by name with one extra detail named \textit{sharing}.
 In \autoref{lst:callbyname} \texttt{force x} is computed twice which may be an expensive operation.
-Under call by need all non results are saved for later use similar to techniques such as dynamic programming.
+Under call by need all results are saved for later use similar to techniques such as dynamic programming.
 \begin{figure}
     \centering
     \begin{subfigure}[b]{0.33\textwidth}
@@ -50,7 +50,7 @@ Under call by need all non results are saved for later use similar to techniques
 
                     \node[circle, draw=black, below left = of app1] (app2) {\texttt{app}};
                     \path[-] (app1) edge node[left] {} (app2);
-                        \node[circle, draw=red, below left = of app2] (value) {\texttt{value}};
+                        \node[circle, draw=black, below left = of app2] (value) {\texttt{value}};
                         \path[-] (app2) edge node[left] {} (value);
                         \node[circle, draw=black, below right = of app2] (double) {\texttt{double}};
                         \path[-] (app2) edge node[left] {} (double);
@@ -68,11 +68,11 @@ Under call by need all non results are saved for later use similar to techniques
                     \path[-] (lamx) edge node[left] {} (lamu);
                         \node[circle, draw=black, below = of lamu] (app1) {\texttt{app}};
                         \path[-] (lamu) edge node[left] {} (app1);
-                            \node[circle, draw=black, below right = of app1] (app2) {\texttt{app}};
+                            \node[circle, draw=red, below right = of app1] (app2) {\texttt{app}};
                             \path[-] (app1) edge node[left] {} (app2);
-                                \node[circle, draw=black, below right = of app2] (x1) {\texttt{x}};
+                                \node[circle, draw=red, below right = of app2] (x1) {\texttt{x}};
                                 \path[-] (app2) edge node[left] {} (x1);
-                                \node[circle, draw=black, below = of app2] (force1) {\texttt{force}};
+                                \node[circle, draw=red, below = of app2] (force1) {\texttt{force}};
                                 \path[-] (app2) edge node[left] {} (force1);
 
                             \node[circle, draw=black, below left = of app1] (app4) {\texttt{app}};
@@ -80,11 +80,11 @@ Under call by need all non results are saved for later use similar to techniques
                                 \node[circle, draw=black, below left = of app4] (add) {\texttt{+}};
                                 \path[-] (app4) edge node[left] {} (add);
 
-                                \node[circle, draw=black, below right = of app4] (app3) {\texttt{app}};
+                                \node[circle, draw=red, below right = of app4] (app3) {\texttt{app}};
                                 \path[-] (app4) edge node[left] {} (app3);
-                                    \node[circle, draw=black, below = of app3] (x2) {\texttt{x}};
+                                    \node[circle, draw=red, below = of app3] (x2) {\texttt{x}};
                                     \path[-] (app3) edge node[left] {} (x2);
-                                    \node[circle, draw=black, below left = of app3] (force2) {\texttt{force}};
+                                    \node[circle, draw=red, below left = of app3] (force2) {\texttt{force}};
                                     \path[-] (app3) edge node[left] {} (force2);
                 \node[draw,scale=1.3,fill=none,rectangle,fit=(lamx)(force2)(x1)(add)](fstB){};
         \end{tikzpicture}
@@ -117,8 +117,8 @@ Under call by need all non results are saved for later use similar to techniques
     \label{fig:evalexpr}
 \end{figure}
 To understand this better observe the expression tree for \autoref{lst:callbyname} in \autoref{fig:evalexpr}.
-Clearly the right and left branches in \autoref{sub:eval:double} are identical thus they may be memoized such that the forcing of \texttt{x} only occurs once.
-More generally if the execution environment supports lazy evaluation, once an expression has been forced it is remembered if that branch is executed again.
+Clearly the two red subtrees in \autoref{sub:eval:double} are identical thus they may be memoized such that the forcing of \texttt{x} only occurs once.
+More generally if the execution environment supports lazy evaluation, once an expression has been forced it is remembered.
 
 \section{Runtime environments}
 Now that the untyped lambda calculus has been introduced, implemented and validated efficiently the question of execution naturally follows.
@@ -153,7 +153,7 @@ The evaluation context is always an abstraction $\lambda x . E$.
 \begin{pcases}
     \pcase{$E = x$ then rewrite $\lambda x . E$ to $I$.}
     \pcase{$E = y$ where $y \neq x$ and $y$ is a variable then rewrite $\lambda x . y$ to $Ky$.}
-    \pcase{$E = Y E$ then rewrite $\lambda x . Y E$ to $S(\lambda x . Y)(\lambda x . E)$ since applying some $y$ to $\lambda x . Y E$ must lambda lift $y$ as a parameter named $x$ to both $Y$ and $E$ such that the lifted expression becomes $((\lambda x . Y)y)((\lambda x . E)y) = S(\lambda x . Y)(\lambda x . E)y$.
+    \pcase{$E = Y E'$ then rewrite $\lambda x . Y E'$ to $S(\lambda x . Y)(\lambda x . E')$ since applying some $y$ to $\lambda x . Y E'$ must lambda lift $y$ as a parameter named $x$ to both $Y$ and $E'$ such that the lifted expression becomes $((\lambda x . Y)y)((\lambda x . E')y) = S(\lambda x . Y)(\lambda x . E')y$.
     Then recurse in both branches.
     }
     \pcase{$E = \lambda x . E'$ then first rewrite $E'$ with the appropriate cases recursively such that $E'$ becomes either $x$, $y$ or $Y E$ such that Case 1, 2 or 3 can be applied.}
@@ -230,7 +230,7 @@ In the expression \texttt{x g} the substitutions from \texttt{x} may never persi
 The first step to evaluate the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
 The $\alpha$-conversion mapping written $[x_1 \mapsto \gamma_1, x_2 \mapsto \gamma_2 \dots , x_n \mapsto \gamma_n]$ states that for some $x_k$ where $1 \leq k \leq n$ all variables $v$ where $v = x_k$ should be renamed to $\gamma_k$.
 Let $\lambda x . ((\lambda x . x) x)$ be a term where a collision between the two $x$'s causes trouble, the $\alpha$-conversion can be $\lambda y . ((\lambda x . x) y)$ since $y$ and $x$ have been introduced by separate abstractions.
-$\alpha$-conversions are solve some critical problems such as closures and recursion when evaluating the lambda calculus.
+$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 $\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
 More formally $\textit{eval}: \Lambda \times S \rightarrow \Lambda \times S$ where $S$ is the domain of substitution mappings and $\Lambda$ is in the domain of lambda expressions such that  $(\lambda',s') = eval(\lambda, s)$ always implies $s \subseteq s'$.
 \begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]

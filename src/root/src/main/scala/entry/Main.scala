@@ -35,7 +35,7 @@ object Main extends IOApp {
     }
 
     val output = succ.map { decls =>
-      inferProgram(decls)
+      //inferProgram(decls)
       val transformed = LCTransform.entrypoint(decls)
       if (asScheme) 
         s"(define main ${emitter.LCEmitter.emitScheme(transformed)})\n(display main)" 

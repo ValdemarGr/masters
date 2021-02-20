@@ -749,19 +749,29 @@ Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (
         };
         \addlegendentry{actual}
 
-        \addplot[
-            color=green,
-            mark=triangle
-        ]
-        coordinates {
-(1,47)  (2,78) (3,128) (4,211) (5,347) (6,570)
-        };
-        \addlegendentry{fitted}
+        %\addplot[
+            %color=green,
+            %mark=triangle
+        %]
+        %coordinates {
+%(1,47)  (2,78) (3,128) (4,211) (5,347) (6,570)
+        %};
+        %\addlegendentry{fitted}
 
    \end{axis} 
 \end{tikzpicture}
     \caption{Plot of type variables in Hindley-Milner type systems}
     \label{fig:expplot}
 \end{figure}
+\section{Type system abstractions}
+The Hindley-Milner type system can only express simple programs which robs algorithmic elegance.
+One domain of programs Hindley-Milner cannot express are those that rely on \textit{parametric polymorphism}.
+Parametric polymorphism (or rank-n types) deals with letting abstractions have polymorphic parameters.
+For instance \autoref{lst:rankn} is not typable in Hindley-Milner since its type is \texttt{$\forall\tau$.$\tau$ $\rightarrow$ ($\forall\gamma$.$\gamma \rightarrow$ Int)}.
+\begin{lstlisting}[language=ML,caption={Program that requires parametric polymorphism},label={lst:rankn},mathescape=true]
+fun f a makeNum =
+    ((makeNum a) + (makeNum 0)) + (makeNum (0 == 2))
+\end{lstlisting}
+
 
 \end{document}
