@@ -766,29 +766,86 @@ Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (
 \section{Higher level type systems}
 The Hindley-Milner type system can only express relatively simple programs which robs algorithmic elegance in respect to other type systems.
 One domain of programs that Hindley-Milner cannot express are those that rely on \textit{parametric polymorphism}.
-Parametric polymorphism (or rank-n types) deals with letting abstractions have polymorphic parameters.
-For instance \autoref{lst:rankn} is not typable in Hindley-Milner since its type is \texttt{$\forall\tau$.$\tau$ $\rightarrow$ ($\forall\gamma$.$\gamma \rightarrow$ Int)}.
+Parametric polymorphism (or rank-n types) deals with letting abstractions have polymorphic parameters such that a type can be quantified within another type, having its depth bounded by n (rank-\textbf{n}).
+For instance \autoref{lst:rankn} is not typable in Hindley-Milner since its type is \texttt{$\forall\tau$.($\forall\gamma$.$\gamma \rightarrow$ Int) $\rightarrow \tau \rightarrow$ Int}.
 \begin{lstlisting}[language=ML,caption={Program that requires parametric polymorphism},label={lst:rankn},mathescape=true]
-fun f a makeNum =
+fun f makeNum a =
     ((makeNum a) + (makeNum 0)) + (makeNum (0 == 2))
 \end{lstlisting}
+More generally, any type which is quantified on the left side of $\rightarrow$ cannot be moved out thus increases the rank.
+
 Even languages which are typed and inferred by Hindley-Milner like Ocaml have introduced kinds through modules to allow higher-kinded types.
-Hindley-Milner is in fact a restricted version of another more general type system called \textit{System F}.
-System F does not have the constraint of allowing only rank 1 polymorphism.
+Hindley-Milner is in fact a restricted version of another more general type system called \textit{System F} (and System F\underline{$\omega$}).
+The Hindley-Milner type system introduces abstractions as monomorphic types whereas a system named System F allows any type to be polymorphic.
 It turns out that allowing higher rank polymorphism makes type inference (type construction in older literature) \textit{undecidable}~\cite{wells1999typability}.
 \begin{remark}
     Formal type systems are in the form of deductive systems, in which one can prove \textit{decidability} among other properties.
     Decidability in deductive systems is a property which expresses whether a system can be decided by an algorithm (which relates to the encoding of algorithms on theoretic computers).
     If and only if every valid formula (type) in the deductive system (type system) can have its correctness decided algorithmically.
 \end{remark}
+
+Another variant of type system is \textit{System F\underline{$\omega$}}.
+System F\underline{$\omega$} introduces another feature (System F\underline{$\omega$} is different to System F, it is not an extension) called type constructors.
+It is uncommon to use System F\underline{$\omega$} on its own since it only allows type constructors of monomorphic types (System F introduces polymorphism), which does not yield much expressiveness since only specific types such as \texttt{Int $\rightarrow$ List Int} would be expressible.
+Throughout this chapter, type constructors have already been introduced in such a way that they can occur in Hindley-Milner though algebraic data types such as \texttt{$\forall$a.a $\rightarrow$ List a}.
+Very commonly moderately generalized types need both the higher rank polymorphism implied by System F and the type constructors implied by System F\underline{$\omega$}.
+
+Hindley-Milner can only take advantage of System F\underline{$\omega$} for rank 1 types which significantly constrains the generalization level.
+A more expressive version of Hindley-Milner is System F$\omega$ which in fact, is the basis for the type system of Haskell, which is very expressive.
+\begin{remark}
+    Haskell has introduced some additional tweaks to System F$\omega$ to avoid the decidability problem among others.
+\end{remark}
+
 In more expressive functional programming language type systems it has become increasingly popular abstract over implementations by introducing concepts from \textit{category theory}.
 Naturally many abstractions of category theory require rank-2 polymorphism.
-More generally the higher the level of polymorphism allowed the higher the possible abstraction level becomes.
-For instance a general purpose \textit{functor} is implementable and usable with rank-2 polymorphism while a natural transformation between functors becomes a matter of rank-3 polymorphism.
+More generally the larger the level of polymorphism allowed the larger the possible abstraction level becomes.
+For instance a general purpose \textit{functor} is implementable and usable with rank-2 polymorphism while a natural transformation between kinds becomes a matter of rank-3 polymorphism.
 \begin{remark}
-    A functor is a mapping between two categories, which for instance can be a functor for lists which provides an algebra for \texttt{$\forall$a.$\forall$b.List a $\rightarrow$ List b}.
+    A functor is a mapping between two categories, which for instance can be a functor for lists which provides the algebra \texttt{$\forall$a.$\forall$b.List a $\rightarrow$ List b}.
 \end{remark}
-\noindent To generalize functor one must be able to express the type \texttt{$\forall\tau$.($\forall$a.a $\rightarrow$ $\tau$a) \rightarrow ($\forall$b.b $\rightarrow$ $\tau$b)} such that applying \texttt{List} effectively partially applies the type and reduces the rank.
+\noindent To generalize functor one must be able to express the type \texttt{$\forall\tau$.($\forall$a.a $\rightarrow$ $\tau$a) $\rightarrow$ ($\forall$b.b $\rightarrow \tau$b)} such that applying \texttt{List} effectively partially applies the type and reduces the rank.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \matrix (m) [matrix of math nodes,
+        row sep=3em, column sep=3em,
+        text height=1.5ex,
+        text depth=0.25ex]{
+                    & \lambda\omega             &              & \lambda\Pi\omega             \\
+        \lambda 2   &                           & \lambda\Pi 2                                \\
+                    & \lambda\underline{\omega} &              & \lambda\Pi\underline{\omega} \\
+        \lambda{\to}&                           & \lambda\Pi  \\
+        };
+        \path[-{Latex[length=2.5mm, width=1.5mm]}]
+        (m-1-2) edge (m-1-4)
+        (m-2-1) edge (m-2-3)
+                edge (m-1-2)
+        (m-3-2) edge (m-1-2)
+                edge (m-3-4)
+        (m-4-1) edge (m-2-1)
+                edge (m-3-2)
+                edge (m-4-3)
+        (m-3-4) edge (m-1-4)
+        (m-2-3) edge (m-1-4)
+        (m-4-3) edge (m-3-4)
+                edge (m-2-3);
+    \end{tikzpicture}
+    \captionsetup{singlelinecheck=off}
+    \caption[nothing, items]{
+        \begin{itemize}
+            \item$\lambda\rightarrow$ is the simply typed lambda calculus without polymorphism.
+            \item$\lambda\underline{\omega}$ is System F\underline{$\omega$}.
+            \item$\lambda 2$ is System F.
+            \item$\lambda\omega$ is System F$\omega$.
+            \item$\Pi$ introduces \textit{dependent types} which is beyond the scope of this thesis.
+        \end{itemize}
+    }
+    \label{lambdacube}
+\end{figure}
+\autoref{lambdacube} shows the \textit{lambda cube}, introduced in \cite{barendregt1991introduction} which encapsulates the family of formal type systems.
+Complicated type systems such as the \textit{calculus of constructions} ($\lambda\Pi\underline{\omega}$) is used in proof assistants.
+
 
 
 \end{document}
