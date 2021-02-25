@@ -804,7 +804,15 @@ For instance a general purpose \textit{functor} is implementable and usable with
 \begin{remark}
     A functor is a mapping between two categories, which for instance can be a functor for lists which provides the algebra \texttt{$\forall$a.$\forall$b.List a $\rightarrow$ List b}.
 \end{remark}
-\noindent To generalize functor one must be able to express the type \texttt{$\forall\tau$.($\forall$a.a $\rightarrow$ $\tau$a) $\rightarrow$ ($\forall$b.b $\rightarrow \tau$b)} such that applying \texttt{List} effectively partially applies the type and reduces the rank.
+\noindent To generalize functor one must be able to express \textit{kinds} which are the types of type constructors denoted $* \rightarrow *$ for a type constructor that takes some type $*$ and creates some type $*$.
+$* \rightarrow *$ is a unary type constructor whereas $*$ is an atomic type like \texttt{Int} or \texttt{List Int}, since these types are fully applied.
+Kinds allow partial application on type constructors on a general level, since the only specific constraint is the shape and not where variables appear.
+The relaxation of type constructions allow various types to be generalized such as $a \rightarrow b \rightarrow M a b$ which could also have the signature of $a \rightarrow b \rightarrow M b a$ which kinds abstract over generalizing $M$ to $* \rightarrow * \rightarrow *$.
+The kind for \texttt{List} is $* \rightarrow *$ such that for any $\tau$ with kind $* \rightarrow *$ the type for functor map is \texttt{$\forall\tau$.($\forall$a.$\tau$a) $\rightarrow$ ($\forall$b.$\tau$b)}.
+\begin{remark}
+    Kinds are an abstraction which can exist purely theoretical without robbing the type system of expressiveness.
+    Just as some complications in type systems are resolved with weakening the type system or enriching the syntax, kinds can have been abstracted away into types~\cite{weirich2013system}.
+\end{remark}
 
 \begin{figure}
     \centering
@@ -845,7 +853,11 @@ For instance a general purpose \textit{functor} is implementable and usable with
     \label{lambdacube}
 \end{figure}
 \autoref{lambdacube} shows the \textit{lambda cube}, introduced in \cite{barendregt1991introduction} which encapsulates the family of formal type systems.
-Complicated type systems such as the \textit{calculus of constructions} ($\lambda\Pi\underline{\omega}$) is used in proof assistants.
+Complicated type system such as the \textit{calculus of constructions} ($\lambda\Pi\underline{\omega}$) are used in proof assistants since they essentially are deduction systems.
+\section{Concluding remarks}
+This section should act as an introduction to more general type systems and where Hindley-Milner is placed on the type system map.
+Hindley-Milner is a small part of a larger more general system which has significant impact on the extensibility of Hindley-Milner.
+Some very renown functional programming languages began by implementing Hindley-Milner as their type system since it is very fast in practice and relatively simple to implement.
 
 
 
