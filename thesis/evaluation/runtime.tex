@@ -8,7 +8,7 @@ When evaluating the untyped lambda calculus one has to choose an evaluation stra
 The choice of evaluation strategy has a large impact on aspects such as complexity guarantees.
 Such strategies are \textit{call by value}, \textit{call by name} and \textit{call by need}.
 Call by value is most often the simplest and most natural way of assuming program execution.
-\begin{lstlisting}[language=ML,caption={Program that doubles values},label={lst:callbyvalue},mathescape=true]
+\begin{lstlisting}[float,language=ML,caption={Program that doubles values},label={lst:callbyvalue},mathescape=true]
 fun double x = x + x;
 let a = double 10;
 double 10;
@@ -16,8 +16,7 @@ double 10;
 By the call by value semantics, \autoref{lst:callbyvalue} eagerly evaluates every expression.
 Clearly the variable \texttt{a} is never used but under the call by value semantics everything is eagerly evaluated.
 Every expression is evaluated in logical order in the call by value evaluation strategy.
-\begin{figure}[ht]
-\begin{lstlisting}[language=ML,caption={Implementation of call by name},label={lst:callbyname},mathescape=true]
+\begin{lstlisting}[float,language=ML,caption={Implementation of call by name},label={lst:callbyname},mathescape=true]
 fun suspend x unit = x;
 fun force x = x 0;
 let value = suspend 10;
@@ -28,7 +27,6 @@ fun double x =
 let a = double value;
 force (double value);
 \end{lstlisting}
-\end{figure}
 The call by name semantics however does only evaluate expressions once they are needed.
 By the call by name semantics \texttt{a} is never evaluated since it is never used.
 In \autoref{lst:callbyname} call by name has been implemented by the use of various functions such as the two constant functions \texttt{suspend} and \texttt{force}.
@@ -212,7 +210,7 @@ Reductions in the context of the lambda calculus are a small set of well-defined
 The techniques required to correctly evaluate a program are a bit more complicated than the SKI calculus but are rewarding in the performance.
 The substitution mapping set is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
 %In $(\lambda f . \lambda x . \lambda y. \texttt{ let } a = f x \texttt{ in } a + y)(\lambda y . y) \,\, 10 \,\, 20$ when evaluating $f x$ where the substitution are $[f \mapsto \lambda y . y, x \mapsto 10, y \mapsto 20]$ there must be taken great care that $x$ is mapped to $y$ in $\lambda y . y$.
-\begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
+\begin{lstlisting}[float,language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
 ($\lambda$g.
     ($\lambda$x.
         ($\lambda$g.
@@ -233,7 +231,7 @@ Let $\lambda x . ((\lambda x . x) x)$ be a term where a collision between the tw
 $\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 $\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
 More formally $\textit{eval}: \Lambda \times S \rightarrow \Lambda \times S$ where $S$ is the domain of substitution mappings and $\Lambda$ is in the domain of lambda expressions such that  $(\lambda',s') = eval(\lambda, s)$ always implies $s \subseteq s'$.
-\begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
+\begin{lstlisting}[float,language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
 let f = ($\lambda$f'.$\lambda$x.
     if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
 f f 10
@@ -410,7 +408,7 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
     %In the implementation the \texttt{Map} constructor is the usual implementation of the Map data structure.
     %Also the implementation is generalized in that it does not describe operations such as addition or whether it is a call by need or name environment.
 %\end{remark}
-%\begin{lstlisting}[language=ML,caption={Implementation of call by name},label={lst:cbn},mathescape=true]
+%\begin{lstlisting}[float,language=ML,caption={Implementation of call by name},label={lst:cbn},mathescape=true]
 %type Three a b c =
     %| Triple a b c;
 %type Term =
@@ -504,7 +502,7 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
 \clearpage
 \begin{exmp}
 Consider the following program which duplicates an object.
-\begin{lstlisting}[language=ML,caption={Object duplication},label={lst:objdup},mathescape=true]
+\begin{lstlisting}[float,language=ML,caption={Object duplication},label={lst:objdup},mathescape=true]
 let d = ($\lambda$f.$\lambda$x.f x x) in
 d ($\lambda$z.$\lambda$y.z + y) (($\lambda$i.i) 0)
 \end{lstlisting}
@@ -604,7 +602,7 @@ When some algorithm with garbage collection evaluates some abstraction term \tex
 %Consider the De Bruijn form of \autoref{lst:add} where \texttt{2} is the index of \texttt{a} and \texttt{1} is the index of \texttt{b}.
 %Beta reductions with De Bruijn indices~\cite{de1972lambda} is another more straightforward method of evaluating the untyped lambda calculus.
 %De Bruijn indices is a representation of lambda calculus which deals with variables based on the scope ''distance`` instead of variable names.
-%\begin{lstlisting}[language=ML,caption={Add as De Bruijn},label={lst:adddebru},mathescape=true]
+%\begin{lstlisting}[float,language=ML,caption={Add as De Bruijn},label={lst:adddebru},mathescape=true]
 %let add = ($\lambda$($\lambda$ 2 1))
 %\end{lstlisting}
 %Consider the De Bruijn form of \autoref{lst:add} where \texttt{2} is the index of \texttt{a} and \texttt{1} is the index of \texttt{b}.
