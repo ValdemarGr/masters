@@ -11,7 +11,7 @@ Many high level techniques exist to model abstractions in tangible concepts.
 Algebraic data types are essentially a combination of disjoint unions, tuples and records.
 Algebraic data types are closely related to types thus require some type theory to fully grasp.
 Types are explored more in depth in \autoref{types}.
-\begin{lstlisting}[float,language=ML,caption={List algebraic data type},label={lst:listadt}]
+\begin{lstlisting}[language=ML,caption={List algebraic data type},label={lst:listadt}]
 type List a = 
     | Nil
     | Cons a (List a)
@@ -22,7 +22,7 @@ The list value can either take the type of \texttt{Nil} indicating an empty list
 The list implementation has two constructors and one type parameter.
 The type parameter $a$ of the list algebraic data type defines a \textit{polymorphic type}; $a$ can agree on any type, it is universally quantified \texttt{$\forall a. $ Cons $a$ (List $a$)}.
 The two constructors \texttt{Nil} and \texttt{Cons} both create a value of type \texttt{List a} once instatiated.
-\begin{lstlisting}[float,language=ML,caption={List instance and match},label={lst:listinstance}]
+\begin{lstlisting}[language=ML,caption={List instance and match},label={lst:listinstance}]
 let l = Cons 1 (Cons 2 (Cons 3 Nil));
 
 match l 
@@ -55,7 +55,7 @@ These encoding rules ensure that the ``handler'' functions are provided uniforml
    &(a \rightarrow \texttt{List } a \rightarrow b) \rightarrow b \rightarrow (a \rightarrow \texttt{List } a \rightarrow b) \rightarrow b
    \label{eq:consconstructor}
 \end{align}
-\begin{lstlisting}[float,language=ML,caption={List algebraic data type implementation},label={lst:listscott}]
+\begin{lstlisting}[language=ML,caption={List algebraic data type implementation},label={lst:listscott}]
 fun cons x xs = 
     fun c _ onCons = onCons x xs;
     c;
@@ -67,7 +67,7 @@ fun nil =
 Encoding the constructors in $L$ yields the functions defined in \autoref{lst:listscott}.
 Pattern matching is but a matter of applying the appropriate handlers.
 In \autoref{lst:listscottexample}.
-\begin{lstlisting}[float,language=ML,caption={Example of scott encoded list algebraic data type},label={lst:listscottexample}]
+\begin{lstlisting}[language=ML,caption={Example of scott encoded list algebraic data type},label={lst:listscottexample}]
 let l = cons 1 (cons 2 (cons 3 nil));
 
 fun head x _ = 

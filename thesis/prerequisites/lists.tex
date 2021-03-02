@@ -3,7 +3,7 @@
 An instance of a data structure which has been thoroughly discussed throughout this thesis is \texttt{List} (\autoref{lst:listadt}).
 \texttt{List} is an excellent choice as an introductory data structure since it gives insight into some very universal problems regarding both immutable and mutable data structures.
 One is free to choose the operations for \texttt{List} but some common ones include \texttt{filter} (\autoref{lst:filter}) and \texttt{map} (\autoref{lst:map}).
-\begin{lstlisting}[float,language=ML,caption={Filtering some \texttt{l:List a} based on a predicate p},label={lst:filter},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Filtering some \texttt{l:List a} based on a predicate p},label={lst:filter},mathescape=true]
 fun filter l p = 
     match l
         | Cons x xs -> 
@@ -16,7 +16,7 @@ fun filter l p =
         | Nil -> l;
     ;
 \end{lstlisting}
-\begin{lstlisting}[float,language=ML,caption={Mapping from \texttt{List a} to \texttt{List b}},label={lst:map},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Mapping from \texttt{List a} to \texttt{List b}},label={lst:map},mathescape=true]
 fun map l f = 
    match l
     | Cons x xs -> Cons (f x) (map xs f);

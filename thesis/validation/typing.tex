@@ -5,7 +5,7 @@
 \label{sec:types}
 The spell checking equivalent for computer programs could be type checking; a subproblem of validating a programmer's intuition of a program's intent.
 Types also have other properties than simply validating they can in fact be related to theorems to which an implementation is the proof~\cite{howard1980formulae}.
-\begin{lstlisting}[float,language=ML,caption={Head implementation},label={lst:headimpl},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl},mathescape=true]
 $\texttt{fun head l: List a} \rightarrow \texttt{a =}$
     $\texttt{match l}$
         $\texttt{| Cons x \_ } \rightarrow \texttt{x;}$
@@ -129,10 +129,10 @@ Type variables are bound when they have been introduced by a quantification or e
 \end{align}
 \begin{exmp}
 Consider the type for the function \texttt{fst} in \autoref{lst:fstimpl}.
-\begin{lstlisting}[float,language=ML,caption={First function},label={lst:fstimplbad},mathescape=true]
+\begin{lstlisting}[language=ML,caption={First function},label={lst:fstimplbad},mathescape=true]
 fun fst a b: $\forall$A.$\forall$B.A $\rightarrow$ B $\rightarrow$ A = a;
 \end{lstlisting}
-\begin{lstlisting}[float,language=ML,caption={First function in lambda calculus},label={lst:fstimpl},mathescape=true]
+\begin{lstlisting}[language=ML,caption={First function in lambda calculus},label={lst:fstimpl},mathescape=true]
 let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
 \end{lstlisting}
     The type for \texttt{fst} is $\forall A \forall B . A \rightarrow B \rightarrow A$.
@@ -159,7 +159,7 @@ When generalizing a type $\tau$ all types which do not occur in $\Gamma$ must be
 Clearly the only bound type variable in the context of $\tau \rightarrow \gamma$ is $\tau$ such that it may become $\forall \tau. \tau \rightarrow \gamma$ in the instance that the type represents a polymorphic let expression.
     Note that $\texttt{x:}\gamma$ in \autoref{eq:monoeq} does not contain $\gamma$ as a quantified type since it has been introduced by an abstraction and \textbf{Abs} only introduces monomorphic types (\autoref{fig:hmrules}).
     An interesting observation is that there can only exist one implementation of the above type system if $\tau \rightarrow \gamma$ is to be introduced by a polymorphic let expression which is displayed in \autoref{lst:theoremsforfree}~\cite{wadler1989theorems}.
-\begin{lstlisting}[float,language=ML,caption={Implementation of type state},label={lst:theoremsforfree},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Implementation of type state},label={lst:theoremsforfree},mathescape=true]
 $\lambda$x.
     let z = ($\lambda$y.x) in
     $\dots$
@@ -170,54 +170,42 @@ $\lambda$x.
 With the now introduced primitives, the Hindley-Milner type system is but a set of rules composed by said primitives.
 \begin{figure}[ht]
 	\begin{mdframed}
-		\minipage{0.49\textwidth}
 		\begin{prooftree}
 			\AxiomC{$x: \sigma \in \Gamma$}
 			\LeftLabel{Var}
 			\UnaryInfC{$\Gamma\vdash x:\sigma$}
 		\end{prooftree}
-		\endminipage
-		\minipage{0.49\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \tau_1 \rightarrow \tau_2$}
 			\LeftLabel{App}
 			\AxiomC{$\Gamma \vdash e_2 : \tau_1$}
 			\BinaryInfC{$\Gamma \vdash e_1 e_2 : \tau_2$}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 
-		\minipage{0.49\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\Gamma, x: \tau_1 \vdash e : \tau_2$}
 			\LeftLabel{Abs}
 			\UnaryInfC{$\Gamma \vdash \lambda x . e : \tau_1 \rightarrow \tau_2$}
 		\end{prooftree}
-		\endminipage\hfill
-		\minipage{0.49\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \sigma$}
 			\LeftLabel{Let}
 			\AxiomC{$\Gamma ,x : \sigma \vdash e_2 : \tau$}
 			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau$}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 
-		\minipage{0.49\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e : \sigma_1$}
 			\AxiomC{$\sigma_1 \sqsubseteq \sigma_2$}
 			\LeftLabel{Ins}
 			\BinaryInfC{$\Gamma \vdash e : \sigma_2$}
 		\end{prooftree}
-		\endminipage\hfill
-		\minipage{0.49\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e : \sigma$}
             \AxiomC{$a \notin \textit{free}(\Gamma)$}
 			\LeftLabel{Gen}
 			\BinaryInfC{$\Gamma \vdash e : \forall a . \sigma$}
 		\end{prooftree}
-		\endminipage
 	\end{mdframed}
 	\caption{Hindley-Milner type rules}
 	\label{fig:hmrules}
@@ -232,7 +220,7 @@ There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules
     \item \textbf{Let} states that if $e_1$ has been judged to have type $\sigma$ then the let expression's identifier $x: \sigma$ must exist in the environment when deriving the type of $e_2$.
         Observe that \textbf{Let} introduces a polymorphic type to the environment while \textbf{Abs} introduces a monomorphic one.
         Note that by \autoref{remark:judgpoly} $x$ may be polymorphic in $e_2$.
-    \item \textbf{Inst} specializes some polymorphic type (in regard to the type system implementation) to a more specific polymorphic type.
+    \item \textbf{Ins} specializes some polymorphic type (in regard to the type system implementation) to a more specific polymorphic type.
         $\sqsubseteq$ is the partial order of types where the binary relation between two types compares the descriptiveness of types.
         \begin{exmp}
             In $L$ the smallest element is the top of the type hierarchy (\autoref{fig:polytree}), the polymorphic type.
@@ -246,11 +234,11 @@ Let polymorphism is exemplified in \autoref{exmp:letpoly}.
 Throughout this example the convenient syntax $(x, z)$ is the pair of the variables $x$ and $z$ which can be implemented by algebraic data structures or a combinator.
 
 The identity function is a common example to illustrate type systems (\autoref{lst:idfun}).
-\begin{lstlisting}[float,language=ML,caption={Identity function in $L$},label={lst:idfun}]
+\begin{lstlisting}[language=ML,caption={Identity function in $L$},label={lst:idfun}]
 fun id x = x;
 id 4;
 \end{lstlisting}
-\begin{lstlisting}[float,language=ML,caption={Identity function in lambda calculus with let},label={lst:idfunlam},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus with let},label={lst:idfunlam},mathescape=true]
 let id = ($\lambda x . x$) in
 id 4
 \end{lstlisting}
@@ -258,16 +246,16 @@ Stating that id has the type $\forall a.a \rightarrow a$ and $4$ has the type \t
 By applying the Hindley-Milner rules one can prove or disprove this statement.
 A correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampleid}.
 
-\begin{lstlisting}[float,language=ML,caption={Identity function in lambda calculus by abstraction},label={lst:idfunlamabs},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus by abstraction},label={lst:idfunlamabs},mathescape=true]
 ($\lambda$id.id 4)($\lambda$x.x)
 \end{lstlisting}
 \autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} are two equivalent programs with slightly different proofs which raises the question of why the let expression is even needed.
 If \autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} were to be slightly changed such that two new programs \autoref{lst:idfunlam2} and \autoref{lst:idfunlamabs2} were to be proved, \autoref{lst:idfunlamabs2} would not be provable while \autoref{lst:idfunlam2} would.
-\begin{lstlisting}[float,language=ML,caption={Identity function with two applications},label={lst:idfunlam2},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Identity function with two applications},label={lst:idfunlam2},mathescape=true]
 let id = ($\lambda$x.x) in
 (id 4, id id)
 \end{lstlisting}
-\begin{lstlisting}[float,language=ML,caption={Identity function with two applications as abstraction},label={lst:idfunlamabs2},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Identity function with two applications as abstraction},label={lst:idfunlamabs2},mathescape=true]
 ($\lambda$id.(id 4, id id)($\lambda$x.x)
 \end{lstlisting}
 In \autoref{lst:idfunlamabs2} \texttt{id} cannot adhere to polymorphism by \textbf{Abs} in \autoref{fig:hmrules} whilst \textbf{Let} can.
@@ -424,22 +412,17 @@ Unification is performed on monotypes, each of which can take one of three forms
 Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} are commutative.
 \begin{figure}
 	\begin{mdframed}
-		\minipage{1\textwidth}
 		\begin{prooftree}
 			\AxiomC{$S, \{ (\tau_1 \rightarrow \tau_2, \gamma_1 \rightarrow \gamma_2) \} \cup T $}
 			\LeftLabel{Arrow}
 			\UnaryInfC{$S,T \cup \{ (\tau_1, \gamma_1), (\tau_2, \gamma_2) \}$}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 
-		\minipage{0.39\textwidth}
 		\begin{prooftree}
             \AxiomC{$\tau_1, \tau_2$}
             \LeftLabel{Intro}
 			\UnaryInfC{$\emptyset, \{ (\tau_1, \tau_2) \}$}
 		\end{prooftree}
-		\endminipage
-		\minipage{0.59\textwidth}
 		\begin{prooftree}
 			\AxiomC{$S, \{ (a, \tau_1) \} \cup T$}
 			\AxiomC{$a \equiv \tau_1$}
@@ -448,25 +431,20 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 			}
 			\BinaryInfC{$S, T $}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 
-		\minipage{1\textwidth}
 		\begin{prooftree}
 			\AxiomC{$S, \{ (a, \tau_1) \} \cup T $}
 			\AxiomC{$a \notin \textit{free}(\tau_1)$}
 			\LeftLabel{Var sub}
 			\BinaryInfC{$S \cup \{ a \mapsto S\tau_1 \}, \{ a \mapsto S\tau_1 \} \cup T$}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 
-		\minipage{1\textwidth}
 		\begin{prooftree}
 			\AxiomC{$S,C_1 \tau_1 \dots \tau_n,C_2 \gamma_1 \dots \gamma_n \cup T$}
 			\AxiomC{$C_1 \equiv C_2$}
 			\LeftLabel{Atom}
 			\BinaryInfC{$S , \{ (\tau_1, \gamma_1) \dots , (\tau_n, \gamma_n)\} \cup T$}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 	\end{mdframed}
 	\caption{Rules for most general unification}
 	\label{fig:mgu}
@@ -500,24 +478,19 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 \end{remark}
 \begin{figure}
 	\begin{mdframed}[style=style1]
-		\minipage{0.40\textwidth}
 		\begin{prooftree}
 			\AxiomC{$x: \sigma \in \Gamma$}
 			\AxiomC{$\tau = \textit{inst}(\sigma)$}
 			\LeftLabel{Var}
 			\BinaryInfC{$\Gamma \vdash x:\tau , \emptyset$}
 		\end{prooftree}
-		\endminipage\hfill
-		\minipage{0.64\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\tau_1 = \textit{fresh}$}
 			\AxiomC{$\Gamma, x: \tau_1 \vdash e: \tau_2, S$}
 			\LeftLabel{Abs}
 			\BinaryInfC{$\Gamma \vdash \lambda x . e : S\tau_1 \rightarrow \tau_2, S$}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 
-		\minipage{1\textwidth}
 		\begin{center}
 			App
 		\end{center}
@@ -527,16 +500,13 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 			\AxiomC{$S_1 \Gamma \vdash e_2 : \tau_2, S_2 \,\,\,\, S_3 = \textit{mgu}(S_2 \tau_1, \tau_2 \rightarrow \tau_3)$}
 			\BinaryInfC{$\Gamma \vdash e_1 e_2 : S_3 \tau_3, S_3 \cdot S_2 \cdot S_1$}
 		\end{prooftree}
-		\endminipage\hfill\vspace{0.8cm}
 
-		\minipage{1\textwidth}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \tau_1, S_1$}
 			\AxiomC{$S_1 \Gamma , x : S_1 \Gamma(\tau_1) \vdash e_2 : \tau_2, S_2$}
 			\LeftLabel{Let}
 			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau_2, S_1 \cdot S_2$}
 		\end{prooftree}
-		\endminipage
 	\end{mdframed}
 	\caption{Algorithm W}
 	\label{fig:dmrules}
@@ -556,7 +526,7 @@ The \textit{inst} function does not specify types anymore but simply makes unifi
 \textit{inst} is an important component to allow polymorphic types to remain polymorphic since no bound type variables may be substituted.
 \begin{exmp}
     Performing some type analysis on \autoref{lst:polyid} yields a very rich example of why \textit{inst} is necessary.
-\begin{lstlisting}[float,language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
 fun id x = x;
 fun ap x f = f x;
 fun doubleid x = id (id (x + 1));
@@ -605,7 +575,7 @@ Recall that in \autoref{sec:lamrec} recursion (along with mutual recursion) was 
 Allowing recursive functions in Hindley-Milner type inference systems is a matter of letting the function be present in the environment when inferring the function's own body.
 \begin{exmp}
 If the function \texttt{f} defined in \autoref{lst:recplus1} were to be typed it would need to be introduced as an unknown type to the environment before typing the body of \texttt{f}.
-\begin{lstlisting}[float,language=ML,caption={Recursive function},label={lst:recplus1},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Recursive function},label={lst:recplus1},mathescape=true]
 fun f x = (f x) + 1;
 \end{lstlisting}
 Let $\Gamma = \{ \texttt{f} : \forall \tau . \tau, \texttt{x} : \forall \mu . \mu \}$.
@@ -618,7 +588,7 @@ Finally the application of the addition function $+: \texttt{Int} \rightarrow \t
 \subsection{Additional language features}
 In addition to the rules in \autoref{fig:dmrules} many other ergonomic features can easily be modelled once the framework has been understood.
 One of the most crucial features of languages are that of decision.
-\begin{lstlisting}[float,language=ML,caption={ADT implementation of decision},label={lst:adtdecision},mathescape=true]
+\begin{lstlisting}[language=ML,caption={ADT implementation of decision},label={lst:adtdecision},mathescape=true]
 type Boolean = 
     | BFalse
     | BTrue
@@ -676,57 +646,60 @@ For instance let some program be \texttt{Cons 1 (Cons 2 Nil)} such that inferenc
 
 \section{The cost of expressiveness}
 Modern languages with strong type systems tend to be notoriously slow to type on pathological inputs.
-In fact many languages with strong type systems provide type systems expressive enough to be turing complete.
+In fact, many languages with strong type systems provide type systems expressive enough to be Turing-complete.
 
-In the construction of the compiler for $L$ one target was the C++ language.
+In the construction of the compiler for $L$, one target was the C++ language.
 An instance of a pathological input for the C++ type checker is most definitely the untyped lambda calculus.
-The lambda terms in C++ must adhere to polymorphism in many cases which has some unknown but large blowup in compilation time.
+The lambda terms in C++ must adhere to polymorphism in many cases which leads to some unknown but large blowup in compilation time.
 In fact type polymorphism is commonly the root of blowup in typing.
 
-ML which implemented Hindley-Milner was believed to have linear complexity before shown to be exponential along with other problematic complexity findings~\cite{mairson1989deciding}.
+ML, which implements a Hindley-Milner inference system, was believed to have linear complexity before shown to be exponential along with other problematic complexity findings~\cite{mairson1989deciding}.
 As it will turn out, Hindley-Milner also suffers an explosive worst case induced by a pathological input fueled by polymorphism.
 
 \begin{lemma}
     There exists a family of programs which are typable in Hindley-Milner and produce $\Omega(2^n)$ unique type variables.
 \end{lemma}
 \begin{proof}
-    The basis of the blowup stems from the introduced fresh type variables in the polymorphic let inference rule.
-    If the amount of type variables can be shown to be exponential the running time must be at least the same by operations such as subsection set combination and unification.
-\begin{lstlisting}[float,language=ML,caption={Nested pair},label={lst:pairproof},mathescape=true]
+    The basis of the blowup stems from the introduced fresh type variables in the polymorphic \texttt{Let} inference rule.
+    If the number of type variables can be shown to be exponential, the running time must be at least the same by operations, such as subsection set combination and unification.
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=ML,caption={Nested dup},label={lst:pairproof},mathescape=true]
 fun dup a f = f a a;
 fun deep x = dup (dup (dup ($\dots$ x)));
 \end{lstlisting}
+\end{minipage}
     \autoref{lst:pairproof} builds a large function signature for \texttt{deep}.
-    The innermost \texttt{pair} invocation will have it's signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$.
-    The second innermost \texttt{pair} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
-    Naively one might judge \autoref{lst:pairproof} to run in $\Omega(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
-    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the amount introduced type variables would be $\Omega(n)$.
-\begin{lstlisting}[float,language=ML,caption={Nested pairs with different type variables},label={lst:pairproofexp},mathescape=true]
+    The innermost \texttt{dup} invocation will have its signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$, if \texttt{a} has type $x$ and \texttt{f} has type $x \rightarrow x \rightarrow \tau$ for some unknown $\tau$ by the App rule in \autoref{fig:dmrules}.
+    The second innermost \texttt{dup} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
+    Naively one might judge \autoref{lst:pairproof} to run in $O(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
+    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the number introduced type variables would be $\Omega(n)$.
+\begin{lstlisting}[language=ML,caption={Nested tuples with different type variables},label={lst:pairproofexp},mathescape=true]
 fun tuple a b f = f a b;
 fun one = tuple tuple tuple;
 fun two = tuple one one;
 fun three = tuple two two;
 $\dots$
 \end{lstlisting}
-    The trick to induce an exponential running time is with the pathological program in \autoref{lst:pairproofexp}.
-    By allowing \texttt{tuple} to be polymorphic and have having $2$ polymorphic parameters, every time \texttt{tuple} is instantiated it will contain only fresh variables.
+    The trick to induce an exponential running time is demonstrated with the pathological program in \autoref{lst:pairproofexp}.
+    By allowing \texttt{tuple} to be polymorphic and have having two polymorphic parameters, every time \texttt{tuple} is instantiated, it will contain only fresh variables.
     The type of \texttt{tuple} is $a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c$.
-    Clearly this looks very much like \autoref{lst:pairproof} but has the subtle difference of letting the parameters \texttt{a} and \texttt{b} be polymorphic and introducing every ''step`` as a polymorphic let expression.
+    Clearly this looks very much like \autoref{lst:pairproof}, but has the subtle difference of letting the parameters \texttt{a} and \texttt{b} (within the type instantiation of the let expression \texttt{tuple})be polymorphic and introducing every ''step`` as a polymorphic let expression.
     The return type of \texttt{one} (the type of \texttt{f}) is displayed in \autoref{eq:instexp}.
     \begin{align}
         \textit{inst}(a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c) \rightarrow \textit{inst}(a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c) \rightarrow \gamma \rightarrow \gamma.
         \label{eq:instexp}
     \end{align}
-    The first and second instantiations will contain different type variable such that they are not structurally equivalent \autoref{eq:afterinstexp}.
+    The first and second instantiations will contain different type variable such that they are not structurally equivalent (\autoref{eq:afterinstexp}).
     \begin{align}
         (\tau \rightarrow \mu \rightarrow (\tau \rightarrow \mu \rightarrow \phi) \rightarrow \phi) \rightarrow (\varphi \rightarrow \zeta \rightarrow (\varphi \rightarrow \zeta \rightarrow \delta) \rightarrow \delta) \rightarrow \gamma \rightarrow \gamma.
         \label{eq:afterinstexp}
     \end{align}
 \end{proof}
 An interesting observation is that by increasing the amount of polymorphic parameters to some $c$ the number of type variables becomes $\Omega(c^n)$.
-This observation does not have any significatn impact since $\Omega(n^n) \in \text{EXPTIME}$ and $\Omega(2^n) \in \text{EXPTIME}$.
+This observation does not have any significant impact since $O(f(n)) \supseteq \Omega(n^n)$ where $f$ is the algorithm for type inference, such that the problem of type inference in Hindley-Milner is at least in EXPTIME which solvable in both $O(2^n)$ and $O(n^n)$.
+The upper bound which states that type inference in Hindley-Milner is in fact \text{EXPTIME-complete} was justified in~\cite{kfoury1990ml,mairson1989deciding}.
 Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (\autoref{lst:appedix:bigexp}).
-\autoref{fig:expplot} shows the relationship between the program in $L$, the theoretical time and an exp fit of data from $L$.
+\autoref{fig:expplot} shows the relationship between the program typed in $L$, the theoretical time ($2^n$).
 \begin{figure}[ht]
     \centering
 \begin{tikzpicture}
@@ -769,7 +742,7 @@ The Hindley-Milner type system can only express relatively simple programs which
 One domain of programs that Hindley-Milner cannot express are those that rely on \textit{parametric polymorphism}.
 Parametric polymorphism (or rank-n types) deals with letting abstractions have polymorphic parameters such that a type can be quantified within another type, having its depth bounded by n (rank-\textbf{n}).
 For instance \autoref{lst:rankn} is not typable in Hindley-Milner since its type is \texttt{$\forall\tau$.($\forall\gamma$.$\gamma \rightarrow$ Int) $\rightarrow \tau \rightarrow$ Int}.
-\begin{lstlisting}[float,language=ML,caption={Program that requires parametric polymorphism},label={lst:rankn},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Program that requires parametric polymorphism},label={lst:rankn},mathescape=true]
 fun f makeNum a =
     ((makeNum a) + (makeNum 0)) + (makeNum (0 == 2))
 \end{lstlisting}

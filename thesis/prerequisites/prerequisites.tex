@@ -2,8 +2,13 @@
 Data structures in traditional contexts are \textit{homogeneous} collections of data, usually with a particular shape represented by an algebraic data type, with an associated set of \textit{morphisms}.
 A homogeneous collection of data is a collection in which every element is of the same type.
 Morphisms come in various forms, they essentially encapsulate the operations that can be performed on a data structure (or more generally an object).
-Together algebraic data structures and their associated morphisms represent an algebra.
+Algebraic data structures and their associated morphisms come together into an algebra.
 \begin{remark}
-    In object oriented programming data structures (an algebra) is most often implemented through a class while functional programming languanges often seperate the shape and operations.
+    In object oriented programming data structures (an algebra) is most often implemented through a class while functional programming languages often separate the shape and operations.
 \end{remark}
+
+Conventional data structures encapsulates data structures which are interesting under the call by value (\autoref{sec:es}) evaluation strategy.
+Evaluation strategies have many implications on the data structure in question.
+In call by name or call by need one would have to be careful not to create an unnecessary dependency which may force a computation which could otherwise stay suspended.
+The choice of evaluation strategy and data structure implementation has a significant impact on complexity analysis, which will be explored.
 \input{prerequisites/lists}
