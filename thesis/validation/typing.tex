@@ -197,7 +197,7 @@ With the now introduced primitives, the Hindley-Milner type system is but a set 
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e : \sigma_1$}
 			\AxiomC{$\sigma_1 \sqsubseteq \sigma_2$}
-			\LeftLabel{Ins}
+			\LeftLabel{Inst}
 			\BinaryInfC{$\Gamma \vdash e : \sigma_2$}
 		\end{prooftree}
 		\begin{prooftree}
@@ -220,7 +220,7 @@ There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules
     \item \textbf{Let} states that if $e_1$ has been judged to have type $\sigma$ then the let expression's identifier $x: \sigma$ must exist in the environment when deriving the type of $e_2$.
         Observe that \textbf{Let} introduces a polymorphic type to the environment while \textbf{Abs} introduces a monomorphic one.
         Note that by \autoref{remark:judgpoly} $x$ may be polymorphic in $e_2$.
-    \item \textbf{Ins} specializes some polymorphic type (in regard to the type system implementation) to a more specific polymorphic type.
+    \item \textbf{Inst} specializes some polymorphic type (in regard to the type system implementation) to a more specific polymorphic type.
         $\sqsubseteq$ is the partial order of types where the binary relation between two types compares the descriptiveness of types.
         \begin{exmp}
             In $L$ the smallest element is the top of the type hierarchy (\autoref{fig:polytree}), the polymorphic type.
@@ -476,7 +476,7 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
     After the set of constraints $C$ has been generated it then traverses the constraints and generates type variable substitutions.
     It is argued that error reporting is significantly easier in such an approach.
 \end{remark}
-\begin{figure}
+\begin{figure}[ht]
 	\begin{mdframed}[style=style1]
 		\begin{prooftree}
 			\AxiomC{$x: \sigma \in \Gamma$}
@@ -526,13 +526,16 @@ The \textit{inst} function does not specify types anymore but simply makes unifi
 \textit{inst} is an important component to allow polymorphic types to remain polymorphic since no bound type variables may be substituted.
 \begin{exmp}
     Performing some type analysis on \autoref{lst:polyid} yields a very rich example of why \textit{inst} is necessary.
+    \newline
+    \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
 fun id x = x;
 fun ap x f = f x;
 fun doubleid x = id (id (x + 1));
 \end{lstlisting}
+    \end{minipage}
     After inferring \texttt{id} and \texttt{ap} the environment will contain id $\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta)\}$.
-    Typing the function \texttt{doubleid} without the use of \textit{inst}, start with the introduced parameter \texttt{x} and then the innermost expression \texttt{id (x + 1)}. 
+    Typing the function \texttt{doubleid} without the use of \textit{inst}; begin by looking at the introduced parameter \texttt{x} and then the innermost expression \texttt{id (x + 1)}. 
 \begin{align}
     &\textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma) = \{ \tau \} \tag{\textbf{Abs} intro \texttt{x} : $\tau$ }\\
     &\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta), (\texttt{x}, \forall \tau . \tau) \}\\
@@ -639,7 +642,7 @@ To implement rules for algebraic data structures one must first decide on what t
 If algebraic data structures were implemented as in \autoref{sec:adt} the type of an algebraic data structure like Boolean in \autoref{lst:adtdecision} would be \texttt{a -> a -> a} since \texttt{BFalse} and \texttt{BTrue} must have a handler each.
 Implementing algebraic data structures by this method does not introduce anything to the inference algorithm since every algebraic data structure becomes a function.
 It is more common to introduce algebraic data structures as new type constructor types since such an implementation yields descriptive errors in comparison to generated function types.
-Fortunately type constructors are trivial to model in Hindley-Milner since a type constructor categorically is a type lambda and type lambdas in Hindley-Milner are simply quantified types.
+Fortunately type constructors are trivial to model in Hindley-Milner since a type constructor is a type lambda and rank-1 type lambdas are simply quantified types.
 \autoref{lst:listadt} introduces the type constructor \texttt{a $\rightarrow$ List a} with value constructors \texttt{Cons: $\forall$a.a $\rightarrow$ List a $\rightarrow$ List a} and \texttt{Nil: $\forall$a.List a}.
 For instance let some program be \texttt{Cons 1 (Cons 2 Nil)} such that inference becomes a matter of first unifying the type of \texttt{Cons} and \texttt{$\forall$a.Int $\rightarrow$ List a $\rightarrow \tau_1$} using the application rule and then unifying \texttt{$\forall$a.Int $\rightarrow \tau_1 \rightarrow \tau_2$} with \texttt{Cons} again by application.
 
@@ -671,8 +674,8 @@ fun deep x = dup (dup (dup ($\dots$ x)));
     \autoref{lst:pairproof} builds a large function signature for \texttt{deep}.
     The innermost \texttt{dup} invocation will have its signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$, if \texttt{a} has type $x$ and \texttt{f} has type $x \rightarrow x \rightarrow \tau$ for some unknown $\tau$ by the App rule in \autoref{fig:dmrules}.
     The second innermost \texttt{dup} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
-    Naively one might judge \autoref{lst:pairproof} to run in $O(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
-    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the number introduced type variables would be $\Omega(n)$.
+    Naively one might judge \autoref{lst:pairproof} to run in $\Omega(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
+    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the number introduced type variables would be $O(n)$.
 \begin{lstlisting}[language=ML,caption={Nested tuples with different type variables},label={lst:pairproofexp},mathescape=true]
 fun tuple a b f = f a b;
 fun one = tuple tuple tuple;
@@ -699,7 +702,7 @@ An interesting observation is that by increasing the amount of polymorphic param
 This observation does not have any significant impact since $O(f(n)) \supseteq \Omega(n^n)$ where $f$ is the algorithm for type inference, such that the problem of type inference in Hindley-Milner is at least in EXPTIME which solvable in both $O(2^n)$ and $O(n^n)$.
 The upper bound which states that type inference in Hindley-Milner is in fact \text{EXPTIME-complete} was justified in~\cite{kfoury1990ml,mairson1989deciding}.
 Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (\autoref{lst:appedix:bigexp}).
-\autoref{fig:expplot} shows the relationship between the program typed in $L$, the theoretical time ($2^n$).
+\autoref{fig:expplot} shows the relationship between the program typed in $L$ and the theoretical time of $2^n$.
 \begin{figure}[ht]
     \centering
 \begin{tikzpicture}
@@ -750,22 +753,22 @@ More generally, any type which is quantified on the left side of $\rightarrow$ c
 
 Even languages which are typed and inferred by Hindley-Milner like Ocaml have introduced kinds through modules to allow higher-kinded types.
 Hindley-Milner is in fact a restricted version of another more general type system called \textit{System F} (and System F\underline{$\omega$}).
-The Hindley-Milner type system introduces abstractions as monomorphic types whereas a system named System F allows any type to be polymorphic.
-It turns out that allowing higher rank polymorphism makes type inference (type construction in older literature) \textit{undecidable}~\cite{wells1999typability}.
+The Hindley-Milner type system introduces abstractions as monomorphic types whereas System F allows any type to be polymorphic.
+It turns out that allowing higher rank polymorphism makes type inference (type reconstruction in older literature) \textit{undecidable}~\cite{wells1999typability}.
 \begin{remark}
-    Formal type systems are in the form of deductive systems, in which one can prove \textit{decidability} among other properties.
+    Formal type systems are in their essence deductive systems, which have provable properties such as \textit{decidability}.
     Decidability in deductive systems is a property which expresses whether a system can be decided by an algorithm (which relates to the encoding of algorithms on theoretic computers).
-    If and only if every valid formula (type) in the deductive system (type system) can have its correctness decided algorithmically.
+    If and only if every valid formula (type) in the deductive system (type system) can have its correctness decided (and reconstructed if necessary) algorithmically.
 \end{remark}
 
 Another variant of type system is \textit{System F\underline{$\omega$}}.
 System F\underline{$\omega$} introduces another feature (System F\underline{$\omega$} is different to System F, it is not an extension) called type constructors.
 It is uncommon to use System F\underline{$\omega$} on its own since it only allows type constructors of monomorphic types (System F introduces polymorphism), which does not yield much expressiveness since only specific types such as \texttt{Int $\rightarrow$ List Int} would be expressible.
 Throughout this chapter, type constructors have already been introduced in such a way that they can occur in Hindley-Milner though algebraic data types such as \texttt{$\forall$a.a $\rightarrow$ List a}.
-Very commonly moderately generalized types need both the higher rank polymorphism implied by System F and the type constructors implied by System F\underline{$\omega$}.
+Very commonly, moderately generalized types need both the higher rank polymorphism implied by System F and the type constructors implied by System F\underline{$\omega$}.
 
 Hindley-Milner can only take advantage of System F\underline{$\omega$} for rank 1 types which significantly constrains the generalization level.
-A more expressive version of Hindley-Milner is System F$\omega$ which in fact, is the basis for the type system of Haskell, which is very expressive.
+A more expressive version of Hindley-Milner is System F$\omega$ which in fact, is the basis for the type system of Haskell, which is significantly more expressive than Hindley-Milner.
 \begin{remark}
     Haskell has introduced some additional tweaks to System F$\omega$ to avoid the decidability problem among others.
 \end{remark}
@@ -773,9 +776,9 @@ A more expressive version of Hindley-Milner is System F$\omega$ which in fact, i
 In more expressive functional programming language type systems it has become increasingly popular abstract over implementations by introducing concepts from \textit{category theory}.
 Naturally many abstractions of category theory require rank-2 polymorphism.
 More generally the larger the level of polymorphism allowed the larger the possible abstraction level becomes.
-For instance a general purpose \textit{functor} is implementable and usable with rank-2 polymorphism while a natural transformation between kinds becomes a matter of rank-3 polymorphism.
+For instance a general purpose \textit{functor} is implementable and usable with rank-2 polymorphism while a natural transformation becomes a matter of rank-3 polymorphism.
 \begin{remark}
-    A functor is a mapping between two categories, which for instance can be a functor for lists which provides the algebra \texttt{$\forall$a.$\forall$b.List a $\rightarrow$ List b}.
+    A functor is a mapping that maps from type constructor instance to another, which for instance can be a functor for lists which provides the algebra \texttt{$\forall$a.$\forall$b.List a $\rightarrow$ List b}.
 \end{remark}
 \noindent To generalize functor one must be able to express \textit{kinds} which are the types of type constructors denoted $* \rightarrow *$ for a type constructor that takes some type $*$ and creates some type $*$.
 $* \rightarrow *$ is a unary type constructor whereas $*$ is an atomic type like \texttt{Int} or \texttt{List Int}, since these types are fully applied.
@@ -784,8 +787,13 @@ The relaxation of type constructions allow various types to be generalized such 
 The kind for \texttt{List} is $* \rightarrow *$ such that for any $\tau$ with kind $* \rightarrow *$ the type for functor map is \texttt{$\forall\tau$.($\forall$a.$\tau$a) $\rightarrow$ ($\forall$b.$\tau$b)}.
 \begin{remark}
     Kinds are an abstraction which can exist purely theoretical without robbing the type system of expressiveness.
-    Just as some complications in type systems are resolved with weakening the type system or enriching the syntax, kinds can have been abstracted away into types~\cite{weirich2013system}.
+    Just as some complications in type systems are resolved with weakening the type system or enriching the syntax, kinds can bu abstracted away into types~\cite{weirich2013system}.
 \end{remark}
+
+$\lambda$P introduces \textit{Dependent types} which lets types depend on terms in the language.
+A common example to show what dependent types can do is that of combining two lists $v_1$ and $v_2$ of size $n_1$ and $n_2$ into a list $v_3$ of size $n_1 + n_2$, where the size can be expressed in the type system.
+The signature for such a function in $L$ could be \texttt{$\forall a.$List $n_1$ a $\rightarrow$ List $n_2$ a $\rightarrow$ List $(n_1 + n_2)$ a}.
+Clearly one would have rules for lists such as a base case for the empty list \texttt{fun empty = Nil} with type \texttt{$\forall a.$List 0 a}, which indicates how the type system is lifted to a logical proofing tool.
 
 \begin{figure}
     \centering
