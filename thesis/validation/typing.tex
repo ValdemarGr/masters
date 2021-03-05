@@ -742,10 +742,10 @@ Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (
 
 \section{Higher level type systems}
 The Hindley-Milner type system can only express relatively simple programs which robs algorithmic elegance in respect to other type systems.
-One domain of programs that Hindley-Milner cannot express are those that rely on \textit{parametric polymorphism}.
-Parametric polymorphism (or rank-n types) deals with letting abstractions have polymorphic parameters such that a type can be quantified within another type, having its depth bounded by n (rank-\textbf{n}).
+One domain of programs that Hindley-Milner cannot express are those that rely on \textit{rank-n types}.
+Rank-n types deals with letting abstractions have polymorphic parameters such that a type can be quantified within another type, having its depth bounded by n (rank-\textbf{n}).
 For instance \autoref{lst:rankn} is not typable in Hindley-Milner since its type is \texttt{$\forall\tau$.($\forall\gamma$.$\gamma \rightarrow$ Int) $\rightarrow \tau \rightarrow$ Int}.
-\begin{lstlisting}[language=ML,caption={Program that requires parametric polymorphism},label={lst:rankn},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Program that requires rank-n types},label={lst:rankn},mathescape=true]
 fun f makeNum a =
     ((makeNum a) + (makeNum 0)) + (makeNum (0 == 2))
 \end{lstlisting}
@@ -783,7 +783,7 @@ For instance a general purpose \textit{functor} is implementable and usable with
 \noindent To generalize functor one must be able to express \textit{kinds} which are the types of type constructors denoted $* \rightarrow *$ for a type constructor that takes some type $*$ and creates some type $*$.
 $* \rightarrow *$ is a unary type constructor whereas $*$ is an atomic type like \texttt{Int} or \texttt{List Int}, since these types are fully applied.
 Kinds allow partial application on type constructors on a general level, since the only specific constraint is the shape and not where variables appear.
-The relaxation of type constructions allow various types to be generalized such as $a \rightarrow b \rightarrow M a b$ which could also have the signature of $a \rightarrow b \rightarrow M b a$ which kinds abstract over generalizing $M$ to $* \rightarrow * \rightarrow *$.
+The relaxation of type constructions allow various types to be generalized such as \texttt{a $\rightarrow$ b $\rightarrow$ M a b} which could also have the signature of \texttt{a $\rightarrow$ b $\rightarrow$ M b a} which kinds abstract over generalizing $M$ to $* \rightarrow * \rightarrow *$.
 The kind for \texttt{List} is $* \rightarrow *$ such that for any $\tau$ with kind $* \rightarrow *$ the type for functor map is \texttt{$\forall\tau$.($\forall$a.$\tau$a) $\rightarrow$ ($\forall$b.$\tau$b)}.
 \begin{remark}
     Kinds are an abstraction which can exist purely theoretical without robbing the type system of expressiveness.
