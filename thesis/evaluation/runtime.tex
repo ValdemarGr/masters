@@ -548,6 +548,43 @@ When performing reductions one might desire to garbage collect the substitution 
 Fortunately the task of collecting garbage is quite easy since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
 When some algorithm with garbage collection evaluates some abstraction term $S,[\texttt{x} \mapsto \gamma]$,\texttt{$\lambda$x.E}, the algorithm should remove the introduced variable \texttt{x} by inspecting the $\alpha$-conversion mapping such that the substitution mapping becomes $S\backslash \{ \gamma \}$ and the $\alpha$-conversion alike.
 
+\subsection{An invariant on infinite programs}
+An important problem still remains which is that of infinite programs.
+Imperative programming languages often solve this by introducing loops, whereas functional programming languages use recursion.
+Recursion may be equally powerful in terms of expressiveness, but becomes a bit more tricky when cosidering interpreter details.
+A prerequisite for an infinitely running program to exist in practice is that the program must not grow it's resource needs as it runs.
+
+The distinction between recursive functions and loops in imperative programming languages is often what makes infinite programs expressible.
+In a traditional imperative language, a function allocates a \textit{stack frame} and is explicitly parameterized, whereas a loop acts more like an anonymous closure which is always parameterized with itself (a function which is wrapped in a fixed point combinator, like the Y-combinator).
+Imperative languages are also often evaluated under call by value which further simplifies implementation details.
+Imperative loops (more interestingly, infinite loops) can safely release all static resources (variables bindings), which were allocated in the iteration, once an iteration has completed.
+
+Let the program
+\begin{lstlisting}[language=ML,caption={Program that implements two functions that map a \texttt{List a} to a \texttt{List b}},label={lst:listmapboth},mathescape=true]
+type List a = 
+    | Nil
+    | Cons a (List a)
+;
+fun mapTail r f =
+//The type of mapTail
+//List a $\rightarrow$ (a $\rightarrow$ b) $\rightarrow$ (List b $\rightarrow$ List b) $\rightarrow$ List b
+    fun mapImpl r f b =
+        match r
+            | Nil -> b Nil;
+            | Cons x xs -> 
+                mapTail xs f (b (Cons (f x)));
+        ;
+    match r
+        | Nil -> Nil;
+        | Cons x xs -> mapTail xs f (Cons (f x));
+    ;
+fun mapGrowing f l = 
+    match l
+        | Nil -> Nil;
+        | Cons x xs -> Cons (f x) (mapGrowing f xs);
+    ;
+\end{lstlisting}
+In pure functional programming languages, techniques such as \textit{tail call optimization} exist
 
 %When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
 %Letting the substitution mapping be 
