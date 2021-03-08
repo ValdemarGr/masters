@@ -556,10 +556,16 @@ A prerequisite for an infinitely running program to exist in practice is that th
 
 The distinction between recursive functions and loops in imperative programming languages is often what makes infinite programs expressible.
 In a traditional imperative language, a function allocates a \textit{stack frame} and is explicitly parameterized, whereas a loop acts more like an anonymous closure which is always parameterized with itself (a function which is wrapped in a fixed point combinator, like the Y-combinator).
-Imperative languages are also often evaluated under call by value which further simplifies implementation details.
+\begin{remark}
+    A call stack is a stack of stack frames.
+    A stack frame is a pointer to a function pointer.
+    Stack frames are used to return execution to the previous function (the calling function).
+    Every time a new function is called, the called-from function places a ``resume execution from here'' pointer onto the call stack.
+\end{remark}
+\noindent Imperative languages are also often evaluated under call by value which further simplifies implementation details.
 Imperative loops (more interestingly, infinite loops) can safely release all static resources (variables bindings), which were allocated in the iteration, once an iteration has completed.
-
-Let the program
+In traditional imperative languages recursive functions can only iterate a finite number of times, more specifically until the call stack is full.
+\begin{figure}
 \begin{lstlisting}[language=ML,caption={Program that implements two functions that map a \texttt{List a} to a \texttt{List b}},label={lst:listmapboth},mathescape=true]
 type List a = 
     | Nil
@@ -576,7 +582,7 @@ fun mapTail r f =
         ;
     match r
         | Nil -> Nil;
-        | Cons x xs -> mapTail xs f (Cons (f x));
+        | Cons x xs -> mapImpl xs f (Cons (f x));
     ;
 fun mapGrowing f l = 
     match l
@@ -584,7 +590,47 @@ fun mapGrowing f l =
         | Cons x xs -> Cons (f x) (mapGrowing f xs);
     ;
 \end{lstlisting}
-In pure functional programming languages, techniques such as \textit{tail call optimization} exist
+\end{figure}
+
+To really understand what happens in a lambda calculus interpreter, we must understand what happens in \autoref{lst:listmapboth}.
+\autoref{lst:listmapboth} implements two variants of a \texttt{map} function which maps a list of type \texttt{List a} to a list \texttt{List b}.
+The two variants differ when considering evaluation strategy and \textit{tail call optimization}.
+\begin{remark}
+    Tail call optimization is an optimization which can be performed on programs with a particular structure.
+    If the last expression is a function invocation, then the rewritten program does not grow.
+    For instance the expression \texttt{let f = ($\lambda$g.$\lambda$x.g x) $\dots$ f g' 0} is eventually rewritten to \texttt{g' 0}.
+    If for instance the expression awaited a result like in \texttt{let f = ($\lambda$g.$\lambda$x.x + (g x)) $\dots$ f g' 0}, then it would be rewritten to \texttt{x + (g' 0)}, which could grow the program throughout interpretation.
+    It should become clear that reduction strategies always implies tail call optimization.
+\end{remark}
+The first flavor of \texttt{map}; \texttt{mapTail}, implements \texttt{map} such that the program expression tree does not grow throughout program interpretation, under a call by value environment.
+\\
+\begin{minipage}{\textwidth}
+\begin{lemma}
+    Evaluating \texttt{mapTail} on a list of arbitary size, adds at most $O(1)$ terms, at any one time throughout program rewriting.
+    Equivalently, at any one point of the evaluation of \texttt{mapTail} the size in terms of lambda terms of \texttt{mapTail} is at most $O(n)$.
+\end{lemma}
+\begin{proof}
+    Unpacking \texttt{Cons} and \texttt{Nil} as their underlying scott encoded functions is omitted for readability.
+    For some $1 \leq k \leq n$ where $n$ is the size of the list, at the recursive invocation of \texttt{mapImpl}, the list is partitioned into the lower $1, \dots k - 1$ elements (\texttt{b (Cons x)}) and the higher $k, \dots n$ elements (\texttt{xs}).
+    \begin{align}
+        &\texttt{ mapTail (Cons 1 (Cons 2 $\dots$ (Cons n Nil))) ($\lambda$x.x)}  \\
+        =&\texttt{ r Nil ($\lambda$x.$\lambda$xs.mapImpl xs ($\lambda$x.x) (Cons (f x)))}  \tag*{} \\
+        =&\texttt{ mapImpl (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1)}  \tag*{} \\
+        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapTail xs f (b (Cons (f x))))}  \tag*{} \\
+        =&\texttt{ mapTail xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
+        =&\texttt{ mapTail xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
+        =&\texttt{ mapTail xs f (Cons 1 (Cons 2))}  \tag*{} \\
+        =&\texttt{ mapTail (Cons 3 (Cons 4 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2))}  \eqtag{3$\dots$n} \\
+        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapTail xs f (b (Cons (f x))))}  \tag*{} \\
+        =&\texttt{ mapTail xs f (($\lambda$xs.Cons 1 (Cons 2 xs)) (Cons 3))}  \tag*{} \\
+        =&\texttt{ mapTail (Cons 4 (Cons 5 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2 (Cons 3)))}  \eqtag{4$\dots$n} \\
+        =&\dots\tag*{}\\
+        =&\texttt{ mapTail (Cons k (Cons (k + 1) $\dots$ (Cons n Nil)))} \tag*{} \\
+        &\texttt{ ($\lambda$x.x) (Cons 1 ($\dots$ (Cons (k - 1))))}  \tag*{} 
+    \end{align}
+    For any one $k$, the combined size of the two lists must be $1, \dots k - 1, k, \dots n$.
+\end{proof}
+\end{minipage}
 
 %When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
 %Letting the substitution mapping be 
