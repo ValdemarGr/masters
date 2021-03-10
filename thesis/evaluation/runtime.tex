@@ -598,37 +598,40 @@ The two variants differ when considering evaluation strategy and \textit{tail ca
 \begin{remark}
     Tail call optimization is an optimization which can be performed on programs with a particular structure.
     If the last expression is a function invocation, then the rewritten program does not grow.
-    For instance the expression \texttt{let f = ($\lambda$g.$\lambda$x.g x) $\dots$ f g' 0} is eventually rewritten to \texttt{g' 0}.
-    If for instance the expression awaited a result like in \texttt{let f = ($\lambda$g.$\lambda$x.x + (g x)) $\dots$ f g' 0}, then it would be rewritten to \texttt{x + (g' 0)}, which could grow the program throughout interpretation.
-    It should become clear that reduction strategies always implies tail call optimization.
+    For instance the expression \texttt{let f = ($\lambda$g.$\lambda$x.g x) in $\dots$ f g' 0} is eventually rewritten to \texttt{g' 0}.
+    If for instance the expression awaited a result like in \texttt{let f = ($\lambda$g.$\lambda$x.x + (g x)) in $\dots$ f g' 0}, then it would be rewritten to \texttt{x + (g' 0)}, increases the size of the program by \texttt{x +}, since the \texttt{+} operator requires both expressions to be evaluated.
+    It should become clear that reduction strategies always imply tail call optimization, whenever possible.
 \end{remark}
 The first flavor of \texttt{map}; \texttt{mapTail}, implements \texttt{map} such that the program expression tree does not grow throughout program interpretation, under a call by value environment.
 \\
 \begin{minipage}{\textwidth}
 \begin{lemma}
-    Evaluating \texttt{mapTail} on a list of arbitary size, adds at most $O(1)$ terms, at any one time throughout program rewriting.
-    Equivalently, at any one point of the evaluation of \texttt{mapTail} the size in terms of lambda terms of \texttt{mapTail} is at most $O(n)$.
+    \texttt{mapTail} is tail recursive and requires an additional $O(n \cdot m)$ space when evaluated on a list of size $n$ with a function \texttt{f} produces values of size $m$.
 \end{lemma}
 \begin{proof}
     Unpacking \texttt{Cons} and \texttt{Nil} as their underlying scott encoded functions is omitted for readability.
+    In this proof the list is of \texttt{Int} and \texttt{f} is the identity function.
     For some $1 \leq k \leq n$ where $n$ is the size of the list, at the recursive invocation of \texttt{mapImpl}, the list is partitioned into the lower $1, \dots k - 1$ elements (\texttt{b (Cons x)}) and the higher $k, \dots n$ elements (\texttt{xs}).
     \begin{align}
         &\texttt{ mapTail (Cons 1 (Cons 2 $\dots$ (Cons n Nil))) ($\lambda$x.x)}  \\
         =&\texttt{ r Nil ($\lambda$x.$\lambda$xs.mapImpl xs ($\lambda$x.x) (Cons (f x)))}  \tag*{} \\
-        =&\texttt{ mapImpl (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1)}  \tag*{} \\
-        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapTail xs f (b (Cons (f x))))}  \tag*{} \\
-        =&\texttt{ mapTail xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
-        =&\texttt{ mapTail xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
-        =&\texttt{ mapTail xs f (Cons 1 (Cons 2))}  \tag*{} \\
-        =&\texttt{ mapTail (Cons 3 (Cons 4 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2))}  \eqtag{3$\dots$n} \\
-        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapTail xs f (b (Cons (f x))))}  \tag*{} \\
-        =&\texttt{ mapTail xs f (($\lambda$xs.Cons 1 (Cons 2 xs)) (Cons 3))}  \tag*{} \\
-        =&\texttt{ mapTail (Cons 4 (Cons 5 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2 (Cons 3)))}  \eqtag{4$\dots$n} \\
+        =&\texttt{ mapImpl (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1)}  \eqtag{2$\dots$n} \label{eq:map:2n} \\
+        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapImpl xs f (b (Cons (f x))))}  \tag*{} \\
+        =&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
+        =&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
+        =&\texttt{ mapImpl xs f (Cons 1 (Cons 2))}  \tag*{} \\
+        =&\texttt{ mapImpl (Cons 3 (Cons 4 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2))}  \eqtag{3$\dots$n} \label{eq:map:3n} \\
+        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapImpl xs f (b (Cons (f x))))}  \tag*{} \\
+        =&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 (Cons 2 xs)) (Cons 3))}  \tag*{} \\
+        =&\texttt{ mapImpl (Cons 4 (Cons 5 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2 (Cons 3)))}  \eqtag{4$\dots$n} \\
         =&\dots\tag*{}\\
-        =&\texttt{ mapTail (Cons k (Cons (k + 1) $\dots$ (Cons n Nil)))} \tag*{} \\
+        =&\texttt{ mapImpl (Cons k (Cons (k + 1) $\dots$ (Cons n Nil)))} \tag*{} \\
         &\texttt{ ($\lambda$x.x) (Cons 1 ($\dots$ (Cons (k - 1))))}  \tag*{} 
     \end{align}
-    For any one $k$, the combined size of the two lists must be $1, \dots k - 1, k, \dots n$.
+    The base case for the proof is once \texttt{mapImpl} is recursively invoked (\autoref{eq:map:2n}), size of the newly created list is $m \cdot 1$ (\texttt{f (Cons 1)}).
+    The first recursive iteration for \texttt{mapImpl} is the step between \autoref{eq:map:2n} and \autoref{eq:map:3n} such that the size becomes $m \cdot 2$ (\texttt{Cons (f 1) (Cons (f 2))}).
+    If we assume that the first $k$ recursive iterations have size $m \cdot k$, then the $k+1$'th iteration has size $m \cdot (k + 1)$ by \texttt{Cons (f 1) (Cons (f 2) $\dots$ (Cons (f (k + 1))))}.
+    Clearly whet $k = n$ then the newly created list is of size $m \cdot n$ and \texttt{xs} is empty, thus the function is.
 \end{proof}
 \end{minipage}
 
