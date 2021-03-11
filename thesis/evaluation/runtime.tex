@@ -566,34 +566,51 @@ In a traditional imperative language, a function allocates a \textit{stack frame
 Imperative loops (more interestingly, infinite loops) can safely release all static resources (variables bindings), which were allocated in the iteration, once an iteration has completed.
 In traditional imperative languages recursive functions can only iterate a finite number of times, more specifically until the call stack is full.
 \begin{figure}
-\begin{lstlisting}[language=ML,caption={Program that implements two functions that map a \texttt{List a} to a \texttt{List b}},label={lst:listmapboth},mathescape=true]
+\begin{lstlisting}[language=ML,caption={Program that implements two functions that fold a \texttt{List a} to a \texttt{b}},label={lst:listfoldboth},mathescape=true]
 type List a = 
     | Nil
     | Cons a (List a)
 ;
-fun mapTail r f =
-//The type of mapTail
-//List a $\rightarrow$ (a $\rightarrow$ b) $\rightarrow$ (List b $\rightarrow$ List b) $\rightarrow$ List b
-    fun mapImpl r f b =
-        match r
-            | Nil -> b Nil;
-            | Cons x xs -> 
-                mapTail xs f (b (Cons (f x)));
-        ;
-    match r
-        | Nil -> Nil;
-        | Cons x xs -> mapImpl xs f (Cons (f x));
-    ;
-fun mapGrowing f l = 
+fun add a b = a + b;
+
+fun foldl f z l =
     match l
-        | Nil -> Nil;
-        | Cons x xs -> Cons (f x) (mapGrowing f xs);
+        | Nil -> z;
+        | Cons x xs -> 
+            foldl f (f x z) xs;
+    ;
+
+fun foldr f z l =
+    match l
+        | Nil -> z;
+        | Cons x xs ->
+            f x (foldr f z xs);
     ;
 \end{lstlisting}
 \end{figure}
+%fun mapTail r f =
+%//The type of mapTail
+%//List a $\rightarrow$ (a $\rightarrow$ b) $\rightarrow$ (List b $\rightarrow$ List b) $\rightarrow$ List b
+    %fun mapImpl r f b =
+        %match r
+            %| Nil -> b Nil;
+            %| Cons x xs -> 
+                %mapTail xs f (b (Cons (f x)));
+        %;
+    %match r
+        %| Nil -> Nil;
+        %| Cons x xs -> mapImpl xs f (Cons (f x));
+    %;
+%fun mapInf f l = 
+    %match l
+        %| Nil -> Nil;
+        %| Cons x xs -> Cons (f x) (mapGrowing f xs);
+    %;
+%\end{lstlisting}
+%\end{figure}
 
-To really understand what happens in a lambda calculus interpreter, we must understand what happens in \autoref{lst:listmapboth}.
-\autoref{lst:listmapboth} implements two variants of a \texttt{map} function which maps a list of type \texttt{List a} to a list \texttt{List b}.
+To really understand what happens in a lambda calculus interpreter, we must understand what happens in \autoref{lst:listfoldboth}.
+\autoref{lst:listfoldboth} implements two variants of a \texttt{fold} function which accumulates a list of type \texttt{List a} to a \texttt{b}.
 The two variants differ when considering evaluation strategy and \textit{tail call optimization}.
 \begin{remark}
     Tail call optimization is an optimization which can be performed on programs with a particular structure.
@@ -602,38 +619,49 @@ The two variants differ when considering evaluation strategy and \textit{tail ca
     If for instance the expression awaited a result like in \texttt{let f = ($\lambda$g.$\lambda$x.x + (g x)) in $\dots$ f g' 0}, then it would be rewritten to \texttt{x + (g' 0)}, increases the size of the program by \texttt{x +}, since the \texttt{+} operator requires both expressions to be evaluated.
     It should become clear that reduction strategies always imply tail call optimization, whenever possible.
 \end{remark}
-The first flavor of \texttt{map}; \texttt{mapTail}, implements \texttt{map} such that the program expression tree does not grow throughout program interpretation, under a call by value environment.
-\\
-\begin{minipage}{\textwidth}
-\begin{lemma}
-    \texttt{mapTail} is tail recursive and requires an additional $O(n \cdot m)$ space when evaluated on a list of size $n$ with a function \texttt{f} produces values of size $m$.
-\end{lemma}
-\begin{proof}
-    Unpacking \texttt{Cons} and \texttt{Nil} as their underlying scott encoded functions is omitted for readability.
-    In this proof the list is of \texttt{Int} and \texttt{f} is the identity function.
-    For some $1 \leq k \leq n$ where $n$ is the size of the list, at the recursive invocation of \texttt{mapImpl}, the list is partitioned into the lower $1, \dots k - 1$ elements (\texttt{b (Cons x)}) and the higher $k, \dots n$ elements (\texttt{xs}).
-    \begin{align}
-        &\texttt{ mapTail (Cons 1 (Cons 2 $\dots$ (Cons n Nil))) ($\lambda$x.x)}  \\
-        =&\texttt{ r Nil ($\lambda$x.$\lambda$xs.mapImpl xs ($\lambda$x.x) (Cons (f x)))}  \tag*{} \\
-        =&\texttt{ mapImpl (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1)}  \eqtag{2$\dots$n} \label{eq:map:2n} \\
-        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapImpl xs f (b (Cons (f x))))}  \tag*{} \\
-        =&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
-        =&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
-        =&\texttt{ mapImpl xs f (Cons 1 (Cons 2))}  \tag*{} \\
-        =&\texttt{ mapImpl (Cons 3 (Cons 4 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2))}  \eqtag{3$\dots$n} \label{eq:map:3n} \\
-        =&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapImpl xs f (b (Cons (f x))))}  \tag*{} \\
-        =&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 (Cons 2 xs)) (Cons 3))}  \tag*{} \\
-        =&\texttt{ mapImpl (Cons 4 (Cons 5 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2 (Cons 3)))}  \eqtag{4$\dots$n} \\
-        =&\dots\tag*{}\\
-        =&\texttt{ mapImpl (Cons k (Cons (k + 1) $\dots$ (Cons n Nil)))} \tag*{} \\
-        &\texttt{ ($\lambda$x.x) (Cons 1 ($\dots$ (Cons (k - 1))))}  \tag*{} 
-    \end{align}
-    The base case for the proof is once \texttt{mapImpl} is recursively invoked (\autoref{eq:map:2n}), size of the newly created list is $m \cdot 1$ (\texttt{f (Cons 1)}).
-    The first recursive iteration for \texttt{mapImpl} is the step between \autoref{eq:map:2n} and \autoref{eq:map:3n} such that the size becomes $m \cdot 2$ (\texttt{Cons (f 1) (Cons (f 2))}).
-    If we assume that the first $k$ recursive iterations have size $m \cdot k$, then the $k+1$'th iteration has size $m \cdot (k + 1)$ by \texttt{Cons (f 1) (Cons (f 2) $\dots$ (Cons (f (k + 1))))}.
-    Clearly whet $k = n$ then the newly created list is of size $m \cdot n$ and \texttt{xs} is empty, thus the function is.
-\end{proof}
-\end{minipage}
+The first flavor of \texttt{fold}; \texttt{foldl}, implements \texttt{fold} such that the program expression tree does not grow throughout program interpretation, under a call by value environment.
+The constraint on evaluation strategy is important for \texttt{foldl}, for reasons which will become clear once other evaluation strategies are discussed.
+\begin{align}
+    &\texttt{ foldl 0 add (Cons 1 (Cons 2 $\dots$ (Cons n Nil)))}  \\
+    =&\texttt{ l z ($\lambda$xs,x.foldl f (f x z) xs)}  \tag*{} \\
+    =&\texttt{ (Cons 1 (Cons 2 $\dots$ (Cons n Nil))) z ($\lambda$xs,x.foldl f (f x z) xs)}  \tag*{} \\
+    =&\texttt{ foldl f (f x z) xs $\{$ xs $\mapsto$ (Cons 2 (Cons 3 $\dots$ (Cons n Nil))), x $\mapsto$ 1, $\dots$ $\}$}  \tag*{} \\
+    =&\texttt{ foldl add (add 1 0) (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) $\{ \dots \}$}  \tag*{} \\
+    =&\texttt{ foldl add 1 (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) $\{ \dots \}$}  \tag*{} 
+\end{align}
+Evaluating \texttt{foldl} on a list of size \texttt{n} with the addition function showcases how the program keeps itself with a 
+
+%\\
+%\begin{minipage}{\textwidth}
+%\begin{lemma}
+    %\texttt{mapTail} is tail recursive and requires an additional $O(n \cdot m)$ space when evaluated on a list of size $n$ with a function \texttt{f} produces values of size $m$.
+%\end{lemma}
+%\begin{proof}
+    %Unpacking \texttt{Cons} and \texttt{Nil} as their underlying scott encoded functions is omitted for readability.
+    %In this proof the list is of \texttt{Int} and \texttt{f} is the identity function.
+    %For some $1 \leq k \leq n$ where $n$ is the size of the list, at the recursive invocation of \texttt{mapImpl}, the list is partitioned into the lower $1, \dots k - 1$ elements (\texttt{b (Cons x)}) and the higher $k, \dots n$ elements (\texttt{xs}).
+    %\begin{align}
+        %&\texttt{ mapTail (Cons 1 (Cons 2 $\dots$ (Cons n Nil))) ($\lambda$x.x)}  \\
+        %=&\texttt{ r Nil ($\lambda$x.$\lambda$xs.mapImpl xs ($\lambda$x.x) (Cons (f x)))}  \tag*{} \\
+        %=&\texttt{ mapImpl (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1)}  \eqtag{2$\dots$n} \label{eq:map:2n} \\
+        %=&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapImpl xs f (b (Cons (f x))))}  \tag*{} \\
+        %=&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
+        %=&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 xs) (Cons 2))}  \tag*{} \\
+        %=&\texttt{ mapImpl xs f (Cons 1 (Cons 2))}  \tag*{} \\
+        %=&\texttt{ mapImpl (Cons 3 (Cons 4 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2))}  \eqtag{3$\dots$n} \label{eq:map:3n} \\
+        %=&\texttt{ r (b Nil) ($\lambda$x.$\lambda$xs.mapImpl xs f (b (Cons (f x))))}  \tag*{} \\
+        %=&\texttt{ mapImpl xs f (($\lambda$xs.Cons 1 (Cons 2 xs)) (Cons 3))}  \tag*{} \\
+        %=&\texttt{ mapImpl (Cons 4 (Cons 5 $\dots$ (Cons n Nil))) ($\lambda$x.x) (Cons 1 (Cons 2 (Cons 3)))}  \eqtag{4$\dots$n} \\
+        %=&\dots\tag*{}\\
+        %=&\texttt{ mapImpl (Cons k (Cons (k + 1) $\dots$ (Cons n Nil)))} \tag*{} \\
+        %&\texttt{ ($\lambda$x.x) (Cons 1 ($\dots$ (Cons (k - 1))))}  \tag*{} 
+    %\end{align}
+    %The base case for the proof is once \texttt{mapImpl} is recursively invoked (\autoref{eq:map:2n}), size of the newly created list is $m \cdot 1$ (\texttt{f (Cons 1)}).
+    %The first recursive iteration for \texttt{mapImpl} is the step between \autoref{eq:map:2n} and \autoref{eq:map:3n} such that the size becomes $m \cdot 2$ (\texttt{Cons (f 1) (Cons (f 2))}).
+    %If we assume that the first $k$ recursive iterations have size $m \cdot k$, then the $k+1$'th iteration has size $m \cdot (k + 1)$ by \texttt{Cons (f 1) (Cons (f 2) $\dots$ (Cons (f (k + 1))))}.
+    %Clearly whet $k = n$ then the newly created list is of size $m \cdot n$ and \texttt{xs} is empty, thus the function is.
+%\end{proof}
+%\end{minipage}
 
 %When evaluating a term that results in a change to the substitution mapping the previous substitution mapping version is paired with it.
 %Letting the substitution mapping be 
