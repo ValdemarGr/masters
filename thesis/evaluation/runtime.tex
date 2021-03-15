@@ -398,10 +398,8 @@ Naturally when new mappings are introduced the mapped to values can be duplicate
 Instead $E$ can be labelled with some name $a$ when found in the evaluation process such that when some value with the label $a$ is evaluated then all duplications of $E$ can share the computed result, effectively adding another type of mapping.
 \begin{remark}
     The system which implements call by need is not of much importance.
-    To keep the implementation simple, in $L$ when some object $E$ is discovered it is declared as a mutable pointer by the interpreter (or natively if implemented in a lazy language) such that all duplications effectively point to the same object.
-\end{remark}
-\begin{remark}
-    The mutable implementation also implies a simple implementation for parallel evaluation since mutation becomes a matter of locking $E$.
+    Sharing can also be implemented in a way which promotes more imperative constructs, such as variables.
+    When some object $E$ is discovered it is declared as a mutable pointer by the interpreter (or natively if implemented in a lazy language) such that all duplications effectively point to the same object.
 \end{remark}
 
 Let $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ be the system without labels, then let \autoref{eq:labelsystem} be the labelled call by need system.
@@ -411,13 +409,14 @@ Let $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ be the system without lab
     \Omega &= \{ a \mapsto E \} \tag*{}
 \end{align}
 By \autoref{eq:labelsystem} it should becomes clear that object duplication is medigated by ``merging'' references.
-
-The labelled system can evaluate expressions in parallel by implementing locking (or cooperative yielding) on the label level (in \autoref{eq:labelsystem} evaluating $\gamma_1$ and $\gamma_2$ in paralell would lock $a$).
-The only scenario where mutual evaluation of an expression is possible, is when two other expressions can access (either through abstraction or closure) the same value.
 \\
 
-An evaluation written $S, \alpha, e \rightarrow e'$ means $e$ evaluates to $e'$ under some substitution mapping $S$ and $\alpha$-conversion mapping $\alpha$.
+%The labelled system can evaluate expressions in parallel by implementing locking (or cooperative yielding) on the label level (in \autoref{eq:labelsystem} evaluating $\gamma_1$ and $\gamma_2$ in paralell would lock $a$).
+%The only scenario where mutual evaluation of an expression is possible, is when two other expressions can access (either through abstraction or closure) the same value.
+%\\
+An evaluation written $S, \Omega, \alpha, x \rightarrow \Theta, e$ means $x$ evaluates to $e$ with the resulting label mapping $\Theta$, under some substitution mapping $S$, label mapping $\Omega$ and $\alpha$-conversion mapping $\alpha$.
 $Sx$ means that variable $x$ is replaced with whatever the substitution map maps $x$ to if $x \in S$ otherwise $Sx = x$, the same operation counts for $\alpha$.
+$\Omega l \rightarrow k$ should be read as, the expression which $l$ points to should be evaluated and be bound to $k$.
 In a call by value environment $\alpha x$ can eagerly convert since the value must be evaluated eagerly.
 In a call by name (or need) environment $\alpha x$ should remain suspended until needed like discussed in this section.
 %An implementation (\autoref{lst:cbn}) of the call by name reduction algorithm \autoref{fig:cbn} can easily be extended with call by need by the aforementioned modifications.
@@ -465,51 +464,52 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \vspace*{0.4cm}
-        \begin{subfigure}[b]{0.30\textwidth}
+        %\begin{subfigure}[b]{0.30\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{$S, \alpha, S \alpha x \rightarrow \Sigma, e$}
+                %\RightLabel{Var}
+                %\UnaryInfC{$S, \alpha, x \rightarrow \Sigma, e$}
+            %\end{prooftree}   
+            %\label{eq:prooftree:ident}
+            %\caption{}
+        %\end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
             \begin{prooftree}
                 \AxiomC{}
-                \RightLabel{Var}
-                \UnaryInfC{$S, \alpha, x \rightarrow S \alpha x$}
-            \end{prooftree}   
-            \label{eq:prooftree:ident}
-            \caption{}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.69\textwidth}
-            \begin{prooftree}
-                \AxiomC{$S,\alpha,e \rightarrow e'$}
                 \RightLabel{Abs}
-                \UnaryInfC{$S,\alpha,(\lambda x.e) \rightarrow (\lambda x.e')$}
+                \UnaryInfC{$S,\alpha,(\lambda x.e) \rightarrow S,\alpha,(\lambda x.e)$}
             \end{prooftree}   
-            \label{eq:prooftree:ref}
+            \label{eq:prooftree:abs}
             \caption{}
         \end{subfigure}
         \begin{subfigure}[b]{1\textwidth}
             \begin{prooftree}
-                \AxiomC{$S,\alpha,S \alpha x \rightarrow e$}
-                \AxiomC{$S \alpha x \not\equiv \alpha x$}
-                \RightLabel{Share}
-                \BinaryInfC{$S \cup \{ \alpha x \mapsto e \}, \alpha, x \rightarrow e$}
+                \AxiomC{$S \cup \{ \gamma \mapsto e \},\alpha \cup \{ x \mapsto \gamma \} , e \rightarrow \Sigma, w$}
+                %\AxiomC{$S \alpha x \not\equiv \alpha x$}
+                \RightLabel{Var share (pointer)}
+                \UnaryInfC{$S \cup \{  \gamma \mapsto e \}, \alpha \cup [ x \mapsto \gamma ], x \rightarrow \Sigma, e \hspace*{1cm} e := w$}
             \end{prooftree}   
-            \label{eq:prooftree:ref}
+            \label{eq:prooftree:point}
             \caption{}
         \end{subfigure}
         \begin{subfigure}[b]{1\textwidth}
             \begin{prooftree}
-                \AxiomC{$S_1,\alpha_1,e_1 \rightarrow (\lambda x . e)$}
-                \AxiomC{$S_1 \cup S_2 \cup \{ \gamma \mapsto \alpha_2 e_2 \},\alpha_2 \cup [ x \mapsto \gamma ],e \rightarrow e' \,\,\, \gamma = \texttt{newvar}$}
+                \AxiomC{$S,\alpha, y \rightarrow \Sigma, (\lambda x . e)$}
+                \AxiomC{$\Sigma \cup \{ \gamma \mapsto \Sigma \alpha p \},\alpha \cup [ x \mapsto \gamma ],e \rightarrow \Delta, w \,\,\, \gamma = \texttt{newvar}$}
                 \RightLabel{App}
-                \BinaryInfC{$S_1 \cup S_2,\alpha_1 \cup \alpha_2,(e_1 \,\, e_2) \rightarrow e'$}
+                \BinaryInfC{$S, \alpha,(y \,\, p) \rightarrow \Delta, w$}
             \end{prooftree}   
-            \label{eq:prooftree:ref}
+            \label{eq:prooftree:app}
             \caption{}
         \end{subfigure}
         \begin{subfigure}[b]{1\textwidth}
             \begin{prooftree}
-                \AxiomC{$S,\alpha,e_1 \rightarrow e_1' \not\equiv (\lambda x . e)$}
+                \AxiomC{$S,\alpha,y \rightarrow \Sigma, f$}
+                \AxiomC{$f \not\equiv (\lambda x . e)$}
                 \RightLabel{App (Reduce left first)}
-                \UnaryInfC{$S, \alpha,(e_1 \,\, e_2) \rightarrow (e_1' \,\, e_2)$}
+                \BinaryInfC{$S, \alpha,(y \,\, p) \rightarrow \Sigma, (f \,\, p)$}
             \end{prooftree}   
-            \label{eq:prooftree:ref}
+            \label{eq:prooftree:appleft}
             \caption{}
         \end{subfigure}
     \end{mdframed}
@@ -627,9 +627,17 @@ The constraint on evaluation strategy is important for \texttt{foldl}, for reaso
     =&\texttt{ (Cons 1 (Cons 2 $\dots$ (Cons n Nil))) z ($\lambda$xs,x.foldl f (f x z) xs)}  \tag*{} \\
     =&\texttt{ foldl f (f x z) xs $\{$ xs $\mapsto$ (Cons 2 (Cons 3 $\dots$ (Cons n Nil))), x $\mapsto$ 1, $\dots$ $\}$}  \tag*{} \\
     =&\texttt{ foldl add (add 1 0) (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) $\{ \dots \}$}  \tag*{} \\
-    =&\texttt{ foldl add 1 (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) $\{ \dots \}$}  \tag*{} 
+    =&\texttt{ foldl add 1 (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) $\{ \dots \}$}  \tag*{} \\
+    & \dots \tag*{}
 \end{align}
-Evaluating \texttt{foldl} on a list of size \texttt{n} with the addition function showcases how the program keeps itself with a 
+Evaluating \texttt{foldl} on a list of size \texttt{n} with the addition function showcases how the program only grows by a constant number of terms.
+\begin{remark}
+    Note again that the list is always refereed to by reference; the list is not copied.
+\end{remark}
+%\begin{remark}
+    %If the program is to remain within a constant amount of space throughout the evaluation of \texttt{foldl}, then garbage collection must support this choice.
+    %Clearly a simple strategy 
+%\end{remark}
 
 %\\
 %\begin{minipage}{\textwidth}
