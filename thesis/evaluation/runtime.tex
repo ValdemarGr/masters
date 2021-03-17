@@ -211,8 +211,55 @@ More advanced techniques exist to translate the lambda calculus to linearly size
 \subsection{Reduction strategies}
 Reductions in the context of the lambda calculus are a small set of well-defined rules for rewriting such that a program is evaluated.
 The techniques required to correctly evaluate a program are a bit more complicated than the SKI calculus but are rewarding in the performance.
-The substitution mapping set is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
+The substitution mapping set, denoted $S$, is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
+Substitutions mappings can be combined $S \cup \Sigma$, if a variable name occurs in both $S$ and $\Sigma$ then the variable in the rightmost mapping is choose $\Sigma$.
 %In $(\lambda f . \lambda x . \lambda y. \texttt{ let } a = f x \texttt{ in } a + y)(\lambda y . y) \,\, 10 \,\, 20$ when evaluating $f x$ where the substitution are $[f \mapsto \lambda y . y, x \mapsto 10, y \mapsto 20]$ there must be taken great care that $x$ is mapped to $y$ in $\lambda y . y$.
+
+A naive reduction strategy would involve adding variables to the substitution set, once they are applied.
+When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be substituted by \texttt{5} such that the expression becomes \texttt{x + 5} with the substitution mapping \texttt{\{x $\mapsto$ 5\}}.
+\begin{figure}[ht]
+    \begin{mdframed}[style=style1]
+        \vspace*{0.4cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
+              \RightLabel{App}
+              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$, y}}
+          \end{prooftree}   
+    \end{mdframed}
+    \caption{A simple application rule}
+    \label{fig:simpleapp}
+\end{figure}
+More generally, a simple rule for App could be defined as in \autoref{fig:simpleapp} which states ``Evaluate \texttt{($\lambda$x.e) z} with the substitution mapping \texttt{S} to \texttt{y} with the substitution mapping $\Sigma$ by first evaluating \texttt{e} with the substitution mapping \texttt{S} $\cup$ \texttt{\{x $\mapsto$ z\}} to \texttt{y} with the substitution mapping $\Sigma$''.
+
+Let expressions are considered as if abstractions and applications; \texttt{let a = b in c $\rightarrow$ ($\lambda$a.c)b}.
+\begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
+fun f a = 
+  fun g x = 
+    let a = 20;
+    a + x;
+  (g a) + a;
+f 10;
+\end{lstlisting}
+Evaluating \autoref{lst:problemprog} using any reduction method (say $\beta$-reductions for simplicity), yields an interesting case of variable ambiguity.
+At some point the evaluation machine will reach a state with the expression \texttt{(g a) + a} and substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ ($\lambda$x.let a = 20 in (a + x))\}}.
+Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} with the substitution mapping \texttt{\{a $\mapsto$ 20, g $\mapsto$ $\dots$\}}, and finally \texttt{50}.
+Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
+Clearly the order of evaluation is important, which is often not the desired semantics.
+A simple solution could involve restoring substitutions once the machine leaves an abstraction 
+\begin{figure}[ht]
+    \begin{mdframed}[style=style1]
+        \vspace*{0.4cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
+              \RightLabel{App}
+              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$ $\cup$ S, y}}
+          \end{prooftree}   
+    \end{mdframed}
+\end{figure}
+\[
+  \texttt{S, ($\lambda$x.e) z $\Rightarrow$ S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ S, e'}
+\]
+
 \begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
 ($\lambda$g.
     ($\lambda$x.
@@ -408,8 +455,17 @@ Let $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ be the system without lab
     S &= \{ \gamma_1 \mapsto a, \gamma_2 \mapsto a \}\\
     \Omega &= \{ a \mapsto E \} \tag*{}
 \end{align}
-By \autoref{eq:labelsystem} it should becomes clear that object duplication is medigated by ``merging'' references.
-\\
+By \autoref{eq:labelsystem} it should becomes clear that object duplication is mitigated by ``merging'' references.
+
+$\alpha$-conversion loses some of it's purpose when a labelling approach is considered.
+\begin{lstlisting}[language=ML,caption={Program},label={lst:labeltest},mathescape=true]
+fun id a = a;
+fun f g a =
+  id (g a a);
+\end{lstlisting}
+
+
+
 
 %The labelled system can evaluate expressions in parallel by implementing locking (or cooperative yielding) on the label level (in \autoref{eq:labelsystem} evaluating $\gamma_1$ and $\gamma_2$ in paralell would lock $a$).
 %The only scenario where mutual evaluation of an expression is possible, is when two other expressions can access (either through abstraction or closure) the same value.
