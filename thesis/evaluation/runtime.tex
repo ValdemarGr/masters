@@ -213,7 +213,19 @@ Reductions in the context of the lambda calculus are a small set of well-defined
 The techniques required to correctly evaluate a program are a bit more complicated than the SKI calculus but are rewarding in the performance.
 The substitution mapping set, denoted $S$, is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
 Substitutions mappings can be combined $S \cup \Sigma$, if a variable name occurs in both $S$ and $\Sigma$ then the variable in the rightmost mapping is choose $\Sigma$.
+\begin{align}
+  \{ x \mapsto y \} x = y\label{eq:subsem}\\
+  \{ x \mapsto y \} z = z \tag*{}
+\end{align}
+Substitution mappings are used as in \autoref{eq:subsem}; if $Sx = y$ if $(x \mapsto y) \in S$ else $Sx = x$.
 %In $(\lambda f . \lambda x . \lambda y. \texttt{ let } a = f x \texttt{ in } a + y)(\lambda y . y) \,\, 10 \,\, 20$ when evaluating $f x$ where the substitution are $[f \mapsto \lambda y . y, x \mapsto 10, y \mapsto 20]$ there must be taken great care that $x$ is mapped to $y$ in $\lambda y . y$.
+
+Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
+A \textit{redex} is a reducible expression in the context of some set of reduction rules.
+The two interesting evaluation orders are \textit{applicative order} and \textit{normal order}~\cite{sestoft2002demonstrating}.
+Applicative order specifies that the parameters of some application should always be evaluated first, e.g. call by value.
+Normal order specifies that the leftmost outermost term should be evaluated first which yields the call by name strategy.
+Before delving into more complicated evaluation strategies such as call by need, call by name will be considered.
 
 A naive reduction strategy would involve adding variables to the substitution set, once they are applied.
 When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be substituted by \texttt{5} such that the expression becomes \texttt{x + 5} with the substitution mapping \texttt{\{x $\mapsto$ 5\}}.
@@ -244,40 +256,86 @@ Evaluating \autoref{lst:problemprog} using any reduction method (say $\beta$-red
 At some point the evaluation machine will reach a state with the expression \texttt{(g a) + a} and substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ ($\lambda$x.let a = 20 in (a + x))\}}.
 Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} with the substitution mapping \texttt{\{a $\mapsto$ 20, g $\mapsto$ $\dots$\}}, and finally \texttt{50}.
 Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
-Clearly the order of evaluation is important, which is often not the desired semantics.
-A simple solution could involve restoring substitutions once the machine leaves an abstraction 
+Clearly the order of evaluation is of importance for the result, which is often not the desired semantics.
+If there exists multiple reduction techniques which ensure the same result, the system is called \textit{confluent}.
+Reduction strategies are confluent, which leads to the question of what result is the correct one?
+In $L$ variables only exist in the scope they are declared in, thus the expected result is \texttt{40}.
+The different results are an effect of leaking the substitution mapping to the outside of the lexical scope in which is was used.
+Confluence is an important property, since programs are difficult to reason with if the interpretation environment produces different results depending on the evaluation order, even if the program is pure.
+A simple solution could involve saving the substitution mapping once the machine enters an abstraction, then restore the same substitution mapping when it leaves.
 \begin{figure}[ht]
     \begin{mdframed}[style=style1]
         \vspace*{0.4cm}
           \begin{prooftree}
             \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
               \RightLabel{App}
-              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$ $\cup$ S, y}}
+              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ S, y}}
           \end{prooftree}   
     \end{mdframed}
+    \caption{An application rule which does not leak}
+    \label{fig:cleanapp}
 \end{figure}
-\[
-  \texttt{S, ($\lambda$x.e) z $\Rightarrow$ S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ S, e'}
-\]
+\noindent \autoref{fig:cleanapp} is a slightly modified version of \autoref{fig:simpleapp}, with the difference of requiring the resulting substitution mapping to be exactly the initial substitution mapping.
 
-\begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
-($\lambda$g.
-    ($\lambda$x.
-        ($\lambda$g.
-            x g
-        )(0)
-    )($\lambda$x.g x)
-)($\lambda$x.x)
-\end{lstlisting}
-When evaluating \autoref{lst:problemprog} it should become clear why a naive evaluation strategy becomes insufficient.
-If \autoref{lst:problemprog} was evaluated naively the expression $\lambda\texttt{x.}$ on line 2 would leak into the substitution mapping of $\lambda\texttt{x.x}$ on line 7.
-Furthermore if no precautions are taken in $\lambda\texttt{x.g x}$ then $\lambda\texttt{g.}$ on line 4 will leak into the substitution mapping. 
-More generally closures must be bound to abstractions and applications must substitute the variable name and restore the context when completed.
-In the expression \texttt{x g} the substitutions from \texttt{x} may never persist outside of the scope of the body of \texttt{x}.
+\autoref{fig:cleanapp} does not handle recursion that well, under normal order evaluations, which becomes apparent in expressions such as \texttt{let f = ($\lambda$f.$\lambda$x.if (x == 0) 0 (x + (f (x - 1))) in f f n)}.
+Once the base case is reached (\texttt{x == 0}), then some expression has accumulated in the substitution set \texttt{\{x $\mapsto$ x + ((x - 1) + $\dots$ + ((x - 1) - 1 $\dots$))\}}, which is clearly not valid.
+\begin{figure}[ht]
+    \begin{mdframed}[style=style1]
+        \vspace*{0.4cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ Sz\}, e $\rightarrow$ $\Sigma$, y}}
+              \RightLabel{App}
+              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ S, y}}
+          \end{prooftree}   
+    \end{mdframed}
+    \caption{An application rule which works for recursion}
+    \label{fig:recapp}
+\end{figure}
+\noindent The problem of recursion can be solved by never introducing variables (\autoref{fig:recapp}).
+An unfortunate consideration which yields \autoref{fig:recapp} unsatisfactory, under the current semantics, is that \texttt{z} can also be bound to an expression which is not a variable, like an application for instance (parameters are never evaluated first in normal order).
+One could recursively apply substitutions to \texttt{z}, but then the suspense would be broken.
+For this method to work then substitutions must be applied lazily.
+The notion of substitutions should now be changed such that substitutions are performed recursively and lazily (\autoref{eq:subsemlaz}).
+\begin{align}
+  &\{ x \mapsto y \} x = y &\label{eq:subsemlaz}\\
+  &\{ x \mapsto y \} z = z  &\tag*{}\\
+  &S f z = (Sf)(Sz) &\tag*{}\\
+  &S (\lambda x.e) = (\lambda x.Se) & (x \mapsto y) \notin S \tag*{}\\
+  &S (\lambda x.e) = (\lambda x.(S \backslash \{x \mapsto y\})e) & (x \mapsto y) \in S \label{eq:subsemlaz2}
+\end{align}
+Expressions can be modelled by a pair \texttt{S,e}, where \texttt{S} is a substation mapping which should be considered once \texttt{e} is evaluated. 
+If a substitution mapping \texttt{S} is applied and then a substitution mapping $\Sigma$ is applied, then the resulting set for an expression should become \texttt{S $\cup$ $\Sigma$}.
+\autoref{eq:subsemlaz2} has been introduced for completeness, but can safely be ignored since it cannot occur because of the substitution union semantics.
+\begin{figure}[ht]
+    \begin{mdframed}[style=style1]
+        \vspace*{0.4cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{\{x $\mapsto$ z\} e $\rightarrow$ y}}
+              \RightLabel{App}
+              \UnaryInfC{\texttt{($\lambda$x.e) z $\rightarrow$ y}}
+          \end{prooftree}   
+    \end{mdframed}
+    \caption{An application rule which has abstracted away substitution mappings}
+    \label{fig:recappsimple}
+\end{figure}
+Notice that any variables introduced must be so through applications.
+All the substitution work can now be moved into the introduced variable (\autoref{fig:recappsimple}).
+\begin{remark}
+  Since substitutions are now local to variables they are can be omitted when written out.
+\end{remark}
+Surely a system which uses \autoref{fig:recappsimple} is confluent, but, alas this is not yet the case.
+Consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\lambda$x.y)g}.
+When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
+Once \texttt{y} is visited the substitution mapping will be \texttt{\{x $\mapsto$ g, y $\mapsto$ x\}}, thus the expression is equivalent to \texttt{($\lambda$x.x)g}, which is not necessarily correct in the case that \texttt{z $\neq$ g}.
 
-The first step to evaluate the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
-The $\alpha$-conversion mapping written $[x_1 \mapsto \gamma_1, x_2 \mapsto \gamma_2 \dots , x_n \mapsto \gamma_n]$ states that for some $x_k$ where $1 \leq k \leq n$ all variables $v$ where $v = x_k$ should be renamed to $\gamma_k$.
-Let $\lambda x . ((\lambda x . x) x)$ be a term where a collision between the two $x$'s causes trouble, the $\alpha$-conversion can be $\lambda y . ((\lambda x . x) y)$ since $y$ and $x$ have been introduced by separate abstractions.
+The shortcomings of \autoref{fig:simpleapp} become more apparent once one begins to consider more exotic evaluation strategies, namely call by need.
+Looking at call by need from a philosophical perspective, indicates that reduction rules must support returning information about newly computed variable values ``up'' through the evaluation tree.
+Furthermore when returning these modified variables up through the program tree, all variables which point to the same expression must also be updated.
+\\
+
+The first step in correctly evaluating the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
+The $\alpha$-conversion mapping written $[x_1 \mapsto \gamma_1, x_2 \mapsto \gamma_2 \dots , x_n \mapsto \gamma_n]$ states that for some $x_k$ where $1 \leq k \leq n$ all variables in the program tree $v$ where $v = x_k$ should be renamed to $\gamma_k$.
+Let \texttt{$\lambda$f.$\lambda$x.x + (f (x - 1))} be a term where a collision between the two $x$'s causes trouble, the $\alpha$-conversion can be $\lambda y . ((\lambda x . x) y)$ since $y$ and $x$ have been introduced by separate abstractions.
 $\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 $\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
 More formally $\textit{eval}: \Lambda \times S \rightarrow \Lambda \times S$ where $S$ is the domain of substitution mappings and $\Lambda$ is in the domain of lambda expressions such that  $(\lambda',s') = eval(\lambda, s)$ always implies $s \subseteq s'$.
@@ -300,15 +358,15 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
         \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                \node[circle, draw=black] (app1) {\texttt{app}};
-                    \node[circle, draw=black, below right = of app1] (var1) {\texttt{10}};
+                \node[draw=black] (app1) {\texttt{app}};
+                    \node[draw=black, below right = of app1] (var1) {\texttt{10}};
                     \path[-] (app1) edge node[left] {} (var1);
 
-                    \node[circle, draw=black, below left = of app1] (app2) {\texttt{app}};
+                    \node[draw=black, below left = of app1] (app2) {\texttt{app}};
                     \path[-] (app1) edge node[left] {} (app2);
-                        \node[circle, draw=red, below left = of app2] (f1) {\texttt{f}};
+                        \node[draw=red, below left = of app2] (f1) {\texttt{f}};
                         \path[-] (app2) edge node[left] {} (f1);
-                        \node[circle, draw=black, below right = of app2] (f2) {\texttt{f}};
+                        \node[draw=black, below right = of app2] (f2) {\texttt{f}};
                         \path[-] (app2) edge node[left] {} (f2);
 
                 \node[draw,scale=1.3,fill=none,rectangle,fit=(app1)(f1)(var1)](fstB){};
@@ -323,31 +381,31 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
         \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                \node[circle, draw=black] (app1) {\texttt{app}};
-                    \node[circle, draw=black, below right = of app1] (var1) {\texttt{10}};
+                \node[draw=black] (app1) {\texttt{app}};
+                    \node[draw=black, below right = of app1] (var1) {\texttt{10}};
                     \path[-] (app1) edge node[left] {} (var1);
 
-                    \node[circle, draw=black, below left = of app1] (app2) {\texttt{app}};
+                    \node[draw=black, below left = of app1] (app2) {\texttt{app}};
                     \path[-] (app1) edge node[left] {} (app2);
-                        \node[circle, draw=red, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
+                        \node[draw=red, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
                         \path[-] (app2) edge node[left] {} (lam1);
-                            \node[circle, draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
+                            \node[draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
                             \path[-] (lam1) edge node[left] {} (lam2);
-                                \node[circle, draw=black, below = of lam2] (app3) {\texttt{app}};
+                                \node[draw=black, below = of lam2] (app3) {\texttt{app}};
                                 \path[-] (lam2) edge node[left] {} (app3);
-                                    \node[circle, draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    \node[draw=black, below left = of app3] (app4) {\texttt{app}};
                                     \path[-] (app3) edge node[left] {} (app4);
-                                        \node[circle, draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        \node[draw=black, below left = of app4] (app5) {\texttt{app}};
                                         \path[-] (app4) edge node[left] {} (app5);
-                                            \node[circle, draw=black, below left = of app5] (if) {\texttt{if}};
+                                            \node[draw=black, below left = of app5] (if) {\texttt{if}};
                                             \path[-] (app5) edge node[left] {} (if);
-                                            \node[circle, draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            \node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
                                             \path[-] (app5) edge node[left] {} (ifc);
-                                        \node[circle, draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        \node[draw=black, below right = of app4] (ift) {\texttt{x}};
                                         \path[-] (app4) edge node[left] {} (ift);
-                                    \node[circle, draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ((x - 1) + (x - 1))}};
+                                    \node[draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ((x - 1) + (x - 1))}};
                                     \path[-] (app3) edge node[left] {} (iff);
-                        \node[circle, draw=black, below right = of app2] (f2) {\texttt{f}};
+                        \node[draw=black, below right = of app2] (f2) {\texttt{f}};
                         \path[-] (app2) edge node[left] {} (f2);
 
                 \node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](sndB){};
@@ -363,18 +421,18 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
         \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                                \node[circle, draw=black, below = of lam2] (app3) {\texttt{app}};
-                                    \node[circle, draw=black, below left = of app3] (app4) {\texttt{app}};
+                                \node[draw=black, below = of lam2] (app3) {\texttt{app}};
+                                    \node[draw=black, below left = of app3] (app4) {\texttt{app}};
                                     \path[-] (app3) edge node[left] {} (app4);
-                                        \node[circle, draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        \node[draw=black, below left = of app4] (app5) {\texttt{app}};
                                         \path[-] (app4) edge node[left] {} (app5);
-                                            \node[circle, draw=black, below left = of app5] (if) {\texttt{if}};
+                                            \node[draw=black, below left = of app5] (if) {\texttt{if}};
                                             \path[-] (app5) edge node[left] {} (if);
-                                            \node[circle, draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            \node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
                                             \path[-] (app5) edge node[left] {} (ifc);
-                                        \node[circle, draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        \node[draw=black, below right = of app4] (ift) {\texttt{x}};
                                         \path[-] (app4) edge node[left] {} (ift);
-                                    \node[circle, draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
+                                    \node[draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
                                     \path[-] (app3) edge node[left] {} (iff);
                 \node[draw,fill=none,scale=1.3,rectangle,fit=(app3)(if)(ifc)(iff)](fouB){};
                 %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
@@ -388,31 +446,31 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
         \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                \node[circle, draw=blue] (app1) {\texttt{app}};
-                    \node[circle, draw=black, below right = of app1] (var1) {\texttt{x - 1}};
+                \node[draw=blue] (app1) {\texttt{app}};
+                    \node[draw=black, below right = of app1] (var1) {\texttt{x - 1}};
                     \path[-] (app1) edge node[left] {} (var1);
 
-                    \node[circle, draw=purple, below left = of app1] (app2) {\texttt{app}};
+                    \node[draw=purple, below left = of app1] (app2) {\texttt{app}};
                     \path[-] (app1) edge node[left] {} (app2);
-                        \node[circle, draw=black, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
+                        \node[draw=black, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
                         \path[-] (app2) edge node[left] {} (lam1);
-                            \node[circle, draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
+                            \node[draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
                             \path[-] (lam1) edge node[left] {} (lam2);
-                                \node[circle, draw=black, below = of lam2] (app3) {\texttt{app}};
+                                \node[draw=black, below = of lam2] (app3) {\texttt{app}};
                                 \path[-] (lam2) edge node[left] {} (app3);
-                                    \node[circle, draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    \node[draw=black, below left = of app3] (app4) {\texttt{app}};
                                     \path[-] (app3) edge node[left] {} (app4);
-                                        \node[circle, draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        \node[draw=black, below left = of app4] (app5) {\texttt{app}};
                                         \path[-] (app4) edge node[left] {} (app5);
-                                            \node[circle, draw=black, below left = of app5] (if) {\texttt{if}};
+                                            \node[draw=black, below left = of app5] (if) {\texttt{if}};
                                             \path[-] (app5) edge node[left] {} (if);
-                                            \node[circle, draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            \node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
                                             \path[-] (app5) edge node[left] {} (ifc);
-                                        \node[circle, draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        \node[draw=black, below right = of app4] (ift) {\texttt{x}};
                                         \path[-] (app4) edge node[left] {} (ift);
-                                    \node[circle, draw=black, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
+                                    \node[draw=black, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
                                     \path[-] (app3) edge node[left] {} (iff);
-                        \node[circle, draw=black, below right = of app2] (f2) {\texttt{f'}};
+                        \node[draw=black, below right = of app2] (f2) {\texttt{f'}};
                         \path[-] (app2) edge node[left] {} (f2);
                 \node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](fouB){};
                 %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
@@ -426,12 +484,6 @@ If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \
     \end{subfigure}
 \end{figure}
 %\tikz[overlay,remember picture]{\draw[-latex,thick] (fstB) -- (fstB-|sndB) node[midway,below,text width=0.5cm]{};} 
-Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
-A \textit{redex} is a reducible expression in the context of some set of reduction rules.
-The two interesting evaluation orders are \textit{applicative order} and \textit{normal order}~\cite{sestoft2002demonstrating}.
-Applicative order specifies that the parameters of some application should always be evaluated first, e.g. call by value.
-Normal order specifies that the leftmost outermost term should be evaluated first which yields the call by name strategy.
-\\
 
 Call by need is a bit more tricky since it requires more than a particular evaluation order to implement~\cite{levy1988sharing}.
 Substitutions can be rewritten when a variable \texttt{x} maps to an application such that for some substitution mapping of the form $\{ \dots, \texttt{x} \mapsto Y E \}$ then the substituted to value is reduced.
