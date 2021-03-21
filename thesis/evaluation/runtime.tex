@@ -303,7 +303,8 @@ The notion of substitutions should now be changed such that substitutions are pe
   &S (\lambda x.e) = (\lambda x.Se) & (x \mapsto y) \notin S \tag*{}\\
   &S (\lambda x.e) = (\lambda x.(S \backslash \{x \mapsto y\})e) & (x \mapsto y) \in S \label{eq:subsemlaz2}
 \end{align}
-Expressions can be modelled by a pair \texttt{S,e}, where \texttt{S} is a substation mapping which should be considered once \texttt{e} is evaluated. 
+Note that previously the substitution mappings travelled along with the interpreter while interpreting, but now substitution mappings should travel along variables.
+Expressions should now be modelled by a pair \texttt{S,e}, where \texttt{S} is a substitution mapping which should be considered once \texttt{e} is evaluated. 
 If a substitution mapping \texttt{S} is applied and then a substitution mapping $\Sigma$ is applied, then the resulting set for an expression should become \texttt{S $\cup$ $\Sigma$}.
 \begin{remark}
   The union of two substitution mappings is important since applying them sequentially could damage the asymptotic complexity of substitution.
