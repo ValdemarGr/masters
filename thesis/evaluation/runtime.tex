@@ -305,6 +305,12 @@ The notion of substitutions should now be changed such that substitutions are pe
 \end{align}
 Expressions can be modelled by a pair \texttt{S,e}, where \texttt{S} is a substation mapping which should be considered once \texttt{e} is evaluated. 
 If a substitution mapping \texttt{S} is applied and then a substitution mapping $\Sigma$ is applied, then the resulting set for an expression should become \texttt{S $\cup$ $\Sigma$}.
+\begin{remark}
+  The union of two substitution mappings is important since applying them sequentially could damage the asymptotic complexity of substitution.
+  Clearly the variables which are lexically ``closer'' must also be respected but this is not of significant importance since $\alpha$-conversion will become necessary later.
+  If $n$ substitutions \texttt{S$_1 \dots$ S$_n$} are applied efficiently ($O(1)$ lookup), then the total number of operations will be $n$, whereas if the substitutions were unioned as they were created the work would be constant.
+  An interpreter would not be of much value if a recursive function which recurses $n$ times takes $O(n^2)$ time, since $O(1 + 2  \dots + n) = O(n \frac{n + 1}{2}) = O(n^2)$.
+\end{remark}
 \autoref{eq:subsemlaz2} has been introduced for completeness, but can safely be ignored since it cannot occur because of the substitution union semantics.
 \begin{figure}[ht]
     \begin{mdframed}[style=style1]
@@ -323,22 +329,21 @@ All the substitution work can now be moved into the introduced variable (\autore
 \begin{remark}
   Since substitutions are now local to variables they are can be omitted when written out.
 \end{remark}
-Surely a system which uses \autoref{fig:recappsimple} is confluent, but, alas this is not yet the case.
+Surely a system which uses \autoref{fig:recappsimple} behaves as expected, but, alas this is not yet the case.
 Consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\lambda$x.y)g}.
 When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
 Once \texttt{y} is visited the substitution mapping will be \texttt{\{x $\mapsto$ g, y $\mapsto$ x\}}, thus the expression is equivalent to \texttt{($\lambda$x.x)g}, which is not necessarily correct in the case that \texttt{z $\neq$ g}.
 
-The shortcomings of \autoref{fig:simpleapp} become more apparent once one begins to consider more exotic evaluation strategies, namely call by need.
-Looking at call by need from a philosophical perspective, indicates that reduction rules must support returning information about newly computed variable values ``up'' through the evaluation tree.
-Furthermore when returning these modified variables up through the program tree, all variables which point to the same expression must also be updated.
-\\
+%The shortcomings of \autoref{fig:simpleapp} become more apparent once one begins to consider more exotic evaluation strategies, namely call by need.
+%Looking at call by need from a philosophical perspective, indicates that reduction rules must support returning information about newly computed variable values ``up'' through the evaluation tree.
+%Furthermore when returning these modified variables up through the program tree, all variables which point to the same expression must also be updated.
+%\\
 
-The first step in correctly evaluating the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
+The next step in correctly evaluating the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
 The $\alpha$-conversion mapping written $[x_1 \mapsto \gamma_1, x_2 \mapsto \gamma_2 \dots , x_n \mapsto \gamma_n]$ states that for some $x_k$ where $1 \leq k \leq n$ all variables in the program tree $v$ where $v = x_k$ should be renamed to $\gamma_k$.
-Let \texttt{$\lambda$f.$\lambda$x.x + (f (x - 1))} be a term where a collision between the two $x$'s causes trouble, the $\alpha$-conversion can be $\lambda y . ((\lambda x . x) y)$ since $y$ and $x$ have been introduced by separate abstractions.
 $\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 $\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
-More formally $\textit{eval}: \Lambda \times S \rightarrow \Lambda \times S$ where $S$ is the domain of substitution mappings and $\Lambda$ is in the domain of lambda expressions such that  $(\lambda',s') = eval(\lambda, s)$ always implies $s \subseteq s'$.
+More formally if \texttt{S, e $\rightarrow$ $\Sigma$, e'} then $\{x \,\,|\,\, (x \mapsto y) \in S\} \subseteq \{x \,\,|\,\, (x \mapsto y) \in \Sigma\}$.
 \begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
 let f = ($\lambda$f'.$\lambda$x.
     if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
