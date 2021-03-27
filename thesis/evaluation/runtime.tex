@@ -258,10 +258,10 @@ Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} wit
 Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
 Clearly the order of evaluation is of importance for the result, which is often not the desired semantics.
 If there exists multiple reduction techniques which ensure the same result, the system is called \textit{confluent}.
-Reduction strategies are confluent, which leads to the question of what result is the correct one?
-In $L$ variables only exist in the scope they are declared in, thus the expected result is \texttt{40}.
-The different results are an effect of leaking the substitution mapping to the outside of the lexical scope in which is was used.
+If reduction strategies for the lambda calculus are not confluent, programs become difficult to reason with.
 Confluence is an important property, since programs are difficult to reason with if the interpretation environment produces different results depending on the evaluation order, even if the program is pure.
+In $L$ variables only exist in the scope they are declared in, thus the expected result is \texttt{40}.
+The different results are an effect of leaking the substitution mapping to the outside of the lexical scope in which it was used.
 A simple solution could involve saving the substitution mapping once the machine enters an abstraction, then restore the same substitution mapping when it leaves.
 \begin{figure}[ht]
     \begin{mdframed}[style=style1]
@@ -308,7 +308,7 @@ Expressions should now be modelled by a pair \texttt{S,e}, where \texttt{S} is a
 If a substitution mapping \texttt{S} is applied and then a substitution mapping $\Sigma$ is applied, then the resulting set for an expression should become \texttt{S $\cup$ $\Sigma$}.
 \begin{remark}
   The union of two substitution mappings is important since applying them sequentially could damage the asymptotic complexity of substitution.
-  Clearly the variables which are lexically ``closer'' must also be respected but this is not of significant importance since $\alpha$-conversion will become necessary later.
+  Clearly the variables which are lexically ``closer'' must also be respected. % but this is not of significant importance since $\alpha$-conversion will become necessary later.
   If $n$ substitutions \texttt{S$_1 \dots$ S$_n$} are applied efficiently ($O(1)$ lookup), then the total number of operations will be $n$, whereas if the substitutions were unioned as they were created the work would be constant.
   An interpreter would not be of much value if a recursive function which recurses $n$ times takes $O(n^2)$ time, since $O(1 + 2  \dots + n) = O(n \frac{n + 1}{2}) = O(n^2)$.
 \end{remark}
@@ -317,9 +317,9 @@ If a substitution mapping \texttt{S} is applied and then a substitution mapping 
     \begin{mdframed}[style=style1]
         \vspace*{0.4cm}
           \begin{prooftree}
-            \AxiomC{\texttt{\{x $\mapsto$ z\} e $\rightarrow$ y}}
+            \AxiomC{\texttt{\{x $\mapsto$ $\Sigma$,z\} e $\rightarrow$ $\Theta$,y}}
               \RightLabel{App}
-              \UnaryInfC{\texttt{($\lambda$x.e) z $\rightarrow$ y}}
+              \UnaryInfC{\texttt{S,($\lambda$x.e) z $\rightarrow$ $\Theta$,y}}
           \end{prooftree}   
     \end{mdframed}
     \caption{An application rule which has abstracted away substitution mappings}
@@ -327,9 +327,14 @@ If a substitution mapping \texttt{S} is applied and then a substitution mapping 
 \end{figure}
 Notice that any variables introduced must be so through applications.
 All the substitution work can now be moved into the introduced variable (\autoref{fig:recappsimple}).
-\begin{remark}
-  Since substitutions are now local to variables they are can be omitted when written out.
-\end{remark}
+
+Functions can store intermediate values in two ways, either by partial application or closure.
+When partially applying functions, the intermediate values (and their respective variable bindings) must be saved in a safe and isolated way.
+\texttt{let f = ($\lambda$x.$\lambda$y.x + y) 0 in E} shows a partially applied function \texttt{f} which should have \texttt{x} binded to the expression \texttt{0} in such a way that applying another value to \texttt{f} will finalize the value.
+Letting \texttt{E} satisfy \texttt{x $\notin$ Free(E)} while \texttt{x} occurs in \texttt{E}, that is, \texttt{x} is bound in \texttt{E}, provides an interesting problem for interpreters.
+If we let \texttt{f} be eager, that is, the binding of \texttt{x} to the expression \texttt{0} is not suspended, then \texttt{f} must associate itself with the substitution \texttt{\{x $\mapsto$ 0\}} and \textit{never} let any other substitutions override the variable \texttt{x}.
+\autoref{fig:recappsimple} solves the problem of not letting substituted to values have their meaning changed, by pairing expressions with their entire substitution mapping.
+
 Surely a system which uses \autoref{fig:recappsimple} behaves as expected, but, alas this is not yet the case.
 Consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\lambda$x.y)g}.
 When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
