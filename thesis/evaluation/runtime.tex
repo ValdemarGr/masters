@@ -335,17 +335,15 @@ Letting \texttt{E} satisfy \texttt{x $\notin$ Free(E)} while \texttt{x} occurs i
 If we let \texttt{f} be eager, that is, the binding of \texttt{x} to the expression \texttt{0} is not suspended, then \texttt{f} must associate itself with the substitution \texttt{\{x $\mapsto$ 0\}} and \textit{never} let any other substitutions override the variable \texttt{x}.
 \autoref{fig:recappsimple} solves the problem of not letting substituted to values have their meaning changed, by pairing expressions with their entire substitution mapping.
 
-Surely a system which uses \autoref{fig:recappsimple} behaves as expected, but, alas this is not yet the case.
-Consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\lambda$x.y)g}.
-When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
-Once \texttt{y} is visited the substitution mapping will be \texttt{\{x $\mapsto$ g, y $\mapsto$ x\}}, thus the expression is equivalent to \texttt{($\lambda$x.x)g}, which is not necessarily correct in the case that \texttt{z $\neq$ g}.
-
+\autoref{fig:recappsimple} induces rather complicated programs to reason with since substitution mapping can occur within substitution mappings.
+Instead, if all variables are unique, ambiguity cannot occur.
+By renaming all variables to a unique name when they are introduced, the evaluation model can be simplified significantly.
+The operation of renaming is called $\alpha$-conversions.
 %The shortcomings of \autoref{fig:simpleapp} become more apparent once one begins to consider more exotic evaluation strategies, namely call by need.
 %Looking at call by need from a philosophical perspective, indicates that reduction rules must support returning information about newly computed variable values ``up'' through the evaluation tree.
 %Furthermore when returning these modified variables up through the program tree, all variables which point to the same expression must also be updated.
 %\\
-
-The next step in correctly evaluating the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
+%The next step in correctly evaluating the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
 The $\alpha$-conversion mapping written $[x_1 \mapsto \gamma_1, x_2 \mapsto \gamma_2 \dots , x_n \mapsto \gamma_n]$ states that for some $x_k$ where $1 \leq k \leq n$ all variables in the program tree $v$ where $v = x_k$ should be renamed to $\gamma_k$.
 $\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 $\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
