@@ -309,8 +309,8 @@ The notion of substitutions should now be changed such that substitutions are pe
   &\{ x \mapsto y \} x = y &\label{eq:subsemlaz}\\
   &\{ x \mapsto y \} z = z  &\tag*{}\\
   &S f z = (Sf)(Sz) &\tag*{}\\
-  &S (\lambda x.e) = (\lambda x.Se) & (x \mapsto y) \notin S \tag*{}\\
-  &S (\lambda x.e) = (\lambda x.(S \backslash \{x \mapsto y\})e) & (x \mapsto y) \in S \tag*{}%\label{eq:subsemlaz2}
+  &S (\lambda x.e) = (\lambda x.Se) & (x \mapsto y) \notin S \tag*{}%\\
+  %&S (\lambda x.e) = (\lambda x.(S \backslash \{x \mapsto y\})e) & (x \mapsto y) \in S \tag*{}%\label{eq:subsemlaz2}
 \end{align}
 Note that previously the substitution mappings travelled along with the interpreter while interpreting, but now substitution mappings should travel along variables.
 Expressions should now be modelled by a pair \texttt{S,e}, where \texttt{S} is a substitution mapping which should be considered once \texttt{e} is evaluated. 
@@ -344,9 +344,13 @@ Surely a system which uses \autoref{fig:recappsimple} is confluent, but, alas th
 \texttt{let f = ($\lambda$x.$\lambda$y.x + y) 0 in E} shows a partially applied function \texttt{f} which should have \texttt{x} binded to the expression \texttt{0} in such a way that applying another value to \texttt{f} will finalize the value.
 Letting \texttt{E} satisfy \texttt{x $\notin$ Free(E)} while \texttt{x} occurs in \texttt{E}, that is, \texttt{x} is bound in \texttt{E}, provides an interesting problem for interpreters under call by value.
 If we let \texttt{f} be eager, that is, the binding of \texttt{x} to the expression \texttt{0} is not suspended, then \texttt{f} must associate itself with the substitution \texttt{\{x $\mapsto$ 0\}} and \textit{never} let any other substitutions override the variable \texttt{x}.
-Now let \texttt{E} be \texttt{($\lambda$x.let g = f in g) 10} such that evaluation yields \autoref{eq:red}.
+\begin{remark}
+  Ad-hoc eager evaluation, that is, forcing suspended evaluations by use of some symbol is often allowed in functional programming languages.
+  Explicit forcing of suspended computations is a technique often used when creating data structures with good worst case performance.
+\end{remark}
+\noindent Now let \texttt{E} be \texttt{($\lambda$x.let g = f in g) 10} such that an evaluation yields \autoref{eq:red}.
 \begin{align}
-  &\texttt{S = \{x $\mapsto$ \{$\dots$\},10, f $\mapsto$ \{x $\mapsto$ 0\}($\lambda$y.x + y)\}} \tag*{}\\
+  &\texttt{S = \{x $\mapsto$ 10, f $\mapsto$ \{x $\mapsto$ 0\}($\lambda$y.x + y)\}} \tag*{}\\
   &\texttt{S(let g = f in g)} \label{eq:red}\\
   &\texttt{S($\lambda$g.g) S(f)} \tag*{}\\
   &\texttt{($\lambda$g.S(g)) \{x $\mapsto$ 0\}($\lambda$y.x + y)} \tag*{}\\
@@ -354,20 +358,21 @@ Now let \texttt{E} be \texttt{($\lambda$x.let g = f in g) 10} such that evaluati
   &\texttt{S($\lambda$y.x + y)} \tag*{}\\
   &\texttt{\{$\dots$, x $\mapsto$ 10\}($\lambda$y.x + y)} \tag*{}
 \end{align}
-\autoref{eq:red} is a common closure and partial application problem in disquise.
+\autoref{eq:red} is a textbook closure and partial application problem in disguise.
 Consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\lambda$x.y) g} in the context of \autoref{fig:cleanapp}.
 When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
 Once \texttt{y} is visited the substitution mapping will be \texttt{\{x $\mapsto$ g, y $\mapsto$ x\}}, thus the expression is equivalent to \texttt{($\lambda$x.x) g}, which is not necessarily correct in the case that \texttt{z $\neq$ g}.
+Both problems are an effect of variable ambiguity.
 %\autoref{fig:recappsimple} solves the problem of not letting substituted to values have their meaning changed, by pairing expressions with their entire substitution mapping.
 
 \autoref{fig:recappsimple} induces rather complicated programs to reason with since substitution mapping can occur within substitution mappings.
-Attempting to extend \autoref{fig:recappsimple} further, to solve variable ambiguity, sacrifices algorithmic elegance and simplicity further.
+%Attempting to extend \autoref{fig:recappsimple} further, to solve variable ambiguity, sacrifices algorithmic elegance and simplicity further.
 Taking a step back and considering what closures and partial application need to behave deterministically is rooted in solving variable ambiguity.
 Instead, if all variables are unique, ambiguity cannot occur.
-By renaming all variables to a unique name when they are introduced, the evaluation model can be simplified significantly and allows \textit{any} of the afforementioned application rules.
+By renaming all variables to a unique name when they are introduced, the evaluation model can be simplified significantly and allows \textit{any} of the aforementioned application rules.
 The operation of renaming is called $\alpha$-conversions.
 \begin{remark}
-  Renaming might render the work of deriving lazy substituions meaningless, but there remains silver lining.
+  Renaming might render the work of deriving lazy substitutions meaningless, but there remains silver lining.
   Renaming eagerly breaks suspension, so renaming should occur lazily.
 \end{remark}
 %The shortcomings of \autoref{fig:simpleapp} become more apparent once one begins to consider more exotic evaluation strategies, namely call by need.
@@ -376,7 +381,7 @@ The operation of renaming is called $\alpha$-conversions.
 %\\
 %The next step in correctly evaluating the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
 The $\alpha$-conversion mapping written $[x_1 \mapsto \gamma_1, x_2 \mapsto \gamma_2 \dots , x_n \mapsto \gamma_n]$ states that for some $x_k$ where $1 \leq k \leq n$ all variables in the program tree $v$ where $v = x_k$ should be renamed to $\gamma_k$.
-$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
+%$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 %$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
 %More formally if \texttt{S, e $\rightarrow$ $\Sigma$, e'} then $\{x \,\,|\,\, (x \mapsto y) \in S\} \subseteq \{x \,\,|\,\, (x \mapsto y) \in \Sigma\}$.
 \begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
@@ -390,6 +395,42 @@ The algorithm should also introduce the applied value to the substitution set th
 Let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
 It should become clear that an $\alpha$-conversion algorithm must also follow the reduction order or else one can force terrible runtime in a call by name (or need) environment by creating purposeless terms which are never executed but are converted.
 $\alpha$-conversions must be suspended until it is needed; let $\alpha E$ denote the $\alpha$-conversion for some conversion mapping $\alpha$ on a lambda expression $E$ which lazily $\alpha$-converts $E$.
+The replacement rules for $\alpha$-conversions are the same as for substitutions.
+\begin{align}
+  &\texttt{[x $\mapsto$ y]x = y} &\label{eq:alpharep}\\
+  &\texttt{[x $\mapsto$ y]z = z} &\tag*{}\\
+  &\texttt{$\alpha$(f z) = ($\alpha$f)($\alpha$z)} &\tag*{}\\
+  &\texttt{$\alpha$($\lambda$x.e) = ($\lambda$x.$\alpha$e)} & \texttt{(x $\mapsto$ y) $\notin$ $\alpha$} \tag*{}\\
+  &\texttt{$\alpha$($\lambda$x.e) = ($\lambda$x.($\alpha\backslash$[x $\mapsto$ y])e)} & \texttt{(x $\mapsto$ y) $\in$ $\alpha$} \label{eq:alprepsub}
+\end{align}
+
+We almost have all the building blocks in place now.
+The problem of ambiguity between \textit{different} variables, that is, variables different places in the program with the same name.
+The ambiguity in different variables $V_1$ can easily be solved by simply renaming all variables by picking fresh variables from some infinite set of variable names $V_2$ where $V_1 \cap V_2 = \emptyset$.
+Once again, not breaking suspension remains as an interesting value.
+First consider the implications of an eager $\alpha$-conversion strategy in \autoref{eq:alpharep}.
+Applying $\alpha$-conversions in applications eagerly ensures that all references to the applied to variable is are replaced (\autoref{fig:simpleappalpha}).
+Also notice that \autoref{eq:alprepsub} ensures that only variables that reference the replaced variable are renamed.
+\begin{figure}[ht]
+    \begin{mdframed}[style=style1]
+        \vspace*{0.4cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{$\gamma$ = fresh \,\,\,\,\, S $\cup$ \{$\gamma$ $\mapsto$ z\}, [x $\mapsto$ $\gamma$]e $\rightarrow$ $\Sigma$, y}}
+              \RightLabel{App}
+              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$, y}}
+          \end{prooftree}   
+    \end{mdframed}
+    \caption{The simple application rule with $\alpha$-conversions}
+    \label{fig:simpleappalpha}
+\end{figure}
+The semantics of eager $\alpha$-conversion implies that once an $\alpha$-conversion is converting an expression, all free variables which the $\alpha$-conversion addresses should be renamed eagerly.
+Moreover, this implies that if some $\alpha$-conversion $\alpha_1$ suspends conversion of an expression and then some other conversion $\alpha_2$ suspends a conversion on the same expression, $\alpha_1$'s conversions should take precedence.
+That is, suspended conversions cannot have their conversions overwritten by other conversions such that \texttt{[x $\mapsto$ y] $\cup$ [x $\mapsto$ z, $\gamma$ $\mapsto$ k] = [x $\mapsto$ y, $\gamma$ $\mapsto$ k]}.
+
+\begin{lstlisting}[language=ML,caption={$\alpha$-conversion of a program with variable name collisions},label={lst:ambg},mathescape=true]
+($\lambda$x.$\lambda$y.$\lambda$x.x + y) $\rightarrow$ ($\lambda\gamma$.$\lambda\theta$.$\lambda\sigma$.$\sigma$ + $\theta$)
+\end{lstlisting}
+
 In \autoref{subfig:red4} the application which contains \texttt{$\lambda$f'} and \texttt{f'} as children (the red node) must $\alpha$-convert \texttt{f'} in ``this scope''.
 If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \{ \gamma \mapsto \texttt{f'} \}, \alpha = [ \texttt{f'} \mapsto \gamma ]$.
 
