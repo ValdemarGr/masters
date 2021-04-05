@@ -388,9 +388,9 @@ Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} wit
 Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
 Clearly the order of evaluation is of importance for the result, which is often not the desired semantics.
 If there exists multiple reduction techniques which ensure the same result, the system is called \textit{confluent}.
+The reduction rules for the lambda calculus are confluent~\cite{church1936some}, which implies that the current set of rules are not valid evaluation rules for the lambda calculus.
 %If reduction strategies for the lambda calculus are not confluent, programs become difficult to reason with.
-Confluence is an important property, since programs are difficult to reason with if the interpretation environment produces different results depending on the evaluation order, even if the program is pure.
-In $L$ variables only exist in the scope they are declared in, thus the expected result is \texttt{40}.
+If the rules were to be confluent, any reduction order would result in \texttt{40}.
 The different results are an effect of leaking the substitution mapping to the outside of the lexical scope in which it was used.
 A simple solution could involve saving the substitution mapping once the machine enters an abstraction, then restore the same substitution mapping when it leaves.
 \begin{figure}[ht]
