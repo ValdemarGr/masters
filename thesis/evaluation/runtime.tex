@@ -234,19 +234,145 @@ Before delving into more complicated evaluation strategies such as call by need,
 A naive reduction strategy would involve adding variables to the substitution set, once they are applied.
 When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be substituted by \texttt{5} such that the expression becomes \texttt{x + 5} with the substitution mapping \texttt{\{x $\mapsto$ 5\}}.
 \begin{figure}[ht]
-    \begin{mdframed}[style=style1]
-        \vspace*{0.4cm}
+    \begin{mdframed}[style=bigbox]
+        \vspace*{0.49cm}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \begin{prooftree}
+                \AxiomC{}
+                \RightLabel{Abs}
+                \UnaryInfC{\texttt{($\lambda$x.e) $\rightarrow$ ($\lambda$x.e)}}
+            \end{prooftree}   
+            \caption{}
+            \label{eq:simpleabs}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            %\vspace*{0.4cm}
+              \begin{prooftree}
+                \AxiomC{\texttt{\{x $\mapsto$ z\} e $\rightarrow$ y}}
+                  \RightLabel{App}
+                  \UnaryInfC{\texttt{($\lambda$x.e) z $\rightarrow$ y}}
+              \end{prooftree}   
+          \caption{A simple application rule}
+          \label{fig:simpleapp}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \vspace*{0.4cm}
+            \begin{prooftree}
+                \AxiomC{}
+                %\AxiomC{$S \alpha x \not\equiv \alpha x$}
+                \RightLabel{Var}
+                \UnaryInfC{\texttt{x $\rightarrow$ y}}
+            \end{prooftree}   
+            \caption{}
+            \label{eq:simplevar}
+        \end{subfigure}
+    \end{mdframed}
+    \caption{Simple call by name lambda calculus}
+    \label{fig:scbn}
+\end{figure}
+The rules in \autoref{fig:scbn} display a simple set of rules for evaluating the call by name lambda calculus.
+The Abs and Var rules (\autoref{eq:simpleabs} and \autoref{eq:simplevar}) are rules which act as leaves within the evaluation of a program.
+Abs and Var both state that if either of them occur then simply return the expression.
+The App rule (\autoref{fig:simpleapp}) states that ``Evaluate \texttt{e} to \texttt{y}, where \texttt{x} has been replaced with \texttt{z} in \texttt{e}''.
+We must introduce rules for how substitutions should act upon encountering lambda calculus term types (\autoref{eq:subsem}).
+\begin{align}
+  &\texttt{\{x $\mapsto$ y\} x = y} \label{eq:subsem}\\
+  &\texttt{\{x $\mapsto$ y\} z = z}  \tag*{}\\
+  &\texttt{S f z = (Sf)(Sz)} \tag*{}\\
+  &\texttt{S ($\lambda$ x.e) = ($\lambda$ x.Se) } \label{eq:subsemrem}%\\
+\end{align}
+
+\begin{lstlisting}[language=ML,caption={Program with variable ambiguity},label={lst:varambg},mathescape=true]
+fun f x =
+  fun g x = x;
+  g (x + x);
+f 2;
+\end{lstlisting}
+Evaluating \autoref{lst:varambg} under the rules in \autoref{eq:subsem} yields a case for more thorough rules.
+Using the App rule (\autoref{fig:simpleapp}) and applying substitutions as defined in (\autoref{eq:subsem}), yields the program in \autoref{lst:varabg2}.
+\begin{lstlisting}[language=ML,caption={Program with variable ambiguity},label={lst:varambg2},mathescape=true]
+fun g x = 2;
+g (2 + 2);
+\end{lstlisting}
+Which eventually evaluates to \texttt{2}, which clearly is not the intended result.
+Removing the rule \autoref{eq:subsemrem} and adding the two rules in \autoref{eq:subsemfixed} solves variable ambiguity.
+\begin{align}
+  &\texttt{S($\lambda$x.e) = ($\lambda$x.Se)} & \texttt{(x $\mapsto$ y) $\notin$ S} \label{eq:subsemfixed}\\
+  &\texttt{S($\lambda$x.e) = ($\lambda$x.(S$\backslash$\{x $\mapsto$ y\})e)} & \texttt{(x $\mapsto$ y) $\in$ S} \tag*{}
+\end{align}
+This evaluation model is indeed powerful enough to evaluate the call by name lambda calculus naively.
+
+To further refine the call by name evaluation semantics observe that substitutions are performed eagerly, that is, they \textit{break suspension}.
+\begin{remark}
+  When considering an arbitrarily large expression under call by name (or need), there is no guarantee that the expression will ever be evaluated, that is, a suspended expression being forced.
+  Breaking suspension voilates the phisosophy behind call by name (and need).
+  A solution could involve composing a function in compile time, which replaces all instances of a variable (by \autoref{eq:subsem} and \autoref{eq:subsemfixed}) with some parameterized value.
+  Substituting expressions eagerly might compromise performance guarantees, even if substitution is an asymptotically constant number of operations.
+  Consider substituting an expression which contains conditional branches, one branch might be a single expression and the other might be a very large expression, consisting of many instances of the same variable.
+  If the program never picks the large expression, why should it ever have any impact on performance.
+  For instance, under call by name one would expect \texttt{fastMap} to evaluate in roughly the same time as \texttt{slowMap}.
+\begin{lstlisting}[language=ML,caption={Performance considerations in substitution},label={lst:problemprog},mathescape=true]
+fun fastMap f l =
+  match l
+    | Nil -> Nil;
+    | Cons x xs -> Cons (f x) (map f xs);
+  ;
+fun slowMap f l =
+  match l
+    | Nil -> Nil;
+    | Cons x xs -> 
+      if (x == 0)
+        let v = x + x + x + x + x + x; 
+        Cons (f x) (map f xs);
+      else
+        Cons (f x) (map f xs);
+      ;
+  ;
+\end{lstlisting}
+\end{remark}
+\subsubsection{Environments}
+Environments, like environments in typing (\autoref{eq:env}), define what ``state'' is required to evaluate some expression.
+In the case of reduction strategies, the environment is always a substitution mapping.
+Environments are a requirement for some call by need semantics and lazy substitution.
+Starting out with slightly modified rules in \autoref{fig:rules:env} which implies an interpreter which brings an environment along when interpreting. 
+\begin{figure}[ht]
+    \begin{mdframed}[style=bigbox]
+        \vspace*{0.49cm}
+        \begin{subfigure}[b]{1\textwidth}
+            \begin{prooftree}
+                \AxiomC{}
+                \RightLabel{Abs}
+                \UnaryInfC{\texttt{S, ($\lambda$x.e) $\rightarrow$ S, ($\lambda$x.e)}}
+            \end{prooftree}   
+            \caption{}
+          \label{fig:rules:env:abs}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.58\textwidth}
+          \vspace*{0.4cm}
           \begin{prooftree}
             \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
               \RightLabel{App}
               \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$, y}}
           \end{prooftree}   
+          \caption{}
+          \label{fig:rules:env:app}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \begin{prooftree}
+                \AxiomC{}
+                \RightLabel{Var}
+                \UnaryInfC{\texttt{S, x $\rightarrow$ S, Sx}}
+            \end{prooftree}   
+            \caption{}
+          \label{fig:rules:env:var}
+        \end{subfigure}
     \end{mdframed}
-    \caption{A simple application rule}
-    \label{fig:simpleapp}
+    \caption{Call by name lambda calculus with environments}
+    \label{fig:rules:env}
 \end{figure}
-More generally, a simple rule for App could be defined as in \autoref{fig:simpleapp} which states ``Evaluate \texttt{($\lambda$x.e) z} with the substitution mapping \texttt{S} to \texttt{y} with the substitution mapping $\Sigma$ by first evaluating \texttt{e} with the substitution mapping \texttt{S} $\cup$ \texttt{\{x $\mapsto$ z\}} to \texttt{y} with the substitution mapping $\Sigma$''.
+%More generally, a simple rule for App could be defined as in \autoref{fig:simpleapp} which states ``Evaluate \texttt{($\lambda$x.e) z} with the substitution mapping \texttt{S} to \texttt{y} with the substitution mapping $\Sigma$ by first evaluating \texttt{e} with the substitution mapping \texttt{S} $\cup$ \texttt{\{x $\mapsto$ z\}} to \texttt{y} with the substitution mapping $\Sigma$''.
 
+\begin{figure}[ht]
 \begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
 fun f a = 
   fun g x = 
@@ -255,7 +381,8 @@ fun f a =
   (g a) + a;
 f 10;
 \end{lstlisting}
-Evaluating \autoref{lst:problemprog} using any reduction method, yields an interesting case of variable ambiguity.
+\end{figure}
+Evaluating \autoref{lst:problemprog} under any evaluation order, yields an interesting case of variable ambiguity.
 At some point the evaluation machine will reach a state with the expression \texttt{(g a) + a} and substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ ($\lambda$x.let a = 20 in (a + x))\}}.
 Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} with the substitution mapping \texttt{\{a $\mapsto$ 20, g $\mapsto$ $\dots$\}}, and finally \texttt{50}.
 Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
