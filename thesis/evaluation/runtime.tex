@@ -306,10 +306,10 @@ One could recursively apply substitutions to \texttt{z}, but then the \textit{su
 \noindent For this method to work then substitutions must be applied lazily.
 The notion of substitutions should now be changed such that substitutions are performed recursively and lazily (\autoref{eq:subsemlaz}).
 \begin{align}
-  &\{ x \mapsto y \} x = y &\label{eq:subsemlaz}\\
-  &\{ x \mapsto y \} z = z  &\tag*{}\\
-  &S f z = (Sf)(Sz) &\tag*{}\\
-  &S (\lambda x.e) = (\lambda x.Se) & (x \mapsto y) \notin S \tag*{}%\\
+  &\{ x \mapsto y \} x = y \label{eq:subsemlaz}\\
+  &\{ x \mapsto y \} z = z  \tag*{}\\
+  &S f z = (Sf)(Sz) \tag*{}\\
+  &S (\lambda x.e) = (\lambda x.Se) \label{eq:subsemlaz2} %& (x \mapsto y) \notin S \tag*{}%\\
   %&S (\lambda x.e) = (\lambda x.(S \backslash \{x \mapsto y\})e) & (x \mapsto y) \in S \tag*{}%\label{eq:subsemlaz2}
 \end{align}
 Note that previously the substitution mappings travelled along with the interpreter while interpreting, but now substitution mappings should travel along variables.
@@ -363,6 +363,21 @@ Consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\l
 When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
 Once \texttt{y} is visited the substitution mapping will be \texttt{\{x $\mapsto$ g, y $\mapsto$ x\}}, thus the expression is equivalent to \texttt{($\lambda$x.x) g}, which is not necessarily correct in the case that \texttt{z $\neq$ g}.
 Both problems are an effect of variable ambiguity.
+
+We almost have all the building blocks in place now.
+Temporarily assuming that substitutions occur eagerly yields interesting results which will help finalize the model.
+Let \texttt{((($\lambda$x.$\lambda$y.$\lambda$x.x) 1) 2) 3} be an expression which is to be evaluated.
+If we follow the rules in \autoref{eq:subsemlaz} then the first substitution will yield.
+\[
+  \texttt{\{x $\mapsto$ 3\}(($\lambda$y.$\lambda$x.x) 1) 2} \rightarrow \texttt{(($\lambda$y.$\lambda$x.3) 1) 2}
+\]
+Adding a rule which allows only the innermost substitution to be captured yields the two following rules (\autoref{eq:subsemfixed}) instead of \autoref{eq:subsemlaz2}.
+\begin{align}
+  &S (\lambda x.e) = (\lambda x.Se) \label{eq:subsemfixed} & (x \mapsto y) \notin S \tag*{}\\
+  &S (\lambda x.e) = (\lambda x.(S \backslash \{x \mapsto y\})e) & (x \mapsto y) \in S \tag*{}%\label{eq:subsemlaz2}
+\end{align}
+
+
 %\autoref{fig:recappsimple} solves the problem of not letting substituted to values have their meaning changed, by pairing expressions with their entire substitution mapping.
 
 \autoref{fig:recappsimple} induces rather complicated programs to reason with since substitution mapping can occur within substitution mappings.
