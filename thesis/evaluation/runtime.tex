@@ -189,7 +189,7 @@ The size of an SKI combinator program is in terms of the number of combinators.
     \vspace*{0.5cm}
 Notice that the applications $f_1 f_1 \dots f_1$ can in fact be changed to $f_1 f_2 \dots f_n$ since for every $f_k$ where $0 < k \leq n$ there are $n - 1$ parameters that induce a K combinator.
 Let $P_n$ be family of programs with $n$ abstractions and $n$ applications.
-$\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1) \in P_3$ and in fact for any $p$ where $\forall n \in \mathbb{Z}^+ \,\, p \in P_n$ $p$ translates into SKI-expressions of size $\Omega(n^2)$.
+$\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1) \in P_3$ and in fact for any $p$ where $\forall n \in \mathbb{Z}^+$ and $p \in P_n$, $p$ translates into SKI-expressions of size $\Omega(n^2)$.
 \end{proof}
 \begin{exmp}
     Observe the size of \autoref{eq:eval:comp1} in comparison to \autoref{eq:evaltime}.
@@ -212,7 +212,7 @@ More advanced techniques exist to translate the lambda calculus to linearly size
 Reductions in the context of the lambda calculus are a small set of well-defined rules for rewriting such that a program is evaluated.
 The techniques required to correctly evaluate a program are a bit more complicated than the SKI calculus but are rewarding in flexibility and performance.
 The substitution mapping set, denoted $S$, is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
-Substitutions mappings can be combined $S \cup \Sigma$, if a variable name occurs in both $S$ and $\Sigma$ then the variable in the rightmost mapping is chosen ($\Sigma$).
+%Substitutions mappings can be combined $S \cup \Sigma$, if a variable name occurs in both $S$ and $\Sigma$ then the variable in the rightmost mapping is chosen ($\Sigma$).
 \begin{align}
   \{ x \mapsto y \} x = y\label{eq:subsem}\\
   \{ x \mapsto y \} z = z \tag*{}
@@ -289,8 +289,8 @@ fun f x =
 f 2;
 \end{lstlisting}
 Evaluating \autoref{lst:varambg} under the rules in \autoref{eq:subsem} yields a case for more thorough rules.
-Using the App rule (\autoref{fig:simpleapp}) and applying substitutions as defined in (\autoref{eq:subsem}), yields the program in \autoref{lst:varabg2}.
-\begin{lstlisting}[language=ML,caption={Program with variable ambiguity},label={lst:varambg2},mathescape=true]
+Using the App rule (\autoref{fig:simpleapp}) and applying substitutions as defined in (\autoref{eq:subsem}), yields the program in \autoref{lst:varambg2}.
+\begin{lstlisting}[language=ML,caption={Program with variable ambiguity after one reduction pass},label={lst:varambg2},mathescape=true]
 fun g x = 2;
 g (2 + 2);
 \end{lstlisting}
@@ -303,9 +303,10 @@ Removing the rule \autoref{eq:subsemrem} and adding the two rules in \autoref{eq
 This evaluation model is indeed powerful enough to evaluate the call by name lambda calculus naively.
 
 To further refine the call by name evaluation semantics observe that substitutions are performed eagerly, that is, they \textit{break suspension}.
+To explore solutions to avoid eager substitutions, environments may be used.
 \begin{remark}
   When considering an arbitrarily large expression under call by name (or need), there is no guarantee that the expression will ever be evaluated, that is, a suspended expression being forced.
-  Breaking suspension voilates the phisosophy behind call by name (and need).
+  Breaking suspension violates the philosophy behind call by name (and need).
   A solution could involve composing a function in compile time, which replaces all instances of a variable (by \autoref{eq:subsem} and \autoref{eq:subsemfixed}) with some parameterized value.
   Substituting expressions eagerly might compromise performance guarantees, even if substitution is an asymptotically constant number of operations.
   Consider substituting an expression which contains conditional branches, one branch might be a single expression and the other might be a very large expression, consisting of many instances of the same variable.
@@ -334,7 +335,7 @@ fun slowMap f l =
 Environments, like environments in typing (\autoref{eq:env}), define what ``state'' is required to evaluate some expression.
 In the case of reduction strategies, the environment is always a substitution mapping.
 Environments are a requirement for some call by need semantics and lazy substitution.
-Starting out with slightly modified rules in \autoref{fig:rules:env} which implies an interpreter which brings an environment along when interpreting. 
+A simple modification to the rules in \autoref{fig:rules:env}, implies an interpreter which brings an environment along when interpreting. 
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \vspace*{0.49cm}
@@ -370,6 +371,8 @@ Starting out with slightly modified rules in \autoref{fig:rules:env} which impli
     \caption{Call by name lambda calculus with environments}
     \label{fig:rules:env}
 \end{figure}
+The $\cup$ operator merges two substitution mappings, choosing the rightmost mapping on duplicates, such that \texttt{\{x $\mapsto$ y, z $\mapsto$ h\} $\cup$ \{x $\mapsto$ m\} $\rightarrow$ \{x $\mapsto$ m, z $\mapsto$ h\}}.
+The semantics of $\cup$ satisfy \autoref{eq:subsemfixed}.
 %More generally, a simple rule for App could be defined as in \autoref{fig:simpleapp} which states ``Evaluate \texttt{($\lambda$x.e) z} with the substitution mapping \texttt{S} to \texttt{y} with the substitution mapping $\Sigma$ by first evaluating \texttt{e} with the substitution mapping \texttt{S} $\cup$ \texttt{\{x $\mapsto$ z\}} to \texttt{y} with the substitution mapping $\Sigma$''.
 
 \begin{figure}[ht]
@@ -382,8 +385,10 @@ fun f a =
 f 10;
 \end{lstlisting}
 \end{figure}
-Evaluating \autoref{lst:problemprog} under any evaluation order, yields an interesting case of variable ambiguity.
+Evaluating \autoref{lst:problemprog}, using the rules proposed in \autoref{fig:rules:env}, yields an interesting case of variable ambiguity.
 At some point the evaluation machine will reach a state with the expression \texttt{(g a) + a} and substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ ($\lambda$x.let a = 20 in (a + x))\}}.
+By the laws of addition, that is, commutativity, it should be possible pick either of the two expressions to evaluate first.
+If any one of the branches in the addition operator are side effectful, it may become a problem, but this language only deals with pure programs.
 Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} with the substitution mapping \texttt{\{a $\mapsto$ 20, g $\mapsto$ $\dots$\}}, and finally \texttt{50}.
 Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
 Clearly the order of evaluation is of importance for the result, which is often not the desired semantics.
@@ -405,7 +410,32 @@ A simple solution could involve saving the substitution mapping once the machine
     \caption{An application rule which does not leak}
     \label{fig:cleanapp}
 \end{figure}
-\noindent \autoref{fig:cleanapp} is a slightly modified version of \autoref{fig:simpleapp}, with the difference of requiring the resulting substitution mapping to be exactly the initial substitution mapping.
+\noindent \autoref{fig:cleanapp} is a slightly modified version of \autoref{fig:rules:env:app}, with the difference of requiring the resulting substitution mapping to be exactly the initial substitution mapping.
+
+\autoref{fig:cleanapp} does not handle closure correctly.
+Evaluating \autoref{lst:closprob} under the rules defined in \autoref{fig:cleanapp} yields yet another problem.
+\begin{figure}[ht]
+\begin{lstlisting}[language=ML,caption={Program with closure},label={lst:closprob},mathescape=true]
+fun g x =
+  fun f z = x + z; // closes x
+  fun run y =
+    let x = 20; $\label{closov}$
+    f y;
+  run 10;
+g 3;
+\end{lstlisting}
+\end{figure}
+When line \autoref{closov} is reached in \autoref{lst:closprob}, then \texttt{x} in the substitution mapping is overwritten by the rules in \autoref{fig:cleanapp}.
+Even if renaming is performed such that all variables become unique, recursive functions still remain a problem.
+Taking a step back and considering what the evaluation strategy which involves eager substitution implies.
+The \textit{first} substitution mapping which reaches an expression, is the substitution mapping which is relevant for that expression.
+By these semantics substitution mappings must be paired with expressions and should now be read as ``\texttt{S, e} are the pair of the environment \texttt{S} necessary to evaluate the expression \textit{e}''.
+The subtle difference is that the binding of an expression involves binding the expression itself and its accompanying environment.
+\begin{remark}
+  An interesting observation is that these semantics introduce expressions with closures as a construct similar to classes in object oriented languages.
+  \texttt{e} is an abstract representation of something, while the environment \texttt{S} is the necessary values to instantiate \texttt{e}.
+  Clearly curried functions can also be seen this way, but it remains an interesting observation.
+\end{remark}
 
 \autoref{fig:cleanapp} does not handle recursion that well, under normal order evaluations, which becomes apparent in expressions such as \texttt{let f = ($\lambda$f.$\lambda$x.if (x == 0) 0 (x + (f (x - 1))) in f f n)}.
 Once the base case is reached (\texttt{x == 0}), then some expression has accumulated in the substitution set \texttt{\{x $\mapsto$ x + ((x - 1) + $\dots$ + ((x - 1) - 1 $\dots$))\}}, which is clearly not valid.
@@ -498,9 +528,9 @@ If we follow the rules in \autoref{eq:subsemlaz} then the first substitution wil
 \[
   \texttt{\{x $\mapsto$ 3\}(($\lambda$y.$\lambda$x.x) 1) 2} \rightarrow \texttt{(($\lambda$y.$\lambda$x.3) 1) 2}
 \]
-Adding a rule which allows only the innermost substitution to be captured yields the two following rules (\autoref{eq:subsemfixed}) instead of \autoref{eq:subsemlaz2}.
+Adding a rule which allows only the innermost substitution to be captured yields the two following rules (\autoref{eq:subsemfixed2}) instead of \autoref{eq:subsemlaz2}.
 \begin{align}
-  &S (\lambda x.e) = (\lambda x.Se) \label{eq:subsemfixed} & (x \mapsto y) \notin S \tag*{}\\
+  &S (\lambda x.e) = (\lambda x.Se) \label{eq:subsemfixed2} & (x \mapsto y) \notin S \tag*{}\\
   &S (\lambda x.e) = (\lambda x.(S \backslash \{x \mapsto y\})e) & (x \mapsto y) \in S \tag*{}%\label{eq:subsemlaz2}
 \end{align}
 
