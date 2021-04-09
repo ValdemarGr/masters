@@ -236,7 +236,7 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \vspace*{0.49cm}
-        \begin{subfigure}[b]{0.32\textwidth}
+        \begin{subfigure}[b]{0.48\textwidth}
             \begin{prooftree}
                 \AxiomC{}
                 \RightLabel{Abs}
@@ -245,17 +245,7 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
             \caption{}
             \label{eq:simpleabs}
         \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            %\vspace*{0.4cm}
-              \begin{prooftree}
-                \AxiomC{\texttt{\{x $\mapsto$ z\} e $\rightarrow$ y}}
-                  \RightLabel{App}
-                  \UnaryInfC{\texttt{($\lambda$x.e) z $\rightarrow$ y}}
-              \end{prooftree}   
-          \caption{A simple application rule}
-          \label{fig:simpleapp}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
+        \begin{subfigure}[b]{0.48\textwidth}
             \vspace*{0.4cm}
             \begin{prooftree}
                 \AxiomC{}
@@ -266,6 +256,17 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
             \caption{}
             \label{eq:simplevar}
         \end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
+            %\vspace*{0.4cm}
+              \begin{prooftree}
+                \AxiomC{\texttt{f $\rightarrow$ ($\lambda$x.e)}}
+                \AxiomC{\texttt{\{x $\mapsto$ z\} e $\rightarrow$ y}}
+                  \RightLabel{App}
+                  \BinaryInfC{\texttt{f z $\rightarrow$ y}}
+              \end{prooftree}   
+          \caption{A simple application rule}
+          \label{fig:simpleapp}
+        \end{subfigure}
     \end{mdframed}
     \caption{Simple call by name lambda calculus}
     \label{fig:scbn}
@@ -273,7 +274,7 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
 The rules in \autoref{fig:scbn} display a simple set of rules for evaluating the call by name lambda calculus.
 The Abs and Var rules (\autoref{eq:simpleabs} and \autoref{eq:simplevar}) are rules which act as leaves within the evaluation of a program.
 Abs and Var both state that if either of them occur then simply return the expression.
-The App rule (\autoref{fig:simpleapp}) states that ``Evaluate \texttt{e} to \texttt{y}, where \texttt{x} has been replaced with \texttt{z} in \texttt{e}''.
+The App rule (\autoref{fig:simpleapp}) states that ``First evaluate \texttt{f} to \texttt{($\lambda$x.e)}, then evaluate \texttt{e} to \texttt{y}, where \texttt{x} has been replaced with \texttt{z} in \texttt{e}''.
 We must introduce rules for how substitutions should act upon encountering lambda calculus term types (\autoref{eq:subsem}).
 \begin{align}
   &\texttt{\{x $\mapsto$ y\} x = y} \label{eq:subsem}\\
@@ -348,12 +349,13 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies an interp
             \caption{}
           \label{fig:rules:env:abs}
         \end{subfigure}
-        \begin{subfigure}[b]{0.58\textwidth}
+        \begin{subfigure}[b]{0.64\textwidth}
           \vspace*{0.4cm}
           \begin{prooftree}
+            \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
             \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
               \RightLabel{App}
-              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$, y}}
+              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
           \end{prooftree}   
           \caption{}
           \label{fig:rules:env:app}
@@ -401,9 +403,10 @@ A simple solution could involve saving the substitution mapping once the machine
     \begin{mdframed}[style=style1]
         \vspace*{0.4cm}
           \begin{prooftree}
+            \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
             \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
               \RightLabel{App}
-              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ S, y}}
+              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Theta$, y}}
           \end{prooftree}   
     \end{mdframed}
     \caption{An application rule which does not leak}
@@ -437,12 +440,13 @@ Now the application rule must implement \autoref{eq:subsemfixed}, seen in \autor
     \begin{mdframed}[style=style1]
         \vspace*{0.4cm}
           \begin{prooftree}
+            \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
             \AxiomC{\texttt{\{x $\mapsto$ S, z\} $\cup$ S, e $\rightarrow$ $\Sigma$, y}}
               \RightLabel{App}
-              \UnaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$, y}}
+              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
           \end{prooftree}   
     \end{mdframed}
-    \caption{An application rule which implements \autoref{eq:subsemfixed} and paired substitutions.}
+    \caption{An application rule which implements \autoref{eq:subsemfixed} and paired substitutions. (the entire set of rules can be found in \autoref{fig:subrenam})}
     \label{fig:subsapp}
 \end{figure}
 \begin{remark}
@@ -615,17 +619,53 @@ The problem of ambiguity between \textit{different} variables, that is, variable
 Once again, not breaking suspension remains as an interesting value.
 In \autoref{fig:subrenam} the \texttt{fresh} function picks a new variable from $V_2$ and updates $V_2$ such that picked variable no longer exists in $V_2$.
 \begin{figure}[ht]
-    \begin{mdframed}[style=style1]
-        \vspace*{0.4cm}
-          \begin{prooftree}
-            \AxiomC{\texttt{\{$\gamma$ $\mapsto$ (S, z), x $\mapsto$ $\gamma$\} $\cup$ S, e $\rightarrow$ $\Sigma$, y}}
-            \AxiomC{$\gamma$ = \texttt{fresh}}
-              \RightLabel{App}
-              \BinaryInfC{\texttt{S, ($\lambda$x.e) z $\rightarrow$ $\Sigma$, y}}
-          \end{prooftree}   
+    \begin{mdframed}[style=bigbox]
+        \vspace*{0.49cm}
+        \begin{subfigure}[b]{0.38\textwidth}
+            \begin{prooftree}
+                \AxiomC{}
+                \RightLabel{Abs}
+                \UnaryInfC{\texttt{S, ($\lambda$x.e) $\rightarrow$ S, ($\lambda$x.e)}}
+            \end{prooftree}   
+            \caption{}
+          \label{fig:rules:freshenv:abs}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.58\textwidth}
+            \begin{prooftree}
+              \AxiomC{\texttt{Sx $\equiv$ x}}
+                \RightLabel{Var (terminal)}
+                \UnaryInfC{\texttt{S, x $\rightarrow$ S, x}}
+            \end{prooftree}   
+            \caption{}
+          \label{fig:rules:freshenv:varterm}
+        \end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
+        \vspace*{0.49cm}
+            \begin{prooftree}
+              \AxiomC{\texttt{$\Theta$, y $\rightarrow$ $\Sigma$, e}}
+                \RightLabel{Var}
+                \UnaryInfC{\texttt{\{x $\mapsto$ ($\Theta$, y)\} $\cup$ S, x $\rightarrow$ \{x $\mapsto$ ($\Theta$, e)\} $\cup$ $\Sigma$, e}}
+            \end{prooftree}   
+            \caption{}
+          \label{fig:rules:freshenv:var}
+        \end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
+          \vspace*{0.4cm}
+              \vspace*{0.4cm}
+              \begin{prooftree}
+                \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
+                \AxiomC{\texttt{\{$\gamma$ $\mapsto$ (S, z), x $\mapsto$ ($\emptyset$, $\gamma$)\} $\cup$ S, e $\rightarrow$ $\Sigma$, y} \,\,\,\, $\gamma$ = \texttt{fresh}}
+                  \RightLabel{App}
+                  \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
+              \end{prooftree}   
+          \caption{An application rule which renames variables}
+          \label{fig:rules:freshenv:app}
+        \end{subfigure}
     \end{mdframed}
-    \caption{An application rule which renames variables}
+    \caption{A set of rules which support the desired semantics}
     \label{fig:subrenam}
+\end{figure}
+\begin{figure}[ht]
 \end{figure}
 
 %First consider the implications of an eager $\alpha$-conversion strategy in \autoref{eq:alpharep}.
@@ -795,11 +835,14 @@ The term object is used to emphasize the uniqueness of lambda calculus terms.
 %Transitive substitutions are not expressible since that causes non-linear evaluation times on some inputs.
 %Naturally when new mappings are introduced the mapped to values can be duplicated instead such that instead of $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto \gamma_1 \}$ then $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ which violates call by need.
 A lambda calculus expression $E$ can be labelled with some name $a$ when found in the evaluation process such that when some value with the label $a$ is evaluated then all duplications of $E$ can share the computed result, effectively adding another type of mapping.
+\begin{figure}
 \begin{lstlisting}[language=ML,caption={Program which benifits from lazy evaluation},label={lst:lazyevalprog},mathescape=true]
 fun double x = x + x;
 let y = double 10;
-y + y;
+fun add z k = z + k;
+add y y;
 \end{lstlisting}
+\end{figure}
 \autoref{lst:lazyevalprog} is a program which under call by name computes \texttt{y} two times.
 By assigning a unique name to the expression of \texttt{y} to \texttt{a} for instance, the unique expression can be tracked.
 When \texttt{y + y} is computed, the first evaluation of \texttt{y} changes \texttt{a} in the substitution mapping such that \texttt{\{$\dots$, a $\mapsto$ 20\}}.
@@ -810,12 +853,42 @@ Let a valid substitution mapping be \texttt{\{x $\mapsto$ 10 + 2, y $\mapsto$ (x
   \texttt{($\lambda$x.($\lambda$y.($\lambda$z.E) (y + 2)) (x + 1)) (10 + 20)} \label{eq:lazyexmp}
 \end{align}
 If the lambda calculus sub-program in \texttt{E} forces \texttt{y}, then the substitution mapping should be updated with \texttt{\{y $\mapsto$ 13\}} which implies that x is also forced \texttt{\{x $\mapsto$ 12\}}.
-\begin{lemma}
-  Unique objects cannot be duplicated in the $\alpha$-conversion labelling semantics.
-\end{lemma}
-\begin{proof}
-  
-\end{proof}
+
+Observe that the App rule in \autoref{fig:subrenam} is the only rule which introduces \textbf{new} variables to the substitution mapping.
+By using the App rule, one can introduce a variable by two different names.
+A transitive reference is created to the originating expression, that is, two names which point to the same reference.
+For any function \texttt{f} which duplicates expressions and any state \texttt{$\forall$e.$\forall$x.\{x $\mapsto$ ($\dots$, e), f $\mapsto$ ($\dots$, ($\lambda$y.$\lambda$z.y+z))\}f x x} the only applicable rule is App.
+Using the App rule two times yields a new state \texttt{$\forall$e.$\forall$x.\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, $\gamma_1$ $\mapsto$ ($\dots$, x), y $\mapsto$ ($\dots$, $\gamma_1$), $\gamma_2$ $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, $\gamma_2$)\}}.
+\autoref{fig:expdep} gives clearer insight into how the expressions depend on each other.
+If any expression in \autoref{fig:expdep} is forced, then everything above will be forced.
+For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} would have to evaluate the reference to $\gamma_2$ which points to \texttt{x} which has been evaluated and added to the substitution mapping by \autoref{fig:rules:freshenv:var} since \texttt{x} is a (transitive) parent of \texttt{y}.
+\begin{figure}
+  \centering
+  \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.25cm and 0.25cm]
+          \node[draw=black] (e) {\texttt{e}};
+
+            \node[draw=black, below = of e] (x) {\texttt{x}};
+            \path[->] (x) edge node[left] {} (e);
+            
+              \node[draw=black, below left = of x] (gamma1) {$\gamma_1$};
+              \path[->] (gamma1) edge node[left] {} (x);
+
+                \node[draw=black, below = of gamma1] (y) {\texttt{y}};
+                \path[->] (y) edge node[left] {} (gamma1);
+
+              \node[draw=black, below right = of x] (gamma2) {$\gamma_2$};
+              \path[->] (gamma2) edge node[left] {} (x);
+
+                \node[draw=black, below = of gamma2] (z) {\texttt{z}};
+                \path[->] (z) edge node[left] {} (gamma2);
+
+          \node[draw,fill=none,scale=1.3,rectangle,fit=(e)(z)(y)](fbb){};
+  \end{tikzpicture}
+  \caption{Expression dependencies}
+  \label{fig:expdep}
+\end{figure}
+We have now arrived at the semantics (except lazy substitutions) described in~\cite{launchbury1993natural}.
+
 \begin{remark}
     The system which implements call by need is not of much importance.
     Sharing can also be implemented in a way which promotes more imperative constructs, such as variables.
