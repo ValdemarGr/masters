@@ -25,6 +25,9 @@
 \usepackage{xcolor}
 \usepackage{wrapfig}
 
+\usepackage[style=alphabetic]{biblatex}
+\addbibresource{bib.bib}
+
 \usetikzlibrary{matrix,fit,trees,arrows,arrows.meta,positioning}
 
 \theoremstyle{plain}
@@ -131,8 +134,9 @@
 
 \input{prerequisites/prerequisites}
 
-\bibliography{bib.bib}{}
-\bibliographystyle{plain}
+%\bibliography{bib.bib}{}
+%\bibliographystyle{plain}
+\printbibliography
 
 \input{appendix/appendix}
 

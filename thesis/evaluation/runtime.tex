@@ -412,7 +412,7 @@ A simple solution could involve saving the substitution mapping once the machine
     \caption{An application rule which does not leak}
     \label{fig:cleanapp}
 \end{figure}
-\noindent \autoref{fig:cleanapp} is a slightly modified version of \autoref{fig:rules:env:app}, with the difference of requiring the resulting substitution mapping to be exactly the initial substitution mapping.
+\noindent \autoref{fig:cleanapp} is a slightly modified version of \autoref{fig:rules:env:app}, with the difference of requiring the resulting substitution mapping to be the initial substitution mapping.
 
 \autoref{fig:cleanapp} does not handle closure correctly.
 Evaluating \autoref{lst:closprob} under the rules defined in \autoref{fig:cleanapp} yields yet another problem.
@@ -844,10 +844,10 @@ add y y;
 \end{lstlisting}
 \end{figure}
 \autoref{lst:lazyevalprog} is a program which under call by name computes \texttt{y} two times.
-By assigning a unique name to the expression of \texttt{y} to \texttt{a} for instance, the unique expression can be tracked.
+By assigning a unique name to the expression of \texttt{y}, \texttt{a} for instance, the unique expression can be tracked.
 When \texttt{y + y} is computed, the first evaluation of \texttt{y} changes \texttt{a} in the substitution mapping such that \texttt{\{$\dots$, a $\mapsto$ 20\}}.
 Furthermore, notice that the phrase ``assigning a unique name'' is exactly what $\alpha$-conversion does.
-By these rules sharing can be implemented very elegantly by also noticing that variable references are transitive.
+By these rules sharing can be implemented very elegantly by also noticing that variable references are in fact, a dependency tree.
 Let a valid substitution mapping be \texttt{\{x $\mapsto$ 10 + 2, y $\mapsto$ (x + 1), z $\mapsto$ (y + 2)\}} with the originating program in \autoref{eq:lazyexmp}.
 \begin{align}
   \texttt{($\lambda$x.($\lambda$y.($\lambda$z.E) (y + 2)) (x + 1)) (10 + 20)} \label{eq:lazyexmp}
@@ -857,8 +857,8 @@ If the lambda calculus sub-program in \texttt{E} forces \texttt{y}, then the sub
 Observe that the App rule in \autoref{fig:subrenam} is the only rule which introduces \textbf{new} variables to the substitution mapping.
 By using the App rule, one can introduce a variable by two different names.
 A transitive reference is created to the originating expression, that is, two names which point to the same reference.
-For any function \texttt{f} which duplicates expressions and any state \texttt{$\forall$e.$\forall$x.\{x $\mapsto$ ($\dots$, e), f $\mapsto$ ($\dots$, ($\lambda$y.$\lambda$z.y+z))\}f x x} the only applicable rule is App.
-Using the App rule two times yields a new state \texttt{$\forall$e.$\forall$x.\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, $\gamma_1$ $\mapsto$ ($\dots$, x), y $\mapsto$ ($\dots$, $\gamma_1$), $\gamma_2$ $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, $\gamma_2$)\}}.
+For some function \texttt{f} which duplicates expressions and some state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ ($\dots$, ($\lambda$y.$\lambda$z.y+z))\}f x x} the only applicable rule is App.
+Using the App rule two times yields a new state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, $\gamma_1$ $\mapsto$ ($\dots$, x), y $\mapsto$ ($\dots$, $\gamma_1$), $\gamma_2$ $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, $\gamma_2$)\}}.
 \autoref{fig:expdep} gives clearer insight into how the expressions depend on each other.
 If any expression in \autoref{fig:expdep} is forced, then everything above will be forced.
 For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} would have to evaluate the reference to $\gamma_2$ which points to \texttt{x} which has been evaluated and added to the substitution mapping by \autoref{fig:rules:freshenv:var} since \texttt{x} is a (transitive) parent of \texttt{y}.
@@ -887,40 +887,40 @@ For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} wo
   \caption{Expression dependencies}
   \label{fig:expdep}
 \end{figure}
-We have now arrived at the semantics (except lazy substitutions) described in~\cite{launchbury1993natural}.
+We have now arrived at semantics which are very similar to the semantics described in~\cite{launchbury1993natural} (except concepts such as lazy substitutions).
 
 \begin{remark}
-    The system which implements call by need is not of much importance.
     Sharing can also be implemented in a way which promotes more imperative constructs, such as variables.
     When some object $E$ is discovered it is declared as a mutable pointer by the interpreter (or natively if implemented in a lazy language) such that all duplications effectively point to the same object.
+    An implementation which builds upon pointers are explored in Chapter 12 in~\cite{peyton1987implementation}.
 \end{remark}
 
-Let $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ be the system without labels, then let \autoref{eq:labelsystem} be the labelled call by need system.
-\begin{align}
-    \label{eq:labelsystem}
-    S &= \{ \gamma_1 \mapsto a, \gamma_2 \mapsto a \}\\
-    \Omega &= \{ a \mapsto E \} \tag*{}
-\end{align}
-By \autoref{eq:labelsystem} it should becomes clear that object duplication is mitigated by ``merging'' references.
+%Let $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ be the system without labels, then let \autoref{eq:labelsystem} be the labelled call by need system.
+%\begin{align}
+    %\label{eq:labelsystem}
+    %S &= \{ \gamma_1 \mapsto a, \gamma_2 \mapsto a \}\\
+    %\Omega &= \{ a \mapsto E \} \tag*{}
+%\end{align}
+%By \autoref{eq:labelsystem} it should becomes clear that object duplication is mitigated by ``merging'' references.
 
-$\alpha$-conversion loses some of it's purpose when a labelling approach is considered.
-\begin{lstlisting}[language=ML,caption={Program},label={lst:labeltest},mathescape=true]
-fun id a = a;
-fun f g a =
-  id (g a a);
-\end{lstlisting}
-
-
+%$\alpha$-conversion loses some of it's purpose when a labelling approach is considered.
+%\begin{lstlisting}[language=ML,caption={Program},label={lst:labeltest},mathescape=true]
+%fun id a = a;
+%fun f g a =
+  %id (g a a);
+%\end{lstlisting}
 
 
-%The labelled system can evaluate expressions in parallel by implementing locking (or cooperative yielding) on the label level (in \autoref{eq:labelsystem} evaluating $\gamma_1$ and $\gamma_2$ in paralell would lock $a$).
-%The only scenario where mutual evaluation of an expression is possible, is when two other expressions can access (either through abstraction or closure) the same value.
-%\\
-An evaluation written $S, \Omega, \alpha, x \rightarrow \Theta, e$ means $x$ evaluates to $e$ with the resulting label mapping $\Theta$, under some substitution mapping $S$, label mapping $\Omega$ and $\alpha$-conversion mapping $\alpha$.
-$Sx$ means that variable $x$ is replaced with whatever the substitution map maps $x$ to if $x \in S$ otherwise $Sx = x$, the same operation counts for $\alpha$.
-$\Omega l \rightarrow k$ should be read as, the expression which $l$ points to should be evaluated and be bound to $k$.
-In a call by value environment $\alpha x$ can eagerly convert since the value must be evaluated eagerly.
-In a call by name (or need) environment $\alpha x$ should remain suspended until needed like discussed in this section.
+
+
+%%The labelled system can evaluate expressions in parallel by implementing locking (or cooperative yielding) on the label level (in \autoref{eq:labelsystem} evaluating $\gamma_1$ and $\gamma_2$ in paralell would lock $a$).
+%%The only scenario where mutual evaluation of an expression is possible, is when two other expressions can access (either through abstraction or closure) the same value.
+%%\\
+%An evaluation written $S, \Omega, \alpha, x \rightarrow \Theta, e$ means $x$ evaluates to $e$ with the resulting label mapping $\Theta$, under some substitution mapping $S$, label mapping $\Omega$ and $\alpha$-conversion mapping $\alpha$.
+%$Sx$ means that variable $x$ is replaced with whatever the substitution map maps $x$ to if $x \in S$ otherwise $Sx = x$, the same operation counts for $\alpha$.
+%$\Omega l \rightarrow k$ should be read as, the expression which $l$ points to should be evaluated and be bound to $k$.
+%In a call by value environment $\alpha x$ can eagerly convert since the value must be evaluated eagerly.
+%In a call by name (or need) environment $\alpha x$ should remain suspended until needed like discussed in this section.
 %An implementation (\autoref{lst:cbn}) of the call by name reduction algorithm \autoref{fig:cbn} can easily be extended with call by need by the aforementioned modifications.
 %\begin{remark}
     %In the implementation the \texttt{Map} constructor is the usual implementation of the Map data structure.
@@ -963,94 +963,131 @@ In a call by name (or need) environment $\alpha x$ should remain suspended until
         %| Application e1 e2 -> 
             %reduceApp S alpha e1 e2
 %\end{lstlisting}
-\begin{figure}[ht]
-    \begin{mdframed}[style=bigbox]
-        \vspace*{0.4cm}
-        %\begin{subfigure}[b]{0.30\textwidth}
+%\begin{figure}[ht]
+    %\begin{mdframed}[style=bigbox]
+        %\vspace*{0.4cm}
+        %%\begin{subfigure}[b]{0.30\textwidth}
+            %%\begin{prooftree}
+                %%\AxiomC{$S, \alpha, S \alpha x \rightarrow \Sigma, e$}
+                %%\RightLabel{Var}
+                %%\UnaryInfC{$S, \alpha, x \rightarrow \Sigma, e$}
+            %%\end{prooftree}   
+            %%\label{eq:prooftree:ident}
+            %%\caption{}
+        %%\end{subfigure}
+        %\begin{subfigure}[b]{1\textwidth}
             %\begin{prooftree}
-                %\AxiomC{$S, \alpha, S \alpha x \rightarrow \Sigma, e$}
-                %\RightLabel{Var}
-                %\UnaryInfC{$S, \alpha, x \rightarrow \Sigma, e$}
+                %\AxiomC{}
+                %\RightLabel{Abs}
+                %\UnaryInfC{$S,\alpha,(\lambda x.e) \rightarrow S,\alpha,(\lambda x.e)$}
             %\end{prooftree}   
-            %\label{eq:prooftree:ident}
+            %\label{eq:prooftree:abs}
             %\caption{}
         %\end{subfigure}
-        \begin{subfigure}[b]{1\textwidth}
-            \begin{prooftree}
-                \AxiomC{}
-                \RightLabel{Abs}
-                \UnaryInfC{$S,\alpha,(\lambda x.e) \rightarrow S,\alpha,(\lambda x.e)$}
-            \end{prooftree}   
-            \label{eq:prooftree:abs}
-            \caption{}
-        \end{subfigure}
-        \begin{subfigure}[b]{1\textwidth}
-            \begin{prooftree}
-                \AxiomC{$S \cup \{ \gamma \mapsto e \},\alpha \cup \{ x \mapsto \gamma \} , e \rightarrow \Sigma, w$}
-                %\AxiomC{$S \alpha x \not\equiv \alpha x$}
-                \RightLabel{Var share (pointer)}
-                \UnaryInfC{$S \cup \{  \gamma \mapsto e \}, \alpha \cup [ x \mapsto \gamma ], x \rightarrow \Sigma, e \hspace*{1cm} e := w$}
-            \end{prooftree}   
-            \label{eq:prooftree:point}
-            \caption{}
-        \end{subfigure}
-        \begin{subfigure}[b]{1\textwidth}
-            \begin{prooftree}
-                \AxiomC{$S,\alpha, y \rightarrow \Sigma, (\lambda x . e)$}
-                \AxiomC{$\Sigma \cup \{ \gamma \mapsto \Sigma \alpha p \},\alpha \cup [ x \mapsto \gamma ],e \rightarrow \Delta, w \,\,\, \gamma = \texttt{newvar}$}
-                \RightLabel{App}
-                \BinaryInfC{$S, \alpha,(y \,\, p) \rightarrow \Delta, w$}
-            \end{prooftree}   
-            \label{eq:prooftree:app}
-            \caption{}
-        \end{subfigure}
-        \begin{subfigure}[b]{1\textwidth}
-            \begin{prooftree}
-                \AxiomC{$S,\alpha,y \rightarrow \Sigma, f$}
-                \AxiomC{$f \not\equiv (\lambda x . e)$}
-                \RightLabel{App (Reduce left first)}
-                \BinaryInfC{$S, \alpha,(y \,\, p) \rightarrow \Sigma, (f \,\, p)$}
-            \end{prooftree}   
-            \label{eq:prooftree:appleft}
-            \caption{}
-        \end{subfigure}
-    \end{mdframed}
-    \caption{Reduction rules for the call by need lambda calculus}
-    \label{fig:cbn}
-\end{figure}
-\clearpage
-\begin{exmp}
-Consider the following program which duplicates an object.
-\begin{lstlisting}[language=ML,caption={Object duplication},label={lst:objdup},mathescape=true]
-let d = ($\lambda$f.$\lambda$x.f x x) in
-d ($\lambda$z.$\lambda$y.z + y) (($\lambda$i.i) 0)
-\end{lstlisting}
-The evaluation of \autoref{lst:objdup} can be seen in \autoref{eq:objdup} (the underlying call by need implementation is not of interest).
-\begin{align}
-    \label{eq:objdup}
-    &\texttt{g s s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0} \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}]\\
-    \rightarrow &(\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y})\texttt{ s s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0} \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}]\tag*{}\\
-    \rightarrow &(\lambda \texttt{y}.\texttt{z + y})\texttt{ s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto s \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}]\tag*{}\\
-    \rightarrow &\texttt{c + q }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto \texttt{s}, \texttt{q} \mapsto \texttt{s}\}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}, \texttt{y} \mapsto \texttt{q}]\tag*{}\\
-    \rightarrow &\texttt{+ s q }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto \texttt{s}, \texttt{q} \mapsto \texttt{s}\}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}, \texttt{y} \mapsto \texttt{q}]\tag*{}\\
-    \rightarrow &\texttt{+ force(s) q }\{ \dots \}[\dots]\tag*{}\\
-    \rightarrow &\texttt{+ force(}(\lambda\texttt{i}.\texttt{i})0\texttt{) q } \{ \dots \}[\dots]\tag*{}\\
-    \rightarrow &\texttt{+ force(0) q }\{ \dots \}[\dots]\tag*{}\\
-    \rightarrow &\texttt{+ 0 q }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
-    \rightarrow &\texttt{+ 0 s }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
-    \rightarrow &\texttt{+ 0 0 }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
-    \rightarrow &\texttt{0 }\{ \dots, s \mapsto 0 \}\tag*{}
-\end{align}
-\end{exmp}
+        %\begin{subfigure}[b]{1\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{$S \cup \{ \gamma \mapsto e \},\alpha \cup \{ x \mapsto \gamma \} , e \rightarrow \Sigma, w$}
+                %%\AxiomC{$S \alpha x \not\equiv \alpha x$}
+                %\RightLabel{Var share (pointer)}
+                %\UnaryInfC{$S \cup \{  \gamma \mapsto e \}, \alpha \cup [ x \mapsto \gamma ], x \rightarrow \Sigma, e \hspace*{1cm} e := w$}
+            %\end{prooftree}   
+            %\label{eq:prooftree:point}
+            %\caption{}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{1\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{$S,\alpha, y \rightarrow \Sigma, (\lambda x . e)$}
+                %\AxiomC{$\Sigma \cup \{ \gamma \mapsto \Sigma \alpha p \},\alpha \cup [ x \mapsto \gamma ],e \rightarrow \Delta, w \,\,\, \gamma = \texttt{newvar}$}
+                %\RightLabel{App}
+                %\BinaryInfC{$S, \alpha,(y \,\, p) \rightarrow \Delta, w$}
+            %\end{prooftree}   
+            %\label{eq:prooftree:app}
+            %\caption{}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{1\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{$S,\alpha,y \rightarrow \Sigma, f$}
+                %\AxiomC{$f \not\equiv (\lambda x . e)$}
+                %\RightLabel{App (Reduce left first)}
+                %\BinaryInfC{$S, \alpha,(y \,\, p) \rightarrow \Sigma, (f \,\, p)$}
+            %\end{prooftree}   
+            %\label{eq:prooftree:appleft}
+            %\caption{}
+        %\end{subfigure}
+    %\end{mdframed}
+    %\caption{Reduction rules for the call by need lambda calculus}
+    %\label{fig:cbn}
+%\end{figure}
+%\clearpage
+%\begin{exmp}
+%Consider the following program which duplicates an object.
+%\begin{lstlisting}[language=ML,caption={Object duplication},label={lst:objdup},mathescape=true]
+%let d = ($\lambda$f.$\lambda$x.f x x) in
+%d ($\lambda$z.$\lambda$y.z + y) (($\lambda$i.i) 0)
+%\end{lstlisting}
+%The evaluation of \autoref{lst:objdup} can be seen in \autoref{eq:objdup} (the underlying call by need implementation is not of interest).
+%\begin{align}
+    %\label{eq:objdup}
+    %&\texttt{g s s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0} \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}]\\
+    %\rightarrow &(\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y})\texttt{ s s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0} \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}]\tag*{}\\
+    %\rightarrow &(\lambda \texttt{y}.\texttt{z + y})\texttt{ s }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto s \}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}]\tag*{}\\
+    %\rightarrow &\texttt{c + q }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto \texttt{s}, \texttt{q} \mapsto \texttt{s}\}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}, \texttt{y} \mapsto \texttt{q}]\tag*{}\\
+    %\rightarrow &\texttt{+ s q }\{ \texttt{g} \mapsto (\lambda \texttt{z}.\lambda \texttt{y}.\texttt{z + y}), \texttt{s} \mapsto (\lambda\texttt{i}.\texttt{i}) \texttt{0}, \texttt{c} \mapsto \texttt{s}, \texttt{q} \mapsto \texttt{s}\}[\texttt{f} \mapsto \texttt{g}, \texttt{x} \mapsto \texttt{s}, \texttt{z} \mapsto \texttt{c}, \texttt{y} \mapsto \texttt{q}]\tag*{}\\
+    %\rightarrow &\texttt{+ force(s) q }\{ \dots \}[\dots]\tag*{}\\
+    %\rightarrow &\texttt{+ force(}(\lambda\texttt{i}.\texttt{i})0\texttt{) q } \{ \dots \}[\dots]\tag*{}\\
+    %\rightarrow &\texttt{+ force(0) q }\{ \dots \}[\dots]\tag*{}\\
+    %\rightarrow &\texttt{+ 0 q }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
+    %\rightarrow &\texttt{+ 0 s }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
+    %\rightarrow &\texttt{+ 0 0 }\{ \dots, s \mapsto 0 \}[\dots]\tag*{}\\
+    %\rightarrow &\texttt{0 }\{ \dots, s \mapsto 0 \}\tag*{}
+%\end{align}
+%\end{exmp}
 
 \subsubsection{Garbage collection}
-Garbage collection in purely function languages is a bit of a controversial topic since there exists no resources to release.
-But adding mappings from lambda terms to variables without any subtractions will lead to an ever increasing substitution mapping size.
-When performing reductions one might desire to garbage collect the substitution mapping once it contains useless substitutions.
-Fortunately the task of collecting garbage is quite easy since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
-When some algorithm with garbage collection evaluates some abstraction term $S,[\texttt{x} \mapsto \gamma]$,\texttt{$\lambda$x.E}, the algorithm should remove the introduced variable \texttt{x} by inspecting the $\alpha$-conversion mapping such that the substitution mapping becomes $S\backslash \{ \gamma \}$ and the $\alpha$-conversion alike.
+Garbage collection in purely functional languages is different from imperative languages like C, since manual memory management is often abstracted away. 
+Adding mappings from variables to lambda terms without any subtractions will lead to an ever increasing substitution mapping size.
+When performing reductions one might desire to garbage collect the substitution mapping once it contains unreachable substitutions.
+Fortunately the task of collecting garbage is quite easy solvable in by a naive algorithm, since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
+Unfortunately not all programs ``return'', like programs which implement infinite recursion.
+\begin{remark}
+  Continually passing style programs clearly need some type of garbage collection.
+  Generally for tail call optimization (\autoref{remark:tailcall}) to be feasible, some sort of ad-hoc freeing of substitutions must be present, such that infinite programs can run in finite space.
+\end{remark}
+\noindent\cite{launchbury1993natural}~presents an elegant (and abstract) rule for garbage collection (\autoref{fig:launchgc}, and a version with lazy substitutions \autoref{fig:lazysub:gc}).
+The function \texttt{R} scans the substitution mapping $\Theta$ for all variables in the expression \texttt{e}.
+\begin{figure}[ht]
+    \begin{mdframed}[style=style1]
+        \vspace*{0.4cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
+            \AxiomC{\texttt{x $\notin$ R($\Theta$, e)}}
+              \RightLabel{GC}
+              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ S, y}}
+          \end{prooftree}   
+    \end{mdframed}
+    \caption{Launchbury garbage collection}
+    \label{fig:launchgc}
+\end{figure}
+\begin{figure}[ht]
+    \begin{mdframed}[style=style1]
+        \vspace*{0.4cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
+            \AxiomC{\texttt{x $\notin$ R($\Theta$, e)}}
+              \RightLabel{GC}
+              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ ($\Delta$, z)\}, e $\rightarrow$ S, y}}
+          \end{prooftree}   
+    \end{mdframed}
+    \caption{Launchbury garbage collection with lazy substitution}
+    \label{fig:lazysub:gc}
+\end{figure}
+Problems in the domain of computer science (especially algorithms), can usually be solved much more efficiently if the problem has certain properties.
+Launchbury garbage collection argues for the possibility of parallel garbage collection, which is a property granted for free in immutable languages.
+In imperative languages garbage collection algorithms either block the execution of the program or have complicated implementation details.
+Fortunately in functional programming languages, data is (traditionally) immutable, which implies that references \textit{never} change.
 
-\subsection{An invariant on infinite programs}
+
+\subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
 Imperative programming languages often solve this by introducing loops, whereas functional programming languages use recursion.
 Recursion may be equally powerful in terms of expressiveness, but becomes a bit more tricky when cosidering interpreter details.
@@ -1114,7 +1151,7 @@ fun foldr f z l =
 To really understand what happens in a lambda calculus interpreter, we must understand what happens in \autoref{lst:listfoldboth}.
 \autoref{lst:listfoldboth} implements two variants of a \texttt{fold} function which accumulates a list of type \texttt{List a} to a \texttt{b}.
 The two variants differ when considering evaluation strategy and \textit{tail call optimization}.
-\begin{remark}
+\begin{remark}\label{remark:tailcall}
     Tail call optimization is an optimization which can be performed on programs with a particular structure.
     If the last expression is a function invocation, then the rewritten program does not grow.
     For instance the expression \texttt{let f = ($\lambda$g.$\lambda$x.g x) in $\dots$ f g' 0} is eventually rewritten to \texttt{g' 0}.
