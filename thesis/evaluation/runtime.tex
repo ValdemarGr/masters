@@ -1086,6 +1086,15 @@ Launchbury garbage collection argues for the possibility of parallel garbage col
 In imperative languages garbage collection algorithms either block the execution of the program or have complicated implementation details.
 Fortunately in functional programming languages, data is (traditionally) immutable, which implies that references \textit{never} change.
 
+The lazy substitution semantics might appear foreign to the rules of garbage collection but can indeed be benefitial in regard to the function \texttt{R}.
+The implementation of the function \texttt{R} is very open for interpretation.
+A function which garbage collects every ``lost reference'' which adheres to \texttt{R} in \autoref{fig:launchgc} could be implemented by the use of \texttt{Free}.
+\begin{align}
+  & \texttt{R($\Theta$, ($\lambda$x.e)) &= R($\Theta$ $\backslash$ \{x\}, e)}&\\
+  & \texttt{R($\Theta$, (f, e)) &= R($\Theta$, f) $\cup$ R($\Theta$, e)}& \tag*{} \\
+  & \texttt{R($\Theta$, x) &= \{x $\mapsto$ (e, S)\} $\cup$ R(S, e)}& \texttt{x $\mapsto$ (e, S) $\in$ $\Theta$} \tag*{} \\
+  & \texttt{R($\Theta$, x) &= \{\}}& \texttt{x $\mapsto$ (e, S) $\notin$ $\Theta$} \tag*{}
+\end{align}
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
