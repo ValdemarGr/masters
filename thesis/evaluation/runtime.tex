@@ -1088,13 +1088,18 @@ Fortunately in functional programming languages, data is (traditionally) immutab
 
 The lazy substitution semantics might appear foreign to the rules of garbage collection but can indeed be benefitial in regard to the function \texttt{R}.
 The implementation of the function \texttt{R} is very open for interpretation.
-A function which garbage collects every ``lost reference'' which adheres to \texttt{R} in \autoref{fig:launchgc} could be implemented by the use of \texttt{Free}.
+A garbage collection algoritm which collects every ``lost reference'' which adheres to \texttt{R} in \autoref{fig:launchgc}, could be implemented by the use of \texttt{Free} or \texttt{Bound}.
+A garbage collection algoritm for \autoref{fig:lazysub:gc} must also inspect the bound substitution mappings as in \autoref{eq:Rgc}.
 \begin{align}
-  & \texttt{R($\Theta$, ($\lambda$x.e)) &= R($\Theta$ $\backslash$ \{x\}, e)}&\\
-  & \texttt{R($\Theta$, (f, e)) &= R($\Theta$, f) $\cup$ R($\Theta$, e)}& \tag*{} \\
-  & \texttt{R($\Theta$, x) &= \{x $\mapsto$ (e, S)\} $\cup$ R(S, e)}& \texttt{x $\mapsto$ (e, S) $\in$ $\Theta$} \tag*{} \\
-  & \texttt{R($\Theta$, x) &= \{\}}& \texttt{x $\mapsto$ (e, S) $\notin$ $\Theta$} \tag*{}
+  \texttt{R($\Theta$, ($\lambda$x.e))}&\texttt{ = R($\Theta$ $\backslash$ \{x\}, e)}& \label{eq:Rgc}\\
+   \texttt{R($\Theta$, (f e))}&\texttt{ = R($\Theta$, f) $\cup$ R($\Theta$, e)}& \tag*{} \\
+   \texttt{R($\Theta$, x)}&\texttt{ = \{x $\mapsto$ (e, R(S, e))\} $\cup$ R(S, e)}&, \texttt{x $\mapsto$ (e, S) $\in$ $\Theta$} \tag*{} \\
+   \texttt{R($\Theta$, x)}&\texttt{ = \{\}}&, \texttt{x $\mapsto$ (e, S) $\notin$ $\Theta$} \tag*{}
 \end{align}
+
+Garbage collection algorithms often run in worst case $O(n)$ and amortized $O(1)$.
+The algorithm proposed in \autoref{eq:Rgc} also runs in similar time.
+This is quite simple to prove.
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
