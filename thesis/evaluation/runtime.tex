@@ -1097,14 +1097,42 @@ A garbage collection algoritm for \autoref{fig:lazysub:gc} must also inspect the
    \texttt{R($\Theta$, x)}&\texttt{ = \{\}}&, \texttt{x $\mapsto$ (e, S) $\notin$ $\Theta$} \tag*{}
 \end{align}
 
-Garbage collection algorithms often run in worst case $O(n)$ and amortized $O(1)$.
-The algorithm proposed in \autoref{eq:Rgc} also runs in similar time.
-This is quite simple to prove.
+Garbage collection algorithms often run in worst case $O(n)$, in regard to the number of variables allocated by the App rule.
+The algorithm proposed in \autoref{eq:Rgc} also has similar guarantees, if \texttt{R} is implemented efficiently.
+The garbage collection algorithm is entirely dependent on how an implementation of \texttt{R} behaves.
+An amortized analysis of garbage collection might seem to yield a running time of $O(1)$ by an analysis which is very similar to a stack.
+Unfortunately the garbage collector is not guaranteed to remove any references, thus running it does not guaranteed a reduction in potential.
+Fortunately, garbage collection can be paid for ``up front''.
+The compilation can  \autoref{fig:expdep}
+
+%The potential function $\Phi$ is the size of the substitution mapping.
+%Letting the potential $\Phi(D_i)$ be the equal to the size of the substitution mapping after $i$ operations, that is, insertions and removals.
+%The substitution mapping has the initial potential $\Phi(D_0) = 0$.
+%An insertion by rule App increases the potential by two since the App rule also introduces a renamed variable.
+%\[
+  %\Phi(D_i) - \Phi(D_{i - 1}) = (|S| + 2) - |S| = 2
+%\]
+%Such that the amortized cost becomes.
+%\[
+  %\textit{insertion}_i = 2 + \Phi(D_i) - \Phi(D_{i - 1}) = 4
+%\]
+%Substitution mappings can be efficiently be implemented by data structures such as hash maps which have probabilistic constant time insertion~\cite{cormen2009introduction}.
+%The garbage collection algorithm can remove $k$ substitutions from the substitution mapping for any $0 \leq k \leq |S|$ by discovering $|S| - k$ variables by some function that adheres to \texttt{R} which runs in $O(1)$.
+%\[
+  %\Phi(D_i) - \Phi(D_{i - 1}) = -k
+%\]
+%Such that.
+%\[
+  %\textit{removal}_i = k + \Phi(D_i) - \Phi(D_{i - 1}) = k - k = 0
+%\]
+%Clearly the worst case analysis can be synthesised by $k=|S|$ such that the running time becomes $O(n)$.
+
+%So how does one implement \texttt{R} efficiently?
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
 Imperative programming languages often solve this by introducing loops, whereas functional programming languages use recursion.
-Recursion may be equally powerful in terms of expressiveness, but becomes a bit more tricky when cosidering interpreter details.
+Recursion may be equally powerful in terms of expressiveness, but becomes a bit more tricky when considering interpreter details.
 A prerequisite for an infinitely running program to exist in practice is that the program must not grow it's resource needs as it runs.
 
 The distinction between recursive functions and loops in imperative programming languages is often what makes infinite programs expressible.
