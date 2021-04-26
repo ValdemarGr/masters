@@ -164,7 +164,7 @@ When translating the untyped lambda calculus to SKI the ''magic`` variable names
 When the translation has been completed then replace $\sigma \mapsto S, \kappa \mapsto K, \iota \mapsto I$.
 \subsection{Combinator translation growth}
 Before proving that the SKI translation algorithm produces a program of larger size the notion of size must be established.
-Size in terms of lambda calculus are the amount of lambda terms (\autoref{lc:lang:abs}, \autoref{lc:lang:var} and \autoref{lc:lang:app}) that make up a program.
+Size in terms of lambda calculus are the number of lambda terms (\autoref{lc:lang:abs}, \autoref{lc:lang:var} and \autoref{lc:lang:app}) that make up a program.
 For instance $\lambda x . x$ has a size of two since it is composed of an abstraction and a variable term.
 The size of an SKI combinator program is in terms of the number of combinators.
 \begin{lemma}
@@ -231,7 +231,7 @@ Applicative order specifies that the parameters of some application should alway
 Normal order specifies that the leftmost outermost term should be evaluated first which yields the call by name strategy.
 Before delving into more complicated evaluation strategies such as call by need, call by name will be considered.
 
-A naive reduction strategy would involve adding variables to the substitution set, once they are applied.
+A naive reduction strategy would involve adding variables to the substitution mapping, once they are applied.
 When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be substituted by \texttt{5} such that the expression becomes \texttt{x + 5} with the substitution mapping \texttt{\{x $\mapsto$ 5\}}.
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
@@ -272,15 +272,15 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
     \label{fig:scbn}
 \end{figure}
 The rules in \autoref{fig:scbn} display a simple set of rules for evaluating the call by name lambda calculus.
-The Abs and Var rules (\autoref{eq:simpleabs} and \autoref{eq:simplevar}) are rules which act as leaves within the evaluation of a program.
+The Abs and Var rules (\autoref{eq:simpleabs} and \autoref{eq:simplevar}) are rules which act as terminal cases within the evaluation of a program.
 Abs and Var both state that if either of them occur then simply return the expression.
 The App rule (\autoref{fig:simpleapp}) states that ``First evaluate \texttt{f} to \texttt{($\lambda$x.e)}, then evaluate \texttt{e} to \texttt{y}, where \texttt{x} has been replaced with \texttt{z} in \texttt{e}''.
 We must introduce rules for how substitutions should act upon encountering lambda calculus term types (\autoref{eq:subsem}).
 \begin{align}
-  &\texttt{\{x $\mapsto$ y\} x = y} \label{eq:subsem}\\
-  &\texttt{\{x $\mapsto$ y\} z = z}  \tag*{}\\
-  &\texttt{S f z = (Sf)(Sz)} \tag*{}\\
-  &\texttt{S ($\lambda$ x.e) = ($\lambda$ x.Se) } \label{eq:subsemrem}%\\
+  &\texttt{\{x $\mapsto$ y\}x = y} \label{eq:subsem}\\
+  &\texttt{\{x $\mapsto$ y\}z = z}  \tag*{}\\
+  &\texttt{S(f z) = (Sf)(Sz)} \tag*{}\\
+  &\texttt{S($\lambda$x.e) = ($\lambda$x.Se) } \label{eq:subsemrem}%\\
 \end{align}
 
 \begin{lstlisting}[language=ML,caption={Program with variable ambiguity},label={lst:varambg},mathescape=true]
@@ -301,16 +301,61 @@ Removing the rule \autoref{eq:subsemrem} and adding the two rules in \autoref{eq
   &\texttt{S($\lambda$x.e) = ($\lambda$x.Se)} & \texttt{(x $\mapsto$ y) $\notin$ S} \label{eq:subsemfixed}\\
   &\texttt{S($\lambda$x.e) = ($\lambda$x.(S$\backslash$\{x $\mapsto$ y\})e)} & \texttt{(x $\mapsto$ y) $\in$ S} \tag*{}
 \end{align}
-This evaluation model is indeed powerful enough to evaluate the call by name lambda calculus naively.
+This evaluation model is indeed powerful enough to evaluate most call by name lambda calculus programs.
+\begin{exmp}
+  With the aforementioned rules, programs can now be proved.
+  Let a program \texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0} be subject to the rules in \autoref{fig:scbn}.
+  \begin{figure}[ht]
+    \begin{mdframed}
+      \begin{prooftree}
+        \AxiomC{\texttt{($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)}}
+        \AxiomC{}
+        \RightLabel{Var}
+        \UnaryInfC{\texttt{0 $\rightarrow$ 0}}
+          \LeftLabel{App}
+          \BinaryInfC{\texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0 $\rightarrow$ 0}}
+      \end{prooftree}
+    \end{mdframed}
+  \end{figure}
+\end{exmp}
+Now consider the following sub-program \texttt{($\lambda$x.y) g} with the following ongoing substitutions \{x $\mapsto$ z, y $\mapsto$ x, $\dots$\}.
+Substituting by the rules outlined in \autoref{eq:subsemfixed} yields \texttt{($\lambda$x.x) g} which is clearly invalid.
+The program before substitution and after should be \textit{$\alpha$-equivalent}, which they are not.
+To solve ambiguity between variables with the same name, one can perform \textit{$\alpha$-conversion}.
+\begin{remark}
+  Notice that even if variables are renamed before program execution, recursive functions can still suffer from ambiguity since all parameters for that function can occur multiple times.
+\end{remark}
+\subsubsection{$\alpha$-conversions}
+The $\alpha$-conversion mapping can occur as the substitution mapping, that is \texttt{\{x $\mapsto$ $\gamma_1$, y $\mapsto$ $\gamma_2$\}}; $\alpha$-conversions are philosophical constructs more than materialized mappings.
+$\alpha$-conversions guarantee what is called \textit{$\alpha$-equivalence} which is the notion of semantic equivalence.
+For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\gamma.\gamma$} since both expressions are semantically equivalent.
+%$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
+%$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
+%More formally if \texttt{S, e $\rightarrow$ $\Sigma$, e'} then $\{x \,\,|\,\, (x \mapsto y) \in S\} \subseteq \{x \,\,|\,\, (x \mapsto y) \in \Sigma\}$.
+\begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
+let f = ($\lambda$f'.$\lambda$x.
+    if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
+f f 10
+\end{lstlisting}
+%A strong guarantee that can be made by tuning the evaluation strategy which is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
+%An algorithm for performing $\alpha$-conversions can be implemented that picks a new variable name from any infinite domain when an abstraction has had a value applied to it and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
+%The algorithm should also introduce the applied value to the substitution set through the alpha converted name.
+\noindent An $\alpha$-conversion algorithm can be implemented such that when a new variable is introduced through an abstraction, a new name for the variable is given.
+More formally; Let $V_1$ be the domain of variables in the program and $V_2$ be the infinite domain for variable names that satisfies $V_1 \cap V_2 = \emptyset$, then when a new variable \texttt{x} is discovered, replace it with some $\gamma \in V_2$ and let $V_2 = V_2 \backslash \{\gamma\}$. 
+For instance, let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
+\\
 
+Instead of performing $\alpha$-conversions one can leverage the ideas proposed in~\cite{launchbury1993natural} to implement laziness, lazy substitution, solve variable ambiguity and perform efficient garbage collection.
 To further refine the call by name evaluation semantics observe that substitutions are performed eagerly, that is, they \textit{break suspension}.
 To explore solutions to avoid eager substitutions, environments may be used.
 \begin{remark}
   When considering an arbitrarily large expression under call by name (or need), there is no guarantee that the expression will ever be evaluated, that is, a suspended expression being forced.
-  Breaking suspension violates the philosophy behind call by name (and need).
+  Rules specify what implementations must adhere to and not anything more.
+  Regardless it still remains as an interest to not break suspension.
+  Breaking suspension may violate the philosophy behind call by name (and need).
   A solution could involve composing a function in compile time, which replaces all instances of a variable (by \autoref{eq:subsem} and \autoref{eq:subsemfixed}) with some parameterized value.
-  Substituting expressions eagerly might compromise performance guarantees, even if substitution is an asymptotically constant number of operations.
-  Consider substituting an expression which contains conditional branches, one branch might be a single expression and the other might be a very large expression, consisting of many instances of the same variable.
+  Substituting expressions eagerly might compromise practical performance guarantees, even if substitution is an asymptotically constant number of operations.
+  Consider substituting an expression which contains conditional branches, one branch might be a simple expression and the other might be a very large expression, consisting of many instances of the same variable.
   If the program never picks the large expression, why should it ever have any impact on performance.
   For instance, in \autoref{lst:fastslow} under call by name one would expect \texttt{fastMap} to evaluate in roughly the same time as \texttt{slowMap}.
 \begin{lstlisting}[language=ML,caption={Performance considerations in substitution},label={lst:fastslow},mathescape=true]
@@ -388,7 +433,7 @@ f 10;
 \end{figure}
 Evaluating \autoref{lst:problemprog}, using the rules proposed in \autoref{fig:rules:env}, yields an interesting case of variable ambiguity.
 At some point the evaluation machine will reach a state with the expression \texttt{(g a) + a} and substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ ($\lambda$x.let a = 20 in (a + x))\}}.
-By the laws of addition, that is, commutativity, it should be possible pick either of the two expressions to evaluate first.
+By the laws of commutativity for addition, it should be possible pick either of the two expressions to evaluate first.
 If any one of the branches in the addition operator are side effectful, it may become a problem, but this language only deals with pure programs.
 Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} with the substitution mapping \texttt{\{a $\mapsto$ 20, g $\mapsto$ $\dots$\}}, and finally \texttt{50}.
 Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
@@ -441,7 +486,7 @@ Now the application rule must implement \autoref{eq:subsemfixed}, seen in \autor
         \vspace*{0.4cm}
           \begin{prooftree}
             \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-            \AxiomC{\texttt{\{x $\mapsto$ S, z\} $\cup$ S, e $\rightarrow$ $\Sigma$, y}}
+            \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ $\Sigma$, y}}
               \RightLabel{App}
               \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
           \end{prooftree}   
@@ -455,22 +500,33 @@ Now the application rule must implement \autoref{eq:subsemfixed}, seen in \autor
   Curried functions can also be seen this way, yet it remains an interesting observation.
 \end{remark}
 
-Surely \autoref{fig:subsapp} solves the problem of lazy substitutions, but alas this is not yet the case.
-To reach a set of rules which will guarantee lazy substitutions and allow call by need, an additional ingredient is needed.
-To understand the need for this ingredient, consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\lambda$x.y) g} in the context of \autoref{fig:subsapp}.
-When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
-Once \texttt{y} is visited the substitution mapping will be \texttt{\{x $\mapsto$ g, y $\mapsto$ x\}}, substituting again yields \texttt{x} which becomes \texttt{g} which does not necessarily satisfy \texttt{g $\equiv$ z}.
-One could rename all variables in some phase in compilation, but the case for recursion is not handled since a duplicate variable name can occur.
-Consider the program in \autoref{lst:amgprog} which yields an invalid state during interpretation.
-\begin{figure}[ht]
-\begin{lstlisting}[language=ML,caption={Recursive program with ambiguity},label={lst:amgprog},mathescape=true]
-fun f x = 
-  f (x + x); $\label{lst:amgprog:l2}$
-f 10;
-\end{lstlisting}
-\end{figure}
-Once Line \autoref{lst:amgprog:l2} is reached the first time, the program will have the state \texttt{\{$\dots$, x $\mapsto$ 10\}}.
-On the second iteration, the program will have the state \texttt{\{$\dots$, x $\mapsto$ (x + x)\}}, which does not make sense.
+\noindent Consider the previously discussed program and state in \autoref{eq:tabc}.
+\begin{align}
+  \texttt{\{x $\mapsto$ (S, z), y $\mapsto$ ($\Theta$, x), $\dots$\}($\lambda$x.y) g} \label{eq:tabc}
+\end{align}
+Performing the next two iterations such that the next states become \autoref{eq:tabd} and then finally \autoref{eq:tabe}.
+\begin{gather}
+  \texttt{\{x $\mapsto$ ($\Sigma$, g), y $\mapsto$ ($\Theta$, x), $\dots$\}y} \label{eq:tabd}\\
+  \texttt{$\Theta$ x} \label{eq:tabe}
+\end{gather}
+The program now evaluates as intended which is a consequence of binding all expressions with their environments.
+
+%Surely \autoref{fig:subsapp} solves the problem of lazy substitutions, but alas this is not yet the case.
+%To reach a set of rules which will guarantee lazy substitutions and allow call by need, an additional ingredient is needed.
+%To understand the need for this ingredient, consider the following valid state \texttt{\{x $\mapsto$ z, y $\mapsto$ x\} ($\lambda$x.y) g} in the context of \autoref{fig:subsapp}.
+%When visiting \texttt{($\lambda$x.y)} then the following substitution mapping is applied \texttt{\{x $\mapsto$ g\}}.
+%Once \texttt{y} is visited the substitution mapping will be \texttt{\{x $\mapsto$ g, y $\mapsto$ x\}}, substituting again yields \texttt{x} which becomes \texttt{g} which does not necessarily satisfy \texttt{g $\equiv$ z}.
+%One could rename all variables in some phase in compilation, but the case for recursion is not handled since a duplicate variable name can occur.
+%Consider the program in \autoref{lst:amgprog} which yields an invalid state during interpretation.
+%\begin{figure}[ht]
+%\begin{lstlisting}[language=ML,caption={Recursive program with ambiguity},label={lst:amgprog},mathescape=true]
+%fun f x = 
+  %f (x + x); $\label{lst:amgprog:l2}$
+%f 10;
+%\end{lstlisting}
+%\end{figure}
+%Once Line \autoref{lst:amgprog:l2} is reached the first time, the program will have the state \texttt{\{$\dots$, x $\mapsto$ 10\}}.
+%On the second iteration, the program will have the state \texttt{\{$\dots$, x $\mapsto$ (x + x)\}}, which does not make sense.
 
 %, thus the expression is equivalent to \texttt{($\lambda$x.x) g}, which is not necessarily correct in the case that \texttt{z $\neq$ g}.
 
@@ -585,24 +641,24 @@ The operation of renaming is called an $\alpha$-conversion.
 %Furthermore when returning these modified variables up through the program tree, all variables which point to the same expression must also be updated.
 %\\
 %The next step in correctly evaluating the lambda calculus is applying \textit{$\alpha$-conversions} which is the operation of renaming.
-\subsubsection{$\alpha$-conversions}
-The $\alpha$-conversion mapping can occur as the substitution mapping, that is \texttt{\{x $\mapsto$ $\gamma_1$, y $\mapsto$ $\gamma_2$\}}; $\alpha$-conversions are philosophical constructs more than materialized mappings.
-$\alpha$-conversions guarantee what is called \textit{$\alpha$-equivalence} which is the notion of semantic equivalence.
-For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\gamma.\gamma$} since both expressions are semantically equivalent.
-%$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
-%$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
-%More formally if \texttt{S, e $\rightarrow$ $\Sigma$, e'} then $\{x \,\,|\,\, (x \mapsto y) \in S\} \subseteq \{x \,\,|\,\, (x \mapsto y) \in \Sigma\}$.
-\begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
-let f = ($\lambda$f'.$\lambda$x.
-    if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
-f f 10
-\end{lstlisting}
-%A strong guarantee that can be made by tuning the evaluation strategy which is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
-%An algorithm for performing $\alpha$-conversions can be implemented that picks a new variable name from any infinite domain when an abstraction has had a value applied to it and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
-%The algorithm should also introduce the applied value to the substitution set through the alpha converted name.
-\noindent An $\alpha$-conversion algorithm can be implemented such that when a new variable is introduced through an abstraction, a new name for the variable is given.
-More formally; Let $V_1$ be the domain of variables in the program and $V_2$ be the infinite domain for variable names that satisfies $V_1 \cap V_2 = \emptyset$, then when a new variable \texttt{x} is discovered, replace it with some $\gamma \in V_2$ and let $V_2 = V_2 \backslash \{\gamma\}$. 
-For instance, let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
+%\subsubsection{$\alpha$-conversions}
+%The $\alpha$-conversion mapping can occur as the substitution mapping, that is \texttt{\{x $\mapsto$ $\gamma_1$, y $\mapsto$ $\gamma_2$\}}; $\alpha$-conversions are philosophical constructs more than materialized mappings.
+%$\alpha$-conversions guarantee what is called \textit{$\alpha$-equivalence} which is the notion of semantic equivalence.
+%For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\gamma.\gamma$} since both expressions are semantically equivalent.
+%%$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
+%%$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
+%%More formally if \texttt{S, e $\rightarrow$ $\Sigma$, e'} then $\{x \,\,|\,\, (x \mapsto y) \in S\} \subseteq \{x \,\,|\,\, (x \mapsto y) \in \Sigma\}$.
+%\begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
+%let f = ($\lambda$f'.$\lambda$x.
+    %if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
+%f f 10
+%\end{lstlisting}
+%%A strong guarantee that can be made by tuning the evaluation strategy which is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
+%%An algorithm for performing $\alpha$-conversions can be implemented that picks a new variable name from any infinite domain when an abstraction has had a value applied to it and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
+%%The algorithm should also introduce the applied value to the substitution set through the alpha converted name.
+%\noindent An $\alpha$-conversion algorithm can be implemented such that when a new variable is introduced through an abstraction, a new name for the variable is given.
+%More formally; Let $V_1$ be the domain of variables in the program and $V_2$ be the infinite domain for variable names that satisfies $V_1 \cap V_2 = \emptyset$, then when a new variable \texttt{x} is discovered, replace it with some $\gamma \in V_2$ and let $V_2 = V_2 \backslash \{\gamma\}$. 
+%For instance, let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
 %It should become clear that an $\alpha$-conversion algorithm must also follow the reduction order or else one can force terrible runtime in a call by name (or need) environment by creating purposeless terms which are never executed but are converted.
 %$\alpha$-conversions must be suspended until it is needed; let $\alpha E$ denote the $\alpha$-conversion for some conversion mapping $\alpha$ on a lambda expression $E$ which lazily $\alpha$-converts $E$.
 %The replacement rules for $\alpha$-conversions are the same as for substitutions.
