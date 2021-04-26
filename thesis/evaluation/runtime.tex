@@ -632,10 +632,10 @@ The program now evaluates as intended which is a consequence of binding all expr
 
 %\autoref{fig:recappsimple} induces rather complicated programs to reason with since substitution mapping can occur within substitution mappings.
 %Attempting to extend \autoref{fig:recappsimple} further, to solve variable ambiguity, sacrifices algorithmic elegance and simplicity further.
-Taking a step back and considering what closures and partial application need to behave deterministically is rooted in solving variable ambiguity.
-Instead, if all variables are unique, ambiguity cannot occur.
-By renaming all variables to a unique name when they are introduced, the evaluation model can be simplified significantly and allows \textit{any} of the aforementioned application rules (some of which imply eager substitution).
-The operation of renaming is called an $\alpha$-conversion.
+%Taking a step back and considering what closures and partial application need to behave deterministically is rooted in solving variable ambiguity.
+%Instead, if all variables are unique, ambiguity cannot occur.
+%By renaming all variables to a unique name when they are introduced, the evaluation model can be simplified significantly and allows \textit{any} of the aforementioned application rules (some of which imply eager substitution).
+%The operation of renaming is called an $\alpha$-conversion.
 %The shortcomings of \autoref{fig:simpleapp} become more apparent once one begins to consider more exotic evaluation strategies, namely call by need.
 %Looking at call by need from a philosophical perspective, indicates that reduction rules must support returning information about newly computed variable values ``up'' through the evaluation tree.
 %Furthermore when returning these modified variables up through the program tree, all variables which point to the same expression must also be updated.
@@ -670,10 +670,10 @@ The operation of renaming is called an $\alpha$-conversion.
   %&\texttt{$\alpha$($\lambda$x.e) = ($\lambda$x.($\alpha\backslash$[x $\mapsto$ y])e)} & \texttt{(x $\mapsto$ y) $\in$ $\alpha$} \label{eq:alprepsub}
 %\end{align}
 
-We almost have all the building blocks in place now.
-The problem of ambiguity between \textit{different} variables, that is, variables different places in the program with the same name and in recursion, can now be solved.
-Once again, not breaking suspension remains as an interesting value.
-In \autoref{fig:subrenam} the \texttt{fresh} function picks a new variable from $V_2$ and updates $V_2$ such that picked variable no longer exists in $V_2$.
+%We almost have all the building blocks in place now.
+%The problem of ambiguity between \textit{different} variables, that is, variables different places in the program with the same name and in recursion, can now be solved.
+%Once again, not breaking suspension remains as an interesting value.
+%In \autoref{fig:subrenam} the \texttt{fresh} function picks a new variable from $V_2$ and updates $V_2$ such that picked variable no longer exists in $V_2$.
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \vspace*{0.49cm}
@@ -710,11 +710,11 @@ In \autoref{fig:subrenam} the \texttt{fresh} function picks a new variable from 
               \vspace*{0.4cm}
               \begin{prooftree}
                 \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-                \AxiomC{\texttt{\{$\gamma$ $\mapsto$ (S, z), x $\mapsto$ ($\emptyset$, $\gamma$)\} $\cup$ S, e $\rightarrow$ $\Sigma$, y} \,\,\,\, $\gamma$ = \texttt{fresh}}
+                \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ $\Sigma$, y}}
                   \RightLabel{App}
                   \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
               \end{prooftree}   
-          \caption{An application rule which renames variables}
+          \caption{An application rule which binds the current environment to expressions}
           \label{fig:rules:freshenv:app}
         \end{subfigure}
     \end{mdframed}
@@ -772,7 +772,7 @@ In \autoref{fig:subrenam} the \texttt{fresh} function picks a new variable from 
                 \path (fstB.north east) -- (fstB.south east) coordinate[midway] (fstP);
         \end{tikzpicture}
         \caption{
-          \texttt{S = \{$\gamma_1 \mapsto$ ($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1)), f $\mapsto \gamma_1$\}}
+          \texttt{S = \{f $\mapsto$ ($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1))\}}
         }
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
@@ -834,8 +834,8 @@ In \autoref{fig:subrenam} the \texttt{fresh} function picks a new variable from 
             \end{tikzpicture}
             \caption{
                 \\
-                \texttt{$\Theta_0$ = \{$\gamma_2 \mapsto$ ($\Sigma$, f), f' $\mapsto \gamma_2$\} $\cup$ $\Sigma$}\\
-                \texttt{$\Theta$ = \{$\gamma_3 \mapsto$ ($\Theta_0$, 10), x $\mapsto \gamma_3$\} $\cup$ $\Theta_0$}
+                \texttt{$\Theta_0$ = \{f' $\mapsto$ ($\Sigma$, f)\} $\cup$ $\Sigma$}\\
+                \texttt{$\Theta$ = \{x $\mapsto$ ($\Theta_0$, 10)\} $\cup$ $\Theta_0$}
             }
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
@@ -902,7 +902,7 @@ add y y;
 \autoref{lst:lazyevalprog} is a program which under call by name computes \texttt{y} two times.
 By assigning a unique name to the expression of \texttt{y}, \texttt{a} for instance, the unique expression can be tracked.
 When \texttt{y + y} is computed, the first evaluation of \texttt{y} changes \texttt{a} in the substitution mapping such that \texttt{\{$\dots$, a $\mapsto$ 20\}}.
-Furthermore, notice that the phrase ``assigning a unique name'' is exactly what $\alpha$-conversion does.
+%Furthermore, notice that the phrase ``assigning a unique name'' is exactly what $\alpha$-conversion does.
 By these rules sharing can be implemented very elegantly by also noticing that variable references are in fact, a dependency tree.
 Let a valid substitution mapping be \texttt{\{x $\mapsto$ 10 + 2, y $\mapsto$ (x + 1), z $\mapsto$ (y + 2)\}} with the originating program in \autoref{eq:lazyexmp}.
 \begin{align}
@@ -914,29 +914,29 @@ Observe that the App rule in \autoref{fig:subrenam} is the only rule which intro
 By using the App rule, one can introduce a variable by two different names.
 A transitive reference is created to the originating expression, that is, two names which point to the same reference.
 For some function \texttt{f} which duplicates expressions and some state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ ($\dots$, ($\lambda$y.$\lambda$z.y+z))\}f x x} the only applicable rule is App.
-Using the App rule two times yields a new state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, $\gamma_1$ $\mapsto$ ($\dots$, x), y $\mapsto$ ($\dots$, $\gamma_1$), $\gamma_2$ $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, $\gamma_2$)\}}.
+Using the App rule two times yields a new state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, y $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, x)\}}.
 \autoref{fig:expdep} gives clearer insight into how the expressions depend on each other.
 If any expression in \autoref{fig:expdep} is forced, then everything above will be forced.
-For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} would have to evaluate the reference to $\gamma_2$ which points to \texttt{x} which has been evaluated and added to the substitution mapping by \autoref{fig:rules:freshenv:var} since \texttt{x} is a (transitive) parent of \texttt{y}.
+For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} would have to evaluate the reference to \texttt{x} which has been evaluated and added to the substitution mapping by \autoref{fig:rules:freshenv:var} since \texttt{x} is an ancestor of \texttt{y}.
 \begin{figure}
   \centering
   \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.25cm and 0.25cm]
-          \node[draw=black] (e) {\texttt{e}};
+        \node[draw=black] (e) {\texttt{e}};
 
-            \node[draw=black, below = of e] (x) {\texttt{x}};
-            \path[->] (x) edge node[left] {} (e);
+          \node[draw=black, below = of e] (x) {\texttt{x}};
+          \path[->] (x) edge node[left] {} (e);
             
-              \node[draw=black, below left = of x] (gamma1) {$\gamma_1$};
-              \path[->] (gamma1) edge node[left] {} (x);
+              %\node[draw=black, below left = of x] (gamma1) {$\gamma_1$};
+              %\path[->] (gamma1) edge node[left] {} (x);
 
-                \node[draw=black, below = of gamma1] (y) {\texttt{y}};
-                \path[->] (y) edge node[left] {} (gamma1);
+              \node[draw=black, below left = of x] (y) {\texttt{y}};
+              \path[->] (y) edge node[left] {} (x);
 
-              \node[draw=black, below right = of x] (gamma2) {$\gamma_2$};
-              \path[->] (gamma2) edge node[left] {} (x);
+            %\node[draw=black, below right = of x] (gamma2) {$\gamma_2$};
+            %\path[->] (gamma2) edge node[left] {} (x);
 
-                \node[draw=black, below = of gamma2] (z) {\texttt{z}};
-                \path[->] (z) edge node[left] {} (gamma2);
+              \node[draw=black, below right = of x] (z) {\texttt{z}};
+              \path[->] (z) edge node[left] {} (x);
 
           \node[draw,fill=none,scale=1.3,rectangle,fit=(e)(z)(y)](fbb){};
   \end{tikzpicture}
@@ -946,7 +946,7 @@ For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} wo
 We have now arrived at semantics which are very similar to the semantics described in~\cite{launchbury1993natural} (except concepts such as lazy substitutions).
 
 \begin{remark}
-    Sharing can also be implemented in a way which promotes more imperative constructs, such as variables.
+    Sharing can also be implemented in a way which promotes more imperative constructs, such as mutable data.
     When some object $E$ is discovered it is declared as a mutable pointer by the interpreter (or natively if implemented in a lazy language) such that all duplications effectively point to the same object.
     An implementation which builds upon pointers are explored in Chapter 12 in~\cite{peyton1987implementation}.
 \end{remark}
