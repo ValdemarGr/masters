@@ -304,18 +304,65 @@ Removing the rule \autoref{eq:subsemrem} and adding the two rules in \autoref{eq
 This evaluation model is indeed powerful enough to evaluate most call by name lambda calculus programs.
 \begin{exmp}
   With the aforementioned rules, programs can now be proved.
-  Let a program \texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0} be subject to the rules in \autoref{fig:scbn}.
+  Let a program \texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0} be subject to the rules in \autoref{fig:scbn}, which solves to \autoref{fig:rules:exmp:sol}.
   \begin{figure}[ht]
     \begin{mdframed}
-      \begin{prooftree}
-        \AxiomC{\texttt{($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)}}
+        \vspace*{0.49cm}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+    \AxiomC{}
+    \LeftLabel{Abs}
+  \UnaryInfC{\texttt{($\lambda$x.($\lambda$x.x) x) $\rightarrow$ ($\lambda$x.($\lambda$x.x) x)}}
+\LeftLabel{Substitution}
+\UnaryInfC{\texttt{\{f $\mapsto$ ($\lambda$x.x)\}($\lambda$x.f x) $\rightarrow$ ($\lambda$x.($\lambda$x.x) x)}}
+        \end{prooftree}
+        \caption{}
+        \label{fig:rules:exmp:left:right}
+      \end{subfigure}
+        \vspace*{0.49cm}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+    \AxiomC{}
+  \LeftLabel{Abs}
+  \UnaryInfC{\texttt{($\lambda$f.$\lambda$x.f x) $\rightarrow$ ($\lambda$f.$\lambda$x.f x)}}
+  \AxiomC{\autoref{fig:rules:exmp:left:right}}
+\LeftLabel{App}
+\BinaryInfC{\texttt{($\lambda$f.$\lambda$x.f x) ($\lambda$x.x) $\rightarrow$ ($\lambda$x.($\lambda$x.x) x)}}
+        \end{prooftree}
+        \caption{}
+        \label{fig:rules:exmp:left}
+      \end{subfigure}
+        \vspace*{0.49cm}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+      \AxiomC{}
+    \LeftLabel{Abs}
+    \UnaryInfC{\texttt{($\lambda$x.x) $\rightarrow$ ($\lambda$x.x)}}
         \AxiomC{}
-        \RightLabel{Var}
-        \UnaryInfC{\texttt{0 $\rightarrow$ 0}}
-          \LeftLabel{App}
-          \BinaryInfC{\texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0 $\rightarrow$ 0}}
-      \end{prooftree}
+      \RightLabel{Var}
+      \UnaryInfC{\texttt{0 $\rightarrow$ 0}}
+    \RightLabel{Substitution}
+    \UnaryInfC{\texttt{\{x $\mapsto$ 0\}x $\rightarrow$ 0}}
+  \RightLabel{App}
+  \BinaryInfC{\texttt{($\lambda$x.x) 0 $\rightarrow$ 0}}
+\RightLabel{Substitution}
+\UnaryInfC{\texttt{\{x $\mapsto$ 0\}($\lambda$x.x) x $\rightarrow$ 0}}
+        \end{prooftree}
+        \caption{}
+        \label{fig:rules:exmp:right}
+      \end{subfigure}
+        \vspace*{0.49cm}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+  \AxiomC{\autoref{fig:rules:exmp:left}}
+  \AxiomC{\autoref{fig:rules:exmp:right}}
+\LeftLabel{App}
+\BinaryInfC{\texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0 $\rightarrow$ 0}}
+        \end{prooftree}
+      \end{subfigure}
     \end{mdframed}
+    \caption{}
+    \label{fig:rules:exmp:sol}
   \end{figure}
 \end{exmp}
 Now consider the following sub-program \texttt{($\lambda$x.y) g} with the following ongoing substitutions \{x $\mapsto$ z, y $\mapsto$ x, $\dots$\}.
@@ -482,11 +529,11 @@ The $\cup$ operator for two substitutions should now be inverted, that is, \text
 Furthermore, notice that binding substitutions to expressions also allows substitutions to float up throughout interpretation.
 Now the application rule must implement \autoref{eq:subsemfixed}, seen in \autoref{fig:subsapp}.
 \begin{figure}[ht]
-    \begin{mdframed}[style=style1]
+    \begin{mdframed}[style=bigbox]
         \vspace*{0.4cm}
           \begin{prooftree}
             \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-            \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ $\Sigma$, y}}
+            \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ ($\Sigma$ $\backslash$ \{x\}) $\cup$ S, y}}
               \RightLabel{App}
               \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
           \end{prooftree}   
@@ -710,7 +757,7 @@ The program now evaluates as intended which is a consequence of binding all expr
               \vspace*{0.4cm}
               \begin{prooftree}
                 \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-                \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ $\Sigma$, y}}
+                \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ ($\Sigma$ $\backslash$ \{x\}) $\cup$ S, y}}
                   \RightLabel{App}
                   \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
               \end{prooftree}   
@@ -911,8 +958,8 @@ Let a valid substitution mapping be \texttt{\{x $\mapsto$ 10 + 2, y $\mapsto$ (x
 If the lambda calculus sub-program in \texttt{E} forces \texttt{y}, then the substitution mapping should be updated with \texttt{\{y $\mapsto$ 13\}} which implies that x is also forced \texttt{\{x $\mapsto$ 12\}}.
 
 Observe that the App rule in \autoref{fig:subrenam} is the only rule which introduces \textbf{new} variables to the substitution mapping.
-By using the App rule, one can introduce a variable by two different names.
-A transitive reference is created to the originating expression, that is, two names which point to the same reference.
+By using the App rule, one can introduce a variable which points to an expression.
+A reference is created to the originating expression, that is, two names which point to the same reference.
 For some function \texttt{f} which duplicates expressions and some state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ ($\dots$, ($\lambda$y.$\lambda$z.y+z))\}f x x} the only applicable rule is App.
 Using the App rule two times yields a new state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, y $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, x)\}}.
 \autoref{fig:expdep} gives clearer insight into how the expressions depend on each other.
@@ -1099,24 +1146,41 @@ We have now arrived at semantics which are very similar to the semantics describ
 %\end{align}
 %\end{exmp}
 
+\subsubsection{Forcing operators}
+When the interpreter executes arithmetic operations for two expressions, they must both be forced.
+Clearly this rule is not encoded into the aforementioned rules, but can be modelled easily as shown in \autoref{fig:oplusrule}.
+\begin{figure}[ht]
+  \begin{mdframed}[style=style1]
+    \begin{prooftree}
+        \AxiomC{\texttt{$\Theta$, x $\rightarrow$ $\Sigma$, n}}
+        \AxiomC{\texttt{$\Sigma$, y $\rightarrow$ S, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\} \land \texttt{n,t} \in \mathbb{Z^+}$}}
+          \RightLabel{Bin op}
+          \BinaryInfC{\texttt{$\Theta$, x $\oplus$ y $\rightarrow$ S, (n $\oplus$ t)}}
+    \end{prooftree}   
+  \end{mdframed}
+  \caption{}
+  \label{fig:oplusrule}
+\end{figure}
+
 \subsubsection{Garbage collection}
-Garbage collection in purely functional languages is different from imperative languages like C, since manual memory management is often abstracted away. 
+Garbage collection (as in any method which frees memory that is no longer in use), in purely functional languages is different from imperative languages like C, since manual memory management is often abstracted away. 
 Adding mappings from variables to lambda terms without any subtractions will lead to an ever increasing substitution mapping size.
 When performing reductions one might desire to garbage collect the substitution mapping once it contains unreachable substitutions.
 Fortunately the task of collecting garbage is quite easy solvable in by a naive algorithm, since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
 Unfortunately not all programs ``return'', like programs which implement infinite recursion.
 \begin{remark}
-  Continually passing style programs clearly need some type of garbage collection.
   Generally for tail call optimization (\autoref{remark:tailcall}) to be feasible, some sort of ad-hoc freeing of substitutions must be present, such that infinite programs can run in finite space.
 \end{remark}
-\noindent\cite{launchbury1993natural}~presents an elegant (and abstract) rule for garbage collection (\autoref{fig:launchgc}, and a version with lazy substitutions \autoref{fig:lazysub:gc}).
+\noindent\cite{launchbury1993natural}~presents an elegant (and abstract) rule for garbage collection (\autoref{fig:launchgc}
+Launchbury garbage collection also introduces a new type of state \texttt{N}, which records a set of needed or live expressions.
+When rules such as App and Bin op are performed, branching occurs, that is, there exists another ``pending'' branch of computation, such that the pending branch's expression and the current substitution mapping is introduced to \texttt{N}.
+A version which regards lazy substitutions can be seen in \autoref{fig:lazysub:gc}).
 The function \texttt{R} scans the substitution mapping $\Theta$ for all variables in the expression \texttt{e}.
 \begin{figure}[ht]
-    \begin{mdframed}[style=style1]
-        \vspace*{0.4cm}
+    \begin{mdframed}
           \begin{prooftree}
             \AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
-            \AxiomC{\texttt{x $\notin$ R($\Theta$, e)}}
+            \AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
               \RightLabel{GC}
               \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ S, y}}
           \end{prooftree}   
@@ -1125,11 +1189,10 @@ The function \texttt{R} scans the substitution mapping $\Theta$ for all variable
     \label{fig:launchgc}
 \end{figure}
 \begin{figure}[ht]
-    \begin{mdframed}[style=style1]
-        \vspace*{0.4cm}
+    \begin{mdframed}
           \begin{prooftree}
             \AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
-            \AxiomC{\texttt{x $\notin$ R($\Theta$, e)}}
+            \AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
               \RightLabel{GC}
               \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ ($\Delta$, z)\}, e $\rightarrow$ S, y}}
           \end{prooftree}   
@@ -1137,29 +1200,31 @@ The function \texttt{R} scans the substitution mapping $\Theta$ for all variable
     \caption{Launchbury garbage collection with lazy substitution}
     \label{fig:lazysub:gc}
 \end{figure}
-Problems in the domain of computer science (especially algorithms), can usually be solved much more efficiently if the problem has certain properties.
-Launchbury garbage collection argues for the possibility of parallel garbage collection, which is a property granted for free in immutable languages.
-In imperative languages garbage collection algorithms either block the execution of the program or have complicated implementation details.
-Fortunately in functional programming languages, data is (traditionally) immutable, which implies that references \textit{never} change.
+%Problems in the domain of computer science (especially algorithms), can usually be solved much more efficiently if the problem has certain properties.
+%Launchbury garbage collection argues for the possibility of parallel garbage collection, which is a property granted for free in immutable languages.
+%In imperative languages garbage collection algorithms either block the execution of the program or have complicated implementation details.
+%Fortunately in functional programming languages, data is (traditionally) immutable, which implies that references \textit{never} change.
 
-The lazy substitution semantics might appear foreign to the rules of garbage collection but can indeed be benefitial in regard to the function \texttt{R}.
-The implementation of the function \texttt{R} is very open for interpretation.
-A garbage collection algoritm which collects every ``lost reference'' which adheres to \texttt{R} in \autoref{fig:launchgc}, could be implemented by the use of \texttt{Free} or \texttt{Bound}.
-A garbage collection algoritm for \autoref{fig:lazysub:gc} must also inspect the bound substitution mappings as in \autoref{eq:Rgc}.
+A garbage collection algorithm which collects every ``lost reference'' which adheres to \texttt{R} in \autoref{fig:launchgc}, could be implemented by the use of \texttt{Free} or \texttt{Bound}.
+A garbage collection algorithm for \autoref{fig:lazysub:gc} must also inspect the bound substitution mappings as in \autoref{eq:Rgc}.
 \begin{align}
-  \texttt{R($\Theta$, ($\lambda$x.e))}&\texttt{ = R($\Theta$ $\backslash$ \{x\}, e)}& \label{eq:Rgc}\\
-   \texttt{R($\Theta$, (f e))}&\texttt{ = R($\Theta$, f) $\cup$ R($\Theta$, e)}& \tag*{} \\
-   \texttt{R($\Theta$, x)}&\texttt{ = \{x $\mapsto$ (e, R(S, e))\} $\cup$ R(S, e)}&, \texttt{x $\mapsto$ (e, S) $\in$ $\Theta$} \tag*{} \\
-   \texttt{R($\Theta$, x)}&\texttt{ = \{\}}&, \texttt{x $\mapsto$ (e, S) $\notin$ $\Theta$} \tag*{}
+  \texttt{GC($\Theta$, N, e)} &= \tag*{}\\
+  &\texttt{T = \{(S, z) | (t $\mapsto$ (S, z)) $\in$ $\Theta$ $\land$ t $\in$ Free(e)\}}\tag*{}\\
+  &\texttt{GC'(N $\cup$ T)}\tag*{}\\
+  \texttt{GC(($\Theta$, e) $\cup$ N)} &= \texttt{Free(e)}
+  %\texttt{GC'($\Theta$, N, e) }&=\texttt{GC($\Theta$, N $\cup$ Free(e))}\label{eq:Rgc}\\\tag*{}\\
+  %\texttt{GC($\Theta$, $\emptyset$)} &= \emptyset& \tag*{}\\
+  %\texttt{GC(\{x $\mapsto$ (S, e)\} $\cup$ $\Theta$, \{x\} $\cup$ N)} &= \texttt{\{x $\mapsto$ (GC(S, Free(e)), e)\} $\cup$ GC($\Theta$, N)}& \tag*{}\\
+  %\texttt{GC(\{x $\mapsto$ (S, e)\} $\cup$ $\Theta$, N)} &= \texttt{GC($\Theta$, N)}& ,\texttt{x $\notin$ N} \tag*{}
 \end{align}
+\begin{remark}
+  
+\end{remark}
 
 Garbage collection algorithms often run in worst case $O(n)$, in regard to the number of variables allocated by the App rule.
-The algorithm proposed in \autoref{eq:Rgc} also has similar guarantees, if \texttt{R} is implemented efficiently.
-The garbage collection algorithm is entirely dependent on how an implementation of \texttt{R} behaves.
+The algorithm proposed in \autoref{eq:Rgc} also has similar guarantees since \texttt{Free} can be computed during compilation.
 An amortized analysis of garbage collection might seem to yield a running time of $O(1)$ by an analysis which is very similar to a stack.
 Unfortunately the garbage collector is not guaranteed to remove any references, thus running it does not guaranteed a reduction in potential.
-Fortunately, garbage collection can be paid for ``up front''.
-The compilation can  \autoref{fig:expdep}
 
 %The potential function $\Phi$ is the size of the substitution mapping.
 %Letting the potential $\Phi(D_i)$ be the equal to the size of the substitution mapping after $i$ operations, that is, insertions and removals.
