@@ -959,6 +959,8 @@ The state in \autoref{eq:mulsub} poses a problem since the forcing of \texttt{y}
 Observe that forcing \texttt{z} recomputes \texttt{y}.
 Sharing the computed value of \texttt{y} is not an option either, since \texttt{y} may not be the same \texttt{y}, which is the reason for the introduction of bound substitution mappings in the first place.
 Fortunately we have yet to apply $\alpha$-conversions to the problem.
+Instead of binding the substitution mappings to expressions, $\alpha$-conversions should be bound to expressions.
+Bound $\alpha$-conversions have a very simple set of properties, such as 
 
 \begin{figure}
 \begin{lstlisting}[language=ML,caption={Program which benifits from lazy evaluation},label={lst:lazyevalprog},mathescape=true]
