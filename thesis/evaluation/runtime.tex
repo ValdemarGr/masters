@@ -209,19 +209,21 @@ Translating the lambda calculus into the SKI-expressions does indeed increase th
 More advanced techniques exist to translate the lambda calculus to linearly sized SKI-expressions with the introduction of more complicated combinators~\cite{kiselyov2018lambda}.
 
 \section{Reduction strategies}
-Reductions in the context of the lambda calculus are a small set of well-defined rules for rewriting such that a program is evaluated.
-The techniques required to correctly evaluate a program are a bit more complicated than the SKI calculus but are rewarding in flexibility and performance.
-Throughout this section we will explore what difficulties lie within evaluating the untyped lambda calculus via reduction strategies.
-The first section will interest itself with the semantics of evaluating the untyped lambda calculus, whilst the second will implement a machine capable of evaluating a result.
+Reductions in the context of the lambda calculus are a small set of well-defined rules for rewriting such that a program is proved or evaluated.
+The techniques required to correctly prove and evaluate a program are a bit more complicated than the SKI calculus but are rewarding in flexibility and performance.
+Throughout this section we will explore what difficulties lie within proving and evaluating the untyped lambda calculus via reduction strategies.
+The first section will interest itself with the semantics of proving the untyped lambda calculus, whilst the second will implement a machine capable of evaluating a result.
 
 \subsection{The abstract evaluation model}
 The substitution mapping, denoted $S$, is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
+\begin{remark}
+  In the section regarding the semantics of reduction strategies, substitutions will exist as singleton sets.
+\end{remark}
 %Substitutions mappings can be combined $S \cup \Sigma$, if a variable name occurs in both $S$ and $\Sigma$ then the variable in the rightmost mapping is chosen ($\Sigma$).
 \begin{align}
-  \{ x \mapsto y \} x = y\label{eq:subsem}\\
-  \{ x \mapsto y \} z = z \tag*{}
+  \texttt{\{x $\mapsto$ y\}x = y}\label{eq:subsem}
 \end{align}
-Substitution mappings are used as in \autoref{eq:subsem}; if $Sx = y$ if $(x \mapsto y) \in S$ else $Sx = x$.
+Substitutions are performed like shown in \autoref{eq:subsem}, which states ``x is substituted by y''.
 %In $(\lambda f . \lambda x . \lambda y. \texttt{ let } a = f x \texttt{ in } a + y)(\lambda y . y) \,\, 10 \,\, 20$ when evaluating $f x$ where the substitution are $[f \mapsto \lambda y . y, x \mapsto 10, y \mapsto 20]$ there must be taken great care that $x$ is mapped to $y$ in $\lambda y . y$.
 
 Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
@@ -233,7 +235,7 @@ Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strate
 The order of evaluation decides the evaluation strategy and also the final form of expressions~\cite{sestoft2002demonstrating}.
 Before delving into more complicated evaluation strategies such as call by need, call by name will be considered.
 
-A reduction strategy would involve adding variables to the substitution mapping, once they are applied.
+A reduction strategy would involve substituting variables, once they are applied.
 When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be substituted by \texttt{5} such that the expression becomes \texttt{x + 5} with the substitution mapping \texttt{\{x $\mapsto$ 5\}}.
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
@@ -283,14 +285,14 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
     \caption{Simple call by name lambda calculus}
     \label{fig:scbn}
 \end{figure}
-The rules in \autoref{fig:scbn} display a simple set of rules for evaluating the call by name lambda calculus.
+The rules in \autoref{fig:scbn} display a simple set of rules for proving call by name lambda calculus programs.
 \begin{itemize}
-\item The Abs and Var rules (\autoref{eq:simpleabs} and \autoref{eq:simplevar}) are rules which act as terminal cases within the evaluation of a program.
-      Abs and Var both state that if either of them occur then simply return the expression.
-\item The App rule (\autoref{fig:simpleapp}) states that ``First evaluate \texttt{f} to \texttt{($\lambda$x.e)}, then evaluate \texttt{e} to \texttt{y}, where \texttt{x} has been replaced with \texttt{z} in \texttt{e}''.
+\item The Abs and Var rules (\autoref{eq:simpleabs} and \autoref{eq:simplevar}) are rules which act as terminal cases of a proof.
+      Abs and Var both state that if either of them occur then the expression must be an axiom by their identity.
+\item The App rule (\autoref{fig:simpleapp}) states that ``\texttt{f z} can be proved to evaluate to \texttt{y} if \texttt{f} can be proved to be \texttt{($\lambda$x.e)} and \texttt{e} can be proved to be \texttt{y}, where \texttt{x} has been replaced with \texttt{z} in \texttt{e}''.
 \item The Let rule has the same function as the App rule, but will have an important role in a more refined version of the semantics.
 \end{itemize}
-We must introduce rules for how substitutions should act upon encountering lambda calculus term types (\autoref{eq:subsem}).
+We must introduce rules for how substitutions should act upon encountering lambda calculus terms (\autoref{eq:subsem}).
 \begin{align}
   &\texttt{\{x $\mapsto$ y\}x = y} \label{eq:subsem}\\
   &\texttt{\{x $\mapsto$ y\}z = z}  \tag*{}\\
@@ -298,48 +300,45 @@ We must introduce rules for how substitutions should act upon encountering lambd
   &\texttt{S($\lambda$x.e) = ($\lambda$x.Se) } \label{eq:subsemrem}%\\
 \end{align}
 
-\subsubsection{Forcing operators}
-When the interpreter executes arithmetic operations for two expressions, they must both be forced.
-Clearly this rule is not encoded into the aforementioned rules, but can be modelled easily as shown in \autoref{fig:oplusrule}.
-\begin{figure}[ht]
-  \begin{mdframed}[style=style1]
-    \begin{prooftree}
-        \AxiomC{\texttt{$\Theta$, x $\rightarrow$ $\Sigma$, n}}
-        \AxiomC{\texttt{$\Sigma$, y $\rightarrow$ S, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\}$}}
-          \RightLabel{Bin op}
-          \BinaryInfC{\texttt{$\Theta$, x $\oplus$ y $\rightarrow$ S, (n $\oplus$ t)}}
-    \end{prooftree}   
-  \end{mdframed}
-  \caption{}
-  \label{fig:oplusrule}
-\end{figure}
-
 \subsubsection{Ambiguous programs}
-\begin{figure}
-\begin{lstlisting}[language=ML,caption={Program with variable ambiguity},label={lst:varambg},mathescape=true]
-fun f x =
-  fun g x = x;
-  g (x + x);
-f 2;
-\end{lstlisting}
-\end{figure}
-Evaluating \autoref{lst:varambg} under the rules in \autoref{eq:subsem} yields a case for more substitution thorough rules.
-Using the App rule (\autoref{fig:simpleapp}) and applying substitutions as defined in (\autoref{eq:subsem}), yields the program in \autoref{lst:varambg2}.
-\begin{lstlisting}[language=ML,caption={Program with variable ambiguity after one reduction pass},label={lst:varambg2},mathescape=true]
-fun g x = 2;
-g (2 + 2);
-\end{lstlisting}
-Which eventually evaluates to \texttt{2}, which clearly is not the intended result.
-Removing the rule \autoref{eq:subsemrem} and adding the two rules in \autoref{eq:subsemfixed} solves variable ambiguity.
+\begin{align}
+  \texttt{($\lambda$x.($\lambda$x.x) 0) 1} \label{eq:ambgprog}
+\end{align}
+Proving \autoref{eq:ambgprog} under the rules in \autoref{eq:subsem} yields a case for more thorough substitution rules.
+By inspection one can determine that a simple program like \autoref{eq:ambgprog} yields the symbol \texttt{0}, but alas this is not the case.
+The first step to prove \autoref{eq:ambgprog} is to apply through the App rule, which prompts the application of the Abs rule on the left side for \texttt{f}, such that the expression to prove now becomes the lambda abstraction with \texttt{x} replaced by \texttt{1} (\autoref{eq:ambgprog2}).
+\begin{align}
+  \texttt{($\lambda$x.1) 0} \label{eq:ambgprog2}
+\end{align}
+Clearly \autoref{eq:ambgprog2} changed the meaning of the program.
+If we continue the proof which states that the program in \autoref{eq:ambgprog2} should evaluate to the symbol \texttt{0}, we would not be in luck.
+Clearly this system is not sound, thus requires some further refinement.
+%\begin{figure}
+%\begin{lstlisting}[language=ML,caption={Program with variable ambiguity},label={lst:varambg},mathescape=true]
+%fun f x =
+  %fun g x = x;
+  %g (x + x);
+%f 2;
+%\end{lstlisting}
+%\end{figure}
+%Evaluating \autoref{lst:varambg} under the rules in \autoref{eq:subsem} yields a case for more thorough substitution rules.
+%Using the App rule (\autoref{fig:simpleapp}) and applying substitutions as defined in (\autoref{eq:subsem}), yields the program in \autoref{lst:varambg2}.
+%\begin{lstlisting}[language=ML,caption={Program with variable ambiguity after one reduction pass},label={lst:varambg2},mathescape=true]
+%fun g x = 2;
+%g (2 + 2);
+%\end{lstlisting}
+%Which eventually evaluates to \texttt{2}, which clearly is not the intended result.
+Removing the rule \autoref{eq:subsemrem} and adding the two rules in \autoref{eq:subsemfixed} solves this type.
 \begin{align}
   &\texttt{S($\lambda$x.e) = ($\lambda$x.Se)} & \texttt{(x $\mapsto$ y) $\notin$ S} \label{eq:subsemfixed}\\
   &\texttt{S($\lambda$x.e) = ($\lambda$x.(S$\backslash$\{x $\mapsto$ y\})e)} & \texttt{(x $\mapsto$ y) $\in$ S} \tag*{}
 \end{align}
-This evaluation model is indeed powerful enough to evaluate most call by name lambda calculus programs.
+This is a simple instance of variable ambiguity, a more problematic variant exists which goes by the name of variable capture.
+This evaluation model is indeed powerful enough to evaluate \textbf{most} call by name lambda calculus programs.
 \begin{exmp}
   With the aforementioned rules, programs can now be proved.
   Note that the Substitution rule in \autoref{fig:rules:exmp:sol} is simply the substitution semantics from \autoref{eq:subsemfixed} made clearer.
-  Let a program \texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0} be subject to the rules in \autoref{fig:scbn}, which solves to \autoref{fig:rules:exmp:sol}.
+  Let a program \texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0}, where \texttt{0} is a symbol of any type, be subject to the rules in \autoref{fig:scbn}, which solves to \autoref{fig:rules:exmp:sol}.
   \begin{figure}[ht]
     \begin{mdframed}
         \vspace*{0.49cm}
@@ -400,13 +399,14 @@ This evaluation model is indeed powerful enough to evaluate most call by name la
     \label{fig:rules:exmp:sol}
   \end{figure}
 \end{exmp}
-Closures are the basis for many practical difficulties when designing evaluation machines for the untyped lambda calculus.
-Now consider the following sub-program \texttt{($\lambda$x.y) g} with the following ongoing substitutions \{x $\mapsto$ z, y $\mapsto$ x, $\dots$\}, which contains \texttt{y} as a closure.
+
+Variable capture is the basis for some practical difficulties when designing evaluation rules for the untyped lambda calculus.
+Consider the following sub-program \texttt{($\lambda$x.y) g} with the following ongoing substitutions \texttt{\{x $\mapsto$ z, y $\mapsto$ x, $\dots$\}}, which contains \texttt{y} as a closure.
 Substituting by the rules outlined in \autoref{eq:subsemfixed} yields \texttt{($\lambda$x.x) g} which is clearly invalid.
-The invalid program result is a product of variable ambiguity.
+The invalid program result is a product of some variable ambiguity, or more precisely variable capture.
 %The program before substitution and after should be \textit{$\alpha$-equivalent}, which they are not.
 %The two program states becomes ambiguous by the ambiguity of multiple variables by the same name.
-To solve ambiguity between variables with the same name, one can perform \textit{$\alpha$-conversion}.
+To solve ambiguity between variables with the same name, one can perform an \textit{$\alpha$-conversion}.
 \begin{remark}
   Notice that even if variables are renamed before program execution, recursive functions can still suffer from ambiguity since all parameters for that function can occur multiple times.
 \end{remark}
@@ -419,17 +419,18 @@ For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\
 %$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
 %$\alpha$-conversions should also be non-destructive but still be context aware such that when leaving an abstraction the remaining substitution mapping is a superset of the substitution mapping when entering.
 %More formally if \texttt{S, e $\rightarrow$ $\Sigma$, e'} then $\{x \,\,|\,\, (x \mapsto y) \in S\} \subseteq \{x \,\,|\,\, (x \mapsto y) \in \Sigma\}$.
-\begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
-let f = ($\lambda$f'.$\lambda$x.
-    if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
-f f 10
-\end{lstlisting}
+%\begin{lstlisting}[language=ML,caption={Recursive addition function},label={lst:recalpha},mathescape=true]
+%let f = ($\lambda$f'.$\lambda$x.
+    %if (x = 0) x else f' f' ((x - 1) + (x - 1))) in
+%f f 10
+%\end{lstlisting}
 %A strong guarantee that can be made by tuning the evaluation strategy which is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
 %An algorithm for performing $\alpha$-conversions can be implemented that picks a new variable name from any infinite domain when an abstraction has had a value applied to it and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
 %The algorithm should also introduce the applied value to the substitution set through the alpha converted name.
 \noindent An $\alpha$-conversion algorithm can be implemented such that when a new variable is introduced through an abstraction, a new name for the variable is given.
 More formally; Let $V_1$ be the domain of variables in the program and $V_2$ be the infinite domain for variable names that satisfies $V_1 \cap V_2 = \emptyset$, such that when a new variable \texttt{x} is discovered, replace it with some $\gamma \in V_2$ and let $V_2 = V_2 \backslash \{\gamma\}$. 
-For instance, let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
+Working with the previous example \texttt{[y $\mapsto$ x]($\lambda$x.y) g}
+%For instance, let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
 The function \texttt{fresh} picks a fresh variable name $\gamma$ from $V_2$ and updates $V_2$ to $V_2 \backslash \{\gamma\}$.
 $\alpha$-conversions will be further explored in future refinements of \autoref{fig:scbn}.
 \\
@@ -505,7 +506,7 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies an interp
           \caption{}
           \label{fig:rules:env:app}
         \end{subfigure}
-        \begin{subfigure}[b]{0.60\textwidth}
+        \begin{subfigure}[b]{1\textwidth}
           \vspace*{0.4cm}
             \begin{prooftree}
                 \AxiomC{\texttt{S, e $\rightarrow$ $\Theta$, y}}
@@ -514,15 +515,6 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies an interp
             \end{prooftree}   
             \caption{}
           \label{fig:rules:env:var}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.33\textwidth}
-            \begin{prooftree}
-                \AxiomC{\texttt{x $\in \mathbb{Z^+}$}}
-                \RightLabel{Num}
-                \UnaryInfC{\texttt{S, x $\rightarrow$ S, x}}
-            \end{prooftree}   
-            \caption{}
-          \label{fig:rules:env:num}
         \end{subfigure}
     \end{mdframed}
     \caption{Call by name lambda calculus with environments}
@@ -618,8 +610,9 @@ Evaluating \autoref{eq:xyk} under the new rules reveals that evaluating \texttt{
 \end{figure}
 
 \subsubsection{Dealing with ambiguity}
-The rules so far have avoided dealing with closure.
-Dealing with closure is a matter of ensuring that variables are distinct.
+The rules so far have avoided dealing with variable ambiguity.
+Notice that ambiguity can only arise in the Let rule, since the Let rule is the only rule of which introduces bindings new bindings to the heap.
+Dealing with ambiguity is a matter of ensuring that variables are distinct.
 Applying the technique from \autoref{sec:alpha} properly lets us evaluate programs without ambiguity.
 
 For instance, consider the program in \autoref{lst:progambg} and the state after line \autoref{lst:progambg:l1} is executed in \autoref{eq:progambg2} and the remaining program in \autoref{lst:progambg2}.
@@ -659,6 +652,38 @@ Evaluating line \autoref{lst:progambg:l1} in \autoref{lst:progambg} now yields t
   \texttt{\{$\sigma$ $\mapsto$ ($\lambda$y.y + $\gamma$), $\gamma$ $\mapsto$ 5\}}\label{eq:pragambgfix}
 \end{gather}
 
+\subsubsection{Introducing useful functionality}
+As the set of rules stand currently one can express numbers through church encodings.
+Church encodings provide a minimal and non-invasive set of combinators which allow the encoding of numbers.
+Unfortunately it is not as practical as it is minimal to church encode numbers.
+For instance, to represent the number \texttt{100000} one would require \texttt{100000} invocations of some successor function.
+Fortunately dwelling on the representation of numbers is an easy task once one convinces themselves that ordinary numbers and arithmetic operations are friendly.
+
+When discovering an arithmetic operations between two expressions, they must both be forced and then the pending expression must evaluated.
+Clearly this rule is not encoded into the aforementioned rules, but can be modelled easily as shown in \autoref{fig:oplusrule}.
+\begin{figure}[ht]
+  \begin{mdframed}[style=style1]
+        \begin{subfigure}[b]{1\textwidth}
+        \vspace*{0.49cm}
+          \begin{prooftree}
+              \AxiomC{\texttt{$\Theta$, x $\rightarrow$ $\Sigma$, n}}
+              \AxiomC{\texttt{$\Sigma$, y $\rightarrow$ S, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\}$}}
+                \RightLabel{Bin op}
+                \BinaryInfC{\texttt{$\Theta$, x $\oplus$ y $\rightarrow$ S, (n $\oplus$ t)}}
+          \end{prooftree}   
+        \end{subfigure}
+        \begin{subfigure}[b]{1\textwidth}
+        \vspace*{0.49cm}
+            \begin{prooftree}
+                \AxiomC{\texttt{x $\in \mathbb{Z^+}$}}
+                \RightLabel{Num}
+                \UnaryInfC{\texttt{S, x $\rightarrow$ S, x}}
+            \end{prooftree}   
+        \end{subfigure}
+  \end{mdframed}
+  \caption{}
+  \label{fig:oplusrule}
+\end{figure}
 
 %The $\cup$ operator merges two substitution mappings, choosing the leftmost mapping on duplicates, such that \texttt{\{x $\mapsto$ y, z $\mapsto$ h\} $\cup$ \{x $\mapsto$ m\} $\rightarrow$ \{x $\mapsto$ y, z $\mapsto$ h\}}, such that the semantics of $\cup$ satisfy \autoref{eq:subsemfixed}.
 %More generally, a simple rule for App could be defined as in \autoref{fig:simpleapp} which states ``Evaluate \texttt{($\lambda$x.e) z} with the substitution mapping \texttt{S} to \texttt{y} with the substitution mapping $\Sigma$ by first evaluating \texttt{e} with the substitution mapping \texttt{S} $\cup$ \texttt{\{x $\mapsto$ z\}} to \texttt{y} with the substitution mapping $\Sigma$''.
