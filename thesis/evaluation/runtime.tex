@@ -779,6 +779,7 @@ Notice that the left branch and right branch in \autoref{fig:finproofexmp:bin} a
 The left branch saves the evaluation result such that the right branch only requires a lookup to find $\gamma$.
 \end{exmp}
 
+
 %The $\cup$ operator merges two substitution mappings, choosing the leftmost mapping on duplicates, such that \texttt{\{x $\mapsto$ y, z $\mapsto$ h\} $\cup$ \{x $\mapsto$ m\} $\rightarrow$ \{x $\mapsto$ y, z $\mapsto$ h\}}, such that the semantics of $\cup$ satisfy \autoref{eq:subsemfixed}.
 %More generally, a simple rule for App could be defined as in \autoref{fig:simpleapp} which states ``Evaluate \texttt{($\lambda$x.e) z} with the substitution mapping \texttt{S} to \texttt{y} with the substitution mapping $\Sigma$ by first evaluating \texttt{e} with the substitution mapping \texttt{S} $\cup$ \texttt{\{x $\mapsto$ z\}} to \texttt{y} with the substitution mapping $\Sigma$''.
 %\begin{figure}[ht]
@@ -1477,68 +1478,151 @@ The left branch saves the evaluation result such that the right branch only requ
 %\end{exmp}
 
 \subsubsection{Garbage collection}
-Garbage collection (as in any method which frees memory that is no longer in use), in purely functional languages is different from imperative languages like C, since manual memory management is often abstracted away. 
-Adding mappings from variables to lambda terms without any subtractions will lead to an ever increasing substitution mapping size.
-When performing reductions one might desire to garbage collect the substitution mapping once it contains unreachable substitutions.
-Fortunately the task of collecting garbage is quite easy solvable in by a naive algorithm, since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
-Unfortunately not all programs ``return'', like programs which implement infinite recursion.
-\begin{remark}
-  Generally for tail call optimization (\autoref{remark:tailcall}) to be feasible, some sort of ad-hoc freeing of substitutions must be present, such that infinite programs can run in finite space.
-\end{remark}
-\noindent\cite{launchbury1993natural}~presents an elegant (and abstract) rule for garbage collection (\autoref{fig:launchgc}
-Launchbury garbage collection also introduces a new type of state \texttt{N}, which records a set of needed or live expressions.
-When rules such as App and Bin op are performed, branching occurs, that is, there exists another ``pending'' branch of computation, such that the pending branch's expression and the current substitution mapping is introduced to \texttt{N}.
-A version which regards lazy substitutions can be seen in \autoref{fig:lazysub:gc}).
-The function \texttt{R} scans the substitution mapping $\Theta$ for all variables in the expression \texttt{e}.
-\begin{figure}[ht]
-    \begin{mdframed}
-          \begin{prooftree}
-            \AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
-            \AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
-              \RightLabel{GC}
-              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ S, y}}
-          \end{prooftree}   
-    \end{mdframed}
-    \caption{Launchbury garbage collection}
-    \label{fig:launchgc}
-\end{figure}
-\begin{figure}[ht]
-    \begin{mdframed}
-          \begin{prooftree}
-            \AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
-            \AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
-              \RightLabel{GC}
-              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ ($\Delta$, z)\}, e $\rightarrow$ S, y}}
-          \end{prooftree}   
-    \end{mdframed}
-    \caption{Launchbury garbage collection with lazy substitution}
-    \label{fig:lazysub:gc}
-\end{figure}
-%Problems in the domain of computer science (especially algorithms), can usually be solved much more efficiently if the problem has certain properties.
-%Launchbury garbage collection argues for the possibility of parallel garbage collection, which is a property granted for free in immutable languages.
-%In imperative languages garbage collection algorithms either block the execution of the program or have complicated implementation details.
-%Fortunately in functional programming languages, data is (traditionally) immutable, which implies that references \textit{never} change.
+In functional programming languages unused variables and expressions accumulate during execution.
+In the context of the rules which have been presented in this section, the heap will inevitably accumulate unused values.
+It is argued in~\cite{launchbury1993natural} that garbage collection remains interesting to introduce in the semantics of the system, since it allows reasoning with space usage in an abstract way.
+In imperative languages which do not make a big deal of side-effects such as \texttt{C}, unused values are managed and released manually.
+Managing unused variables in a purely lazy functional programming language is not ergonomic, and implies a side-effect, thus the language is no longer pure.
 
-A garbage collection algorithm which collects every ``lost reference'' which adheres to \texttt{R} in \autoref{fig:launchgc}, could be implemented by the use of \texttt{Free} or \texttt{Bound}.
-A garbage collection algorithm for \autoref{fig:lazysub:gc} must also inspect the bound substitution mappings as in \autoref{eq:Rgc}.
+A naive garbage collector could involve letting the Let rule, release references as in \autoref{fig:letrelease}. 
+\begin{figure}[ht]
+  \begin{mdframed}
+    \begin{prooftree}
+      \AxiomC{\texttt{S $\cup$ \{$\gamma$ $\mapsto$ e\}, \{x $\mapsto$ $\gamma$\}y $\rightarrow$ $\Theta$, z}}
+      \AxiomC{\texttt{$\gamma$ = fresh}}
+        \RightLabel{Let}
+        \BinaryInfC{\texttt{S, let x = e in y $\rightarrow$ $\Theta$ $\backslash$ \{$\gamma$ $\mapsto$ e'\}, z}}
+    \end{prooftree}   
+  \end{mdframed}
+  \caption{A Let rule which cleans up after itself}
+  \label{fig:letrelease}
+\end{figure}
+A garbage collection rule as described in \autoref{fig:letrelease} works, but is inadequate since it does not allow removal of unused values at \textit{any} time, thus it does not let us reason with recursive programs which run in constant space.
+Introducing a garbage collection rule which can be placed at any one step of the proof requires some additional work for various reasons.
+Foremost, introspection of expressions becomes necessary since the rule must determine what gets to stay in the heap.
+Furthermore, rules which branch such as the App rule and Bin op rule requires the tracing of expressions which are pending.
+More precisely, when evaluating \texttt{f} in the App rule in \autoref{fig:rules:env:app}, the expression \texttt{z} should not be released since it must be present for the right branch (\texttt{\{x $\mapsto$ z\}e}).
+All branching rules must record expressions which are needed for further branches, this is done by introducing a set of expressions \texttt{N}, such that all evaluations are written $\rightarrow_{\texttt{N}}$ (\autoref{fig:branchrules}).
+\begin{figure}[ht]
+  \begin{mdframed}[style=style1]
+    \begin{subfigure}[b]{1\textwidth}
+    \vspace*{0.19cm}
+          \begin{prooftree}
+            \AxiomC{\texttt{$\Theta$, f $\rightarrow_{\texttt{(N $\cup$ \{z\})}}$ S, ($\lambda$x.e)}}
+            \AxiomC{\texttt{S, \{x $\mapsto$ z\}e $\rightarrow_{\texttt{N}}$ $\Sigma$, y}}
+              \RightLabel{App}
+              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow_{\texttt{N}}$ $\Sigma$, y}}
+          \end{prooftree}   
+    \end{subfigure}
+    \begin{subfigure}[b]{1\textwidth}
+    \vspace*{0.49cm}
+      \begin{prooftree}
+          \AxiomC{\texttt{$\Theta$, x $\rightarrow_{\texttt{(N $\cup$ \{y\})}}$ $\Sigma$, n}}
+          \AxiomC{\texttt{$\Sigma$, y $\rightarrow_{\texttt{N}}$ S, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\}$}}
+            \RightLabel{Bin op}
+            \BinaryInfC{\texttt{$\Theta$, x $\oplus$ y $\rightarrow_{\texttt{N}}$ S, (n $\oplus$ t)}}
+      \end{prooftree}   
+    \end{subfigure}
+  \end{mdframed}
+  \caption{Branching rules which record needed expressions}
+  \label{fig:branchrules}
+\end{figure}
+In addition to \autoref{fig:branchrules}, there must also be an accompanying rule which inspects some current expression \texttt{e} and \texttt{N}, such that only the \texttt{free} variables for these expressions remain (\autoref{fig:gc}).
+\begin{figure}[ht]
+  \begin{mdframed}
+    \begin{prooftree}
+            \AxiomC{\texttt{$\Theta$, e $\rightarrow_{\texttt{N}}$ S, y}}
+            \AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
+              \RightLabel{GC}
+              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ S, y}}
+    \end{prooftree}   
+  \end{mdframed}
+  \caption{A rule which filters by used values}
+  \label{fig:gc}
+\end{figure}
+\texttt{R} is the set of reachable variables, which inspects the heap, \texttt{N} and some current expression \texttt{e}.
+One could also define the garbage collection rule more compactly if the granularity of \autoref{fig:gc} is too fine.
+\begin{figure}[ht]
+  \begin{mdframed}
+    \begin{prooftree}
+            \AxiomC{\texttt{$\Sigma$, e $\rightarrow_{\texttt{N}}$ S, y}}
+            \AxiomC{\texttt{$\Sigma$ = Prune($\Theta$, N)}}
+              \RightLabel{GC}
+              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ S, y}}
+    \end{prooftree}   
+  \end{mdframed}
+  \caption{A rule which prunes unused values}
+  \label{fig:gcmacro}
+\end{figure}
+\autoref{fig:gcmacro} defines a garbage collection algorithm which prunes all unreachable values, where \texttt{Prune} is the minimal set of required values to continue program evaluation.
+\texttt{Prune} can be defined as in \autoref{eq:prune}
 \begin{align}
-  \texttt{GC($\Theta$, N, e)} &= \tag*{}\\
-  &\texttt{T = \{(S, z) | (t $\mapsto$ (S, z)) $\in$ $\Theta$ $\land$ t $\in$ Free(e)\}}\tag*{}\\
-  &\texttt{GC'(N $\cup$ T)}\tag*{}\\
-  \texttt{GC(($\Theta$, e) $\cup$ N)} &= \texttt{Free(e)}
-  %\texttt{GC'($\Theta$, N, e) }&=\texttt{GC($\Theta$, N $\cup$ Free(e))}\label{eq:Rgc}\\\tag*{}\\
-  %\texttt{GC($\Theta$, $\emptyset$)} &= \emptyset& \tag*{}\\
-  %\texttt{GC(\{x $\mapsto$ (S, e)\} $\cup$ $\Theta$, \{x\} $\cup$ N)} &= \texttt{\{x $\mapsto$ (GC(S, Free(e)), e)\} $\cup$ GC($\Theta$, N)}& \tag*{}\\
-  %\texttt{GC(\{x $\mapsto$ (S, e)\} $\cup$ $\Theta$, N)} &= \texttt{GC($\Theta$, N)}& ,\texttt{x $\notin$ N} \tag*{}
+  &\texttt{Prune($\Theta$, \{\}) = \{\}} \label{eq:prune}\\
+  &\texttt{Prune($\Theta$, \{e\} $\cup$ N) = \{x $\mapsto$ y | x $\in$ free(e), x $\mapsto$ y $\in$ $\Theta$\} $\cup$ Prune($\Theta$, N)} \tag*{}
 \end{align}
-\begin{remark}
-  
-\end{remark}
 
-Garbage collection algorithms often run in worst case $O(n)$, in regard to the number of variables allocated by the App rule.
-The algorithm proposed in \autoref{eq:Rgc} also has similar guarantees since \texttt{Free} can be computed during compilation.
-An amortized analysis of garbage collection might seem to yield a running time of $O(1)$ by an analysis which is very similar to a stack.
-Unfortunately the garbage collector is not guaranteed to remove any references, thus running it does not guaranteed a reduction in potential.
+%Garbage collection (as in any method which frees memory that is no longer in use), in purely functional languages is different from imperative languages like C, since manual memory management is often abstracted away. 
+%Adding mappings from variables to lambda terms without any subtractions will lead to an ever increasing substitution mapping size.
+%When performing reductions one might desire to garbage collect the substitution mapping once it contains unreachable substitutions.
+%Fortunately the task of collecting garbage is quite easy solvable in by a naive algorithm, since the ``scope'' of a substitution is only relevant where the substituted variables has been introduced, which may only happen in the abstraction term.
+%Unfortunately not all programs ``return'', like programs which implement infinite recursion.
+%\begin{remark}
+  %Generally for tail call optimization (\autoref{remark:tailcall}) to be feasible, some sort of ad-hoc freeing of substitutions must be present, such that infinite programs can run in finite space.
+%\end{remark}
+%\noindent\cite{launchbury1993natural}~presents an elegant (and abstract) rule for garbage collection (\autoref{fig:launchgc}
+%Launchbury garbage collection also introduces a new type of state \texttt{N}, which records a set of needed or live expressions.
+%When rules such as App and Bin op are performed, branching occurs, that is, there exists another ``pending'' branch of computation, such that the pending branch's expression and the current substitution mapping is introduced to \texttt{N}.
+%A version which regards lazy substitutions can be seen in \autoref{fig:lazysub:gc}).
+%The function \texttt{R} scans the substitution mapping $\Theta$ for all variables in the expression \texttt{e}.
+%\begin{figure}[ht]
+    %\begin{mdframed}
+          %\begin{prooftree}
+            %\AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
+            %\AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
+              %\RightLabel{GC}
+              %\BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ S, y}}
+          %\end{prooftree}   
+    %\end{mdframed}
+    %\caption{Launchbury garbage collection}
+    %\label{fig:launchgc}
+%\end{figure}
+%\begin{figure}[ht]
+    %\begin{mdframed}
+          %\begin{prooftree}
+            %\AxiomC{\texttt{$\Theta$, e $\rightarrow$ S, y}}
+            %\AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
+              %\RightLabel{GC}
+              %\BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ ($\Delta$, z)\}, e $\rightarrow$ S, y}}
+          %\end{prooftree}   
+    %\end{mdframed}
+    %\caption{Launchbury garbage collection with lazy substitution}
+    %\label{fig:lazysub:gc}
+%\end{figure}
+%%Problems in the domain of computer science (especially algorithms), can usually be solved much more efficiently if the problem has certain properties.
+%%Launchbury garbage collection argues for the possibility of parallel garbage collection, which is a property granted for free in immutable languages.
+%%In imperative languages garbage collection algorithms either block the execution of the program or have complicated implementation details.
+%%Fortunately in functional programming languages, data is (traditionally) immutable, which implies that references \textit{never} change.
+
+%A garbage collection algorithm which collects every ``lost reference'' which adheres to \texttt{R} in \autoref{fig:launchgc}, could be implemented by the use of \texttt{Free} or \texttt{Bound}.
+%A garbage collection algorithm for \autoref{fig:lazysub:gc} must also inspect the bound substitution mappings as in \autoref{eq:Rgc}.
+%\begin{align}
+  %\texttt{GC($\Theta$, N, e)} &= \tag*{}\\
+  %&\texttt{T = \{(S, z) | (t $\mapsto$ (S, z)) $\in$ $\Theta$ $\land$ t $\in$ Free(e)\}}\tag*{}\\
+  %&\texttt{GC'(N $\cup$ T)}\tag*{}\\
+  %\texttt{GC(($\Theta$, e) $\cup$ N)} &= \texttt{Free(e)}
+  %%\texttt{GC'($\Theta$, N, e) }&=\texttt{GC($\Theta$, N $\cup$ Free(e))}\label{eq:Rgc}\\\tag*{}\\
+  %%\texttt{GC($\Theta$, $\emptyset$)} &= \emptyset& \tag*{}\\
+  %%\texttt{GC(\{x $\mapsto$ (S, e)\} $\cup$ $\Theta$, \{x\} $\cup$ N)} &= \texttt{\{x $\mapsto$ (GC(S, Free(e)), e)\} $\cup$ GC($\Theta$, N)}& \tag*{}\\
+  %%\texttt{GC(\{x $\mapsto$ (S, e)\} $\cup$ $\Theta$, N)} &= \texttt{GC($\Theta$, N)}& ,\texttt{x $\notin$ N} \tag*{}
+%\end{align}
+%\begin{remark}
+  
+%\end{remark}
+
+%Garbage collection algorithms often run in worst case $O(n)$, in regard to the number of variables allocated by the App rule.
+%The algorithm proposed in \autoref{eq:Rgc} also has similar guarantees since \texttt{Free} can be computed during compilation.
+%An amortized analysis of garbage collection might seem to yield a running time of $O(1)$ by an analysis which is very similar to a stack.
+%Unfortunately the garbage collector is not guaranteed to remove any references, thus running it does not guaranteed a reduction in potential.
 
 %The potential function $\Phi$ is the size of the substitution mapping.
 %Letting the potential $\Phi(D_i)$ be the equal to the size of the substitution mapping after $i$ operations, that is, insertions and removals.
@@ -1563,6 +1647,8 @@ Unfortunately the garbage collector is not guaranteed to remove any references, 
 %Clearly the worst case analysis can be synthesised by $k=|S|$ such that the running time becomes $O(n)$.
 
 %So how does one implement \texttt{R} efficiently?
+
+\subsection{Interpreting programs}
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
