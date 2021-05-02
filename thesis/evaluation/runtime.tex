@@ -338,7 +338,10 @@ This evaluation model is indeed powerful enough to evaluate \textbf{most} call b
 \begin{exmp}
   With the aforementioned rules, programs can now be proved.
   Note that the Substitution rule in \autoref{fig:rules:exmp:sol} is simply the substitution semantics from \autoref{eq:subsemfixed} made clearer.
-  Let a program \texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0}, where \texttt{0} is a symbol of any type, be subject to the rules in \autoref{fig:scbn}, which solves to \autoref{fig:rules:exmp:sol}.
+  Let the program in \autoref{eq:exmp:subrules}, where \texttt{0} is a symbol of any type, be subject to the rules in \autoref{fig:scbn}, which solves to \autoref{fig:rules:exmp:sol}.
+  \begin{align}
+    \texttt{(($\lambda$f.$\lambda$x.f x) ($\lambda$x.x)) 0}\label{eq:exmp:subrules}
+  \end{align}
   \begin{figure}[ht]
     \begin{mdframed}
         \vspace*{0.49cm}
@@ -403,16 +406,16 @@ This evaluation model is indeed powerful enough to evaluate \textbf{most} call b
 Variable capture is the basis for some practical difficulties when designing evaluation rules for the untyped lambda calculus.
 Consider the following sub-program \texttt{($\lambda$x.y) g} with the following ongoing substitutions \texttt{\{x $\mapsto$ z, y $\mapsto$ x, $\dots$\}}, which contains \texttt{y} as a closure.
 Substituting by the rules outlined in \autoref{eq:subsemfixed} yields \texttt{($\lambda$x.x) g} which is clearly invalid.
-The invalid program result is a product of some variable ambiguity, or more precisely variable capture.
+The invalid program result is a product of variable capture.
 %The program before substitution and after should be \textit{$\alpha$-equivalent}, which they are not.
 %The two program states becomes ambiguous by the ambiguity of multiple variables by the same name.
 To solve ambiguity between variables with the same name, one can perform an \textit{$\alpha$-conversion}.
 \begin{remark}
-  Notice that even if variables are renamed before program execution, recursive functions can still suffer from ambiguity since all parameters for that function can occur multiple times.
+  Notice that if variables are renamed before program execution, recursive functions can still suffer from ambiguity since all parameters for that function can occur multiple times.
 \end{remark}
 \subsubsection{$\alpha$-conversions} \label{sec:alpha}
 %An $\alpha$-conversion mapping can occur as the substitution mapping, that is \texttt{\{x $\mapsto$ $\gamma_1$, y $\mapsto$ $\gamma_2$\}}; $\alpha$-conversions are philosophical constructs more than materialized mappings.
-An $\alpha$-conversion is in simple terms a renaming which does not change the semantic meaning of an expression.
+An $\alpha$-conversion is a renaming operation which does not modify the meaning of the expression.
 $\alpha$-conversions can appear similar to substitutions, for instance renaming \texttt{x} to $\gamma$ appears as \texttt{\{x $\mapsto$ $\gamma$\}}.
 $\alpha$-conversions guarantee what is called \textit{$\alpha$-equivalence} which is the notion of semantic equivalence.
 For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\gamma.\gamma$} since both expressions are semantically equivalent.
@@ -429,10 +432,10 @@ For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\
 %The algorithm should also introduce the applied value to the substitution set through the alpha converted name.
 \noindent An $\alpha$-conversion algorithm can be implemented such that when a new variable is introduced through an abstraction, a new name for the variable is given.
 More formally; Let $V_1$ be the domain of variables in the program and $V_2$ be the infinite domain for variable names that satisfies $V_1 \cap V_2 = \emptyset$, such that when a new variable \texttt{x} is discovered, replace it with some $\gamma \in V_2$ and let $V_2 = V_2 \backslash \{\gamma\}$. 
-Working with the previous example \texttt{[y $\mapsto$ x]($\lambda$x.y) g}
+Working with the previous example \texttt{\{y $\mapsto$ x\}($\lambda$x.y) g}
 %For instance, let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
 The function \texttt{fresh} picks a fresh variable name $\gamma$ from $V_2$ and updates $V_2$ to $V_2 \backslash \{\gamma\}$.
-$\alpha$-conversions will be further explored in future refinements of \autoref{fig:scbn}.
+$\alpha$-conversions will be further explored in future refinements of \autoref{fig:scbn} in the from of renaming through the Let rule.
 \\
 
 %\subsubsection{Eager substitutions}
@@ -468,11 +471,11 @@ $\alpha$-conversions will be further explored in future refinements of \autoref{
   %;
 %\end{lstlisting}
 %\end{remark}
-\subsubsection{Environments}
-Environments, like environments in typing (\autoref{eq:env}), define what ``state'' is required to evaluate some expression.
-In the current case of reduction strategies, the environment is always a substitution mapping.
-Environments are a requirement for call by need semantics.
-A simple modification to the rules in \autoref{fig:rules:env}, implies an interpreter which brings an environment along when interpreting. 
+\subsubsection{The heap}
+Heaps, like environments in typing (\autoref{eq:env}), define what ``state'' is required to evaluate some expression.
+A heap contains mappings from variables to expressions, much like the substitution mapping.
+Heaps are a requirement for call by need semantics.
+A simple modification to the rules in \autoref{fig:rules:env}, implies that the system must bring a heap along. 
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \vspace*{0.49cm}
@@ -522,19 +525,17 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies an interp
 \end{figure}
 The rules in \autoref{fig:rules:env} are quite different from the rules in \autoref{fig:scbn}.
 \begin{itemize}
-  \item Var is no longer terminal, it now inspects the environment for a replacement value some \texttt{x}.
-  \item Num is a new rule, which acts as the new terminal rule in place of Var.
-    Num specifies that terminal values are in the set $\mathbb{Z^+}$.
+  \item Var is no longer terminal, it now inspects the heap for a replacement value for some \texttt{x}.
   \item Let now has a role which is distinct from App.
-    Let now introduces values to the environment, but does not induce a substitution.
-  \item App remains the same by eagerly substituting, but now augmented with environments.
-  \item Abs is now augmented with environments.
+    Let now introduces values to the heap, but does not induce a substitution.
+  \item App remains the same by eagerly substituting, but now augmented with a heap.
+  \item Abs is now augmented with a heap.
 \end{itemize}
 The rules in \autoref{fig:rules:env} are not any more powerful that the rules in \autoref{fig:scbn}, but are a basis for lazy evaluation.
 
 \subsubsection{Lazy evaluation}
 With the revised semantics in \autoref{fig:rules:env}, lazy evaluation can now be introduced.
-The basis for sharing of evaluated expressions is rooted in a labelling problem~\cite{levy1988sharing}.
+The basis for sharing evaluated expressions is rooted in a labelling problem~\cite{levy1988sharing}.
 Before delving into a set of rules which use a labelling technique, consider that sharing can be viewed as a dependency graph of expressions.
 Let \autoref{fig:dependencygraph} be a depiction of the dependency graph of \autoref{eq:xyk} under the rules in \autoref{fig:rules:env}.
 \begin{align}
@@ -608,33 +609,25 @@ Evaluating \autoref{eq:xyk} under the new rules reveals that evaluating \texttt{
   \caption{Expression dependencies after evaluating \texttt{x}}
   \label{fig:dependencygraphv2}
 \end{figure}
+One consideration remains, the App rule does not promote lazy evaluation.
+All non-trivial parameters must be bound to a variable by the Let rule to also allow anonymous expressions to be subject to lazy evaluation.
+An algorithm for binding anonymous expressions can be found in~\cite{launchbury1993natural}.
 
 \subsubsection{Dealing with ambiguity}
 The rules so far have avoided dealing with variable ambiguity.
-Notice that ambiguity can only arise in the Let rule, since the Let rule is the only rule of which introduces bindings new bindings to the heap.
+Notice that ambiguity can only arise in the Let rule, since the Let rule is the only rule of which can introduce new bindings to the heap.
 Dealing with ambiguity is a matter of ensuring that variables are distinct.
 Applying the technique from \autoref{sec:alpha} properly lets us evaluate programs without ambiguity.
 
-For instance, consider the program in \autoref{lst:progambg} and the state after line \autoref{lst:progambg:l1} is executed in \autoref{eq:progambg2} and the remaining program in \autoref{lst:progambg2}.
-The state and remaining program is intact, but evaluating line \autoref{lst:progambg2:l1} in \autoref{lst:progambg} yields the state in \autoref{eq:progambg3} which changes the meaning of \texttt{v}.
-\begin{lstlisting}[language=ML,caption={Program which may suffer from variable ambiguity},label={lst:progambg},mathescape=true]
-let v = $\$$ (let x = 5 in ($\lambda$y.y + x)) in $\label{lst:progambg:l1}$
-let x = 0 in
-v 5
-\end{lstlisting}
-\begin{gather}
-  \texttt{\{v $\mapsto$ ($\lambda$y.y + x), x $\mapsto$ 5\}}\label{eq:progambg2}
-\end{gather}
-\begin{lstlisting}[language=ML,caption={Program after evaluating \texttt{v}},label={lst:progambg2},mathescape=true]
-let x = 0 in $\label{lst:progambg2:l1}$
-v 5
-\end{lstlisting}
-\begin{gather}
-  \texttt{\{v $\mapsto$ ($\lambda$y.y + x), x $\mapsto$ 0\}}\label{eq:progambg3}
-\end{gather}
-
-Naturally renaming can occur at the Let rule, since Let introduces new variables to the environment.
-Enhancing the Let rule with renaming by the semantics from \autoref{sec:alpha} yields a replacement for Let (\autoref{fig:eval:letrename})~\cite{sestoft1997deriving}. 
+Consider a previous case of variable capture \autoref{eq:ambg:cap}.
+\begin{align}
+  \texttt{\{x $\mapsto$ z, y $\mapsto$ x, $\dots$\}($\lambda$x.y) g}\label{eq:ambg:cap}
+\end{align}
+None of the changes so far have any impact on the falsity of the expression.
+Consider that \texttt{x} and \texttt{y} must have entered the heap through a Let expression.
+Consider also that some variable \texttt{k} cannot be subject to variable capture if \texttt{k $\notin$ Bound($\lambda$v.e)}.
+Naturally if \texttt{k} is unique, that is, it is introduced through the \texttt{fresh} function from \autoref{sec:alpha} then \texttt{k} can never occur bound.
+The obvious rule from these considerations must be new Let rule defined in \autoref{fig:eval:letrename}.
 \begin{figure}[ht]
   \begin{mdframed}
     \begin{prooftree}
@@ -647,10 +640,32 @@ Enhancing the Let rule with renaming by the semantics from \autoref{sec:alpha} y
   \caption{}
   \label{fig:eval:letrename}
 \end{figure}
-Evaluating line \autoref{lst:progambg:l1} in \autoref{lst:progambg} now yields the state in \autoref{eq:pragambgfix} which introduces \texttt{x} as a fresh variable ($\gamma$) from the \texttt{fresh} function.
-\begin{gather}
-  \texttt{\{$\sigma$ $\mapsto$ ($\lambda$y.y + $\gamma$), $\gamma$ $\mapsto$ 5\}}\label{eq:pragambgfix}
-\end{gather}
+The correctness of \autoref{fig:eval:letrename} and the aforementioned considerations are formalised in~\cite{sestoft1997deriving}.
+
+%For instance, consider the program in \autoref{lst:progambg} and the state after line \autoref{lst:progambg:l1} is executed in \autoref{eq:progambg2} and the remaining program in \autoref{lst:progambg2}.
+%The state and remaining program is intact, but evaluating line \autoref{lst:progambg2:l1} in \autoref{lst:progambg} yields the state in \autoref{eq:progambg3} which changes the meaning of \texttt{v}.
+%\begin{lstlisting}[language=ML,caption={Program which may suffer from variable ambiguity},label={lst:progambg},mathescape=true]
+%let v = $\$$ (let x = 5 in ($\lambda$y.y + x)) in $\label{lst:progambg:l1}$
+%let x = 0 in
+%v 5
+%\end{lstlisting}
+%\begin{gather}
+  %\texttt{\{v $\mapsto$ ($\lambda$y.y + x), x $\mapsto$ 5\}}\label{eq:progambg2}
+%\end{gather}
+%\begin{lstlisting}[language=ML,caption={Program after evaluating \texttt{v}},label={lst:progambg2},mathescape=true]
+%let x = 0 in $\label{lst:progambg2:l1}$
+%v 5
+%\end{lstlisting}
+%\begin{gather}
+  %\texttt{\{v $\mapsto$ ($\lambda$y.y + x), x $\mapsto$ 0\}}\label{eq:progambg3}
+%\end{gather}
+
+%Naturally renaming can occur at the Let rule, since Let introduces new variables to the heap.
+%Enhancing the Let rule with renaming by the semantics from \autoref{sec:alpha} yields a replacement for Let (\autoref{fig:eval:letrename})~\cite{sestoft1997deriving}. 
+%Evaluating line \autoref{lst:progambg:l1} in \autoref{lst:progambg} now yields the state in \autoref{eq:pragambgfix} which introduces \texttt{x} as a fresh variable ($\gamma$) from the \texttt{fresh} function.
+%\begin{gather}
+  %\texttt{\{$\sigma$ $\mapsto$ ($\lambda$y.y + $\gamma$), $\gamma$ $\mapsto$ 5\}}\label{eq:pragambgfix}
+%\end{gather}
 
 \subsubsection{Introducing useful functionality}
 As the set of rules stand currently one can express numbers through church encodings.
@@ -684,100 +699,179 @@ Clearly this rule is not encoded into the aforementioned rules, but can be model
   \caption{}
   \label{fig:oplusrule}
 \end{figure}
+Notice that \autoref{fig:oplusrule} also must accompany a Num rule which introduces integers to the system.
+
+\begin{exmp}
+Now that rules have been established which avoid variable ambiguity through renaming and support lazy evaluation, an example seems natural.
+An expression which requires the aforementioned properties to resolve as expected is presented in \autoref{eq:doneexmp} and proved in \autoref{fig:finproofexmp}.
+\begin{align}
+  \texttt{let y = (1 + 1) in ($\lambda$x.($\lambda$y.x + y) x) y}\label{eq:doneexmp}
+\end{align}
+\begin{figure}[ht]
+  \begin{mdframed}[style=bigbox]
+    \begin{subfigure}[b]{1\textwidth}
+      \vspace*{0.49cm}
+      \begin{prooftree}
+            \AxiomC{}
+            \LeftLabel{Lam}
+            \UnaryInfC{\texttt{\{$\gamma$ $\mapsto$ (1 + 1)\}, ($\lambda$x.($\lambda$y.x + y) x) $\rightarrow$ \{$\gamma$ $\mapsto$ (1 + 1)\},($\lambda$x.($\lambda$y.x + y) x)}}
+      \end{prooftree}
+      \caption{}
+      \label{fig:finproofexmp:app1}
+    \end{subfigure}
+    \begin{subfigure}[b]{1\textwidth}
+      \vspace*{0.49cm}
+      \begin{prooftree}
+            \AxiomC{}
+            \LeftLabel{Lam}
+            \UnaryInfC{\texttt{\{$\gamma$ $\mapsto$ (1 + 1)\}, ($\lambda$y.$\gamma$ + y) $\rightarrow$ \{$\gamma$ $\mapsto$ (1 + 1)\}, ($\lambda$y.$\gamma$ + y)}}
+      \end{prooftree}
+      \caption{}
+      \label{fig:finproofexmp:app2}
+    \end{subfigure}
+    \begin{subfigure}[b]{1\textwidth}
+      \vspace*{0.49cm}
+      \begin{prooftree}
+                \AxiomC{}
+                \LeftLabel{Num}
+                \UnaryInfC{\texttt{\{\}, 1 $\rightarrow$ \{\}, 1}}
+                \AxiomC{}
+                \LeftLabel{Num}
+                \UnaryInfC{\texttt{\{\}, 1 $\rightarrow$ \{\}, 1}}
+                \LeftLabel{Bin op}
+                \BinaryInfC{\texttt{\{\}, 1 + 1 $\rightarrow$ \{\}, 2}}
+                \LeftLabel{Var}
+                \UnaryInfC{\texttt{\{$\gamma$ $\mapsto$ (1 + 1)\}, $\gamma$ $\rightarrow$ \{$\gamma$ $\mapsto$ 2\}, 2}}
+
+                \AxiomC{}
+                \RightLabel{Num}
+                \UnaryInfC{\texttt{\{\}, 2 $\rightarrow$ \{\}, 2}}
+                \RightLabel{Var}
+                \UnaryInfC{\texttt{\{$\gamma$ $\mapsto$ 2\}, $\gamma$ $\rightarrow$ \{$\gamma$ $\mapsto$ 2\}, 2}}
+
+              \LeftLabel{Bin op}
+              \BinaryInfC{\texttt{\{$\gamma$ $\mapsto$ (1 + 1)\}, $\gamma$ + $\gamma$ $\rightarrow$ \{$\gamma$ $\mapsto$ 2\}, 4}}
+      \end{prooftree}
+      \caption{}
+      \label{fig:finproofexmp:bin}
+    \end{subfigure}
+    \begin{subfigure}[b]{1\textwidth}
+      \vspace*{0.49cm}
+      \begin{prooftree}
+            \AxiomC{\autoref{fig:finproofexmp:app1}}
+              \AxiomC{\autoref{fig:finproofexmp:app2}}
+              \AxiomC{\autoref{fig:finproofexmp:bin}}
+              \LeftLabel{App}
+            \BinaryInfC{\texttt{\{$\gamma$ $\mapsto$ (1 + 1)\}, ($\lambda$y.$\gamma$ + y) $\gamma$ $\rightarrow$ \{$\gamma$ $\mapsto$ 2\}, 4}}
+          \LeftLabel{App}
+          \BinaryInfC{\texttt{\{$\gamma$ $\mapsto$ (1 + 1)\}, ($\lambda$x.($\lambda$y.x + y) x) $\gamma$ $\rightarrow$ \{$\gamma$ $\mapsto$ 2\}, 4}}
+        \LeftLabel{Let}
+        \UnaryInfC{\texttt{\{\}, let y = (1 + 1) in ($\lambda$x.($\lambda$y.x + y) x) y $\rightarrow$ \{$\gamma$ $\mapsto$ 2\}, 4}}
+      \end{prooftree}
+      \caption{}
+      \label{fig:finproofexmp:all}
+    \end{subfigure}
+  \end{mdframed}
+  \caption{The proof for the program in \autoref{eq:doneexmp}}
+  \label{fig:finproofexmp}
+\end{figure}
+Notice that the left branch and right branch in \autoref{fig:finproofexmp:bin} are not identical.
+The left branch saves the evaluation result such that the right branch only requires a lookup to find $\gamma$.
+\end{exmp}
 
 %The $\cup$ operator merges two substitution mappings, choosing the leftmost mapping on duplicates, such that \texttt{\{x $\mapsto$ y, z $\mapsto$ h\} $\cup$ \{x $\mapsto$ m\} $\rightarrow$ \{x $\mapsto$ y, z $\mapsto$ h\}}, such that the semantics of $\cup$ satisfy \autoref{eq:subsemfixed}.
 %More generally, a simple rule for App could be defined as in \autoref{fig:simpleapp} which states ``Evaluate \texttt{($\lambda$x.e) z} with the substitution mapping \texttt{S} to \texttt{y} with the substitution mapping $\Sigma$ by first evaluating \texttt{e} with the substitution mapping \texttt{S} $\cup$ \texttt{\{x $\mapsto$ z\}} to \texttt{y} with the substitution mapping $\Sigma$''.
-\begin{figure}[ht]
-\begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
-fun f a = 
-  fun g x = 
-    let a = 20;
-    a + x;
-  (g a) + a;
-f 10;
-\end{lstlisting}
-\end{figure}
-Evaluating \autoref{lst:problemprog}, using the rules proposed in \autoref{fig:rules:env}, yields an interesting case of variable ambiguity.
-At some point the evaluation machine will reach a state with the expression \texttt{(g a) + a} and substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ ($\lambda$x.let a = 20 in (a + x))\}}.
-By the laws of commutativity for addition, it should be possible pick either of the two expressions to evaluate first.
-If any one of the branches in the addition operator are side-effectful, it may become a problem, but this language only deals with pure programs.
-Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} with the substitution mapping \texttt{\{a $\mapsto$ 20, g $\mapsto$ $\dots$\}}, and finally \texttt{50}.
-Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
-Clearly the order of evaluation is of importance for the result, which is often not the desired semantics.
-If there exists multiple reduction techniques which ensure the same result, the system is called \textit{confluent}.
-The reduction rules for the lambda calculus programs are confluent~\cite{church1936some}, which implies that the current set of rules are not valid evaluation rules for the lambda calculus.
-%If reduction strategies for the lambda calculus are not confluent, programs become difficult to reason with.
-If the rules were to be confluent, any reduction order would result in \texttt{40}.
-The different results are an effect of leaking the substitution mapping to the outside of the lexical scope in which it was used.
-A simple solution could involve saving the substitution mapping once the machine enters an abstraction, then restore the same substitution mapping when it leaves.
-\begin{figure}[ht]
-    \begin{mdframed}[style=style1]
-        \vspace*{0.4cm}
-          \begin{prooftree}
-            \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-            \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
-              \RightLabel{App}
-              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Theta$, y}}
-          \end{prooftree}   
-    \end{mdframed}
-    \caption{An application rule which does not leak}
-    \label{fig:cleanapp}
-\end{figure}
-\noindent \autoref{fig:cleanapp} is a slightly modified version of \autoref{fig:rules:env:app}, with the difference of requiring the resulting substitution mapping to be the initial substitution mapping.
+%\begin{figure}[ht]
+%\begin{lstlisting}[language=ML,caption={Problematic program},label={lst:problemprog},mathescape=true]
+%fun f a = 
+  %fun g x = 
+    %let a = 20;
+    %a + x;
+  %(g a) + a;
+%f 10;
+%\end{lstlisting}
+%\end{figure}
+%Evaluating \autoref{lst:problemprog}, using the rules proposed in \autoref{fig:rules:env}, yields an interesting case of variable ambiguity.
+%At some point the evaluation machine will reach a state with the expression \texttt{(g a) + a} and substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ ($\lambda$x.let a = 20 in (a + x))\}}.
+%By the laws of commutativity for addition, it should be possible pick either of the two expressions to evaluate first.
+%If any one of the branches in the addition operator are side-effectful, it may become a problem, but this language only deals with pure programs.
+%Evaluating the left side of \texttt{(g a) + a} first, yields \texttt{30 + a} with the substitution mapping \texttt{\{a $\mapsto$ 20, g $\mapsto$ $\dots$\}}, and finally \texttt{50}.
+%Evaluating the right side of \texttt{(g a) + a} first, yields \texttt{(g a) + 10} with the substitution mapping \texttt{\{a $\mapsto$ 10, g $\mapsto$ $\dots$\}}, and finally \texttt{40}.
+%Clearly the order of evaluation is of importance for the result, which is often not the desired semantics.
+%If there exists multiple reduction techniques which ensure the same result, the system is called \textit{confluent}.
+%The reduction rules for the lambda calculus programs are confluent~\cite{church1936some}, which implies that the current set of rules are not valid evaluation rules for the lambda calculus.
+%%If reduction strategies for the lambda calculus are not confluent, programs become difficult to reason with.
+%If the rules were to be confluent, any reduction order would result in \texttt{40}.
+%The different results are an effect of leaking the substitution mapping to the outside of the lexical scope in which it was used.
+%A simple solution could involve saving the substitution mapping once the machine enters an abstraction, then restore the same substitution mapping when it leaves.
+%\begin{figure}[ht]
+    %\begin{mdframed}[style=style1]
+        %\vspace*{0.4cm}
+          %\begin{prooftree}
+            %\AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
+            %\AxiomC{\texttt{S $\cup$ \{x $\mapsto$ z\}, e $\rightarrow$ $\Sigma$, y}}
+              %\RightLabel{App}
+              %\BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Theta$, y}}
+          %\end{prooftree}   
+    %\end{mdframed}
+    %\caption{An application rule which does not leak}
+    %\label{fig:cleanapp}
+%\end{figure}
+%\noindent \autoref{fig:cleanapp} is a slightly modified version of \autoref{fig:rules:env:app}, with the difference of requiring the resulting substitution mapping to be the initial substitution mapping.
 
-\autoref{fig:cleanapp} does not handle closure correctly.
-Evaluating \autoref{lst:closprob} under the rules defined in \autoref{fig:cleanapp} yields yet another problem.
-\begin{figure}[ht]
-\begin{lstlisting}[language=ML,caption={Program with closure},label={lst:closprob},mathescape=true]
-fun g x =
-  fun f z = x + z; // closes x
-  fun run y =
-    let x = 20; $\label{closov}$
-    f y;
-  run 10;
-g 3;
-\end{lstlisting}
-\end{figure}
-When line \autoref{closov} is reached in \autoref{lst:closprob}, then \texttt{x} in the substitution mapping is overwritten by the rules in \autoref{fig:cleanapp}.
-Even if renaming is performed such that all variables become unique, recursive functions still remain a problem.
-Taking a step back and considering what the evaluation strategy which involves eager substitution implies.
-The \textit{first} substitution mapping which reaches an expression, is the substitution mapping which is relevant for that expression.
-By these semantics substitution mappings must be paired with expressions and should now be read as ``\texttt{S, e} are the pair of the environment \texttt{S} necessary to evaluate the expression \textit{e}''.
-Substitutions bound to expressions should remain immutable; whenever an expression is discovered during interpretation, the substitution at that time is the only important substitution mapping.
-The $\cup$ operator for two substitutions should now be inverted, that is, \texttt{S $\cup$ $\Sigma$} should now pick substitutions from \texttt{S} if duplicates occur.
-Furthermore, notice that binding substitutions to expressions also allows substitutions to float up throughout interpretation.
-Now the application rule must implement \autoref{eq:subsemfixed}, seen in \autoref{fig:subsapp}.
-\begin{figure}[ht]
-    \begin{mdframed}[style=bigbox]
-        \vspace*{0.4cm}
-          \begin{prooftree}
-            \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-            \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ ($\Sigma$ $\backslash$ \{x\}) $\cup$ S, y}}
-              \RightLabel{App}
-              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
-          \end{prooftree}   
-    \end{mdframed}
-    \caption{An application rule which implements \autoref{eq:subsemfixed} and paired substitutions.
-    % (the entire set of rules can be found in \autoref{fig:subrenam})
-    }
-    \label{fig:subsapp}
-\end{figure}
-\begin{remark}
-  An interesting observation is that these semantics introduce expressions with closures as a construct similar to classes in object oriented languages.
-  \texttt{e} is an abstract representation of something, while the environment \texttt{S} is the necessary values to instantiate \texttt{e}, together they can produce some output.
-  Curried functions can also be seen this way, yet it remains an interesting observation.
-\end{remark}
+%\autoref{fig:cleanapp} does not handle closure correctly.
+%Evaluating \autoref{lst:closprob} under the rules defined in \autoref{fig:cleanapp} yields yet another problem.
+%\begin{figure}[ht]
+%\begin{lstlisting}[language=ML,caption={Program with closure},label={lst:closprob},mathescape=true]
+%fun g x =
+  %fun f z = x + z; // closes x
+  %fun run y =
+    %let x = 20; $\label{closov}$
+    %f y;
+  %run 10;
+%g 3;
+%\end{lstlisting}
+%\end{figure}
+%When line \autoref{closov} is reached in \autoref{lst:closprob}, then \texttt{x} in the substitution mapping is overwritten by the rules in \autoref{fig:cleanapp}.
+%Even if renaming is performed such that all variables become unique, recursive functions still remain a problem.
+%Taking a step back and considering what the evaluation strategy which involves eager substitution implies.
+%The \textit{first} substitution mapping which reaches an expression, is the substitution mapping which is relevant for that expression.
+%By these semantics substitution mappings must be paired with expressions and should now be read as ``\texttt{S, e} are the pair of the environment \texttt{S} necessary to evaluate the expression \textit{e}''.
+%Substitutions bound to expressions should remain immutable; whenever an expression is discovered during interpretation, the substitution at that time is the only important substitution mapping.
+%The $\cup$ operator for two substitutions should now be inverted, that is, \texttt{S $\cup$ $\Sigma$} should now pick substitutions from \texttt{S} if duplicates occur.
+%Furthermore, notice that binding substitutions to expressions also allows substitutions to float up throughout interpretation.
+%Now the application rule must implement \autoref{eq:subsemfixed}, seen in \autoref{fig:subsapp}.
+%\begin{figure}[ht]
+    %\begin{mdframed}[style=bigbox]
+        %\vspace*{0.4cm}
+          %\begin{prooftree}
+            %\AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
+            %\AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ ($\Sigma$ $\backslash$ \{x\}) $\cup$ S, y}}
+              %\RightLabel{App}
+              %\BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
+          %\end{prooftree}   
+    %\end{mdframed}
+    %\caption{An application rule which implements \autoref{eq:subsemfixed} and paired substitutions.
+    %% (the entire set of rules can be found in \autoref{fig:subrenam})
+    %}
+    %\label{fig:subsapp}
+%\end{figure}
+%\begin{remark}
+  %An interesting observation is that these semantics introduce expressions with closures as a construct similar to classes in object oriented languages.
+  %\texttt{e} is an abstract representation of something, while the environment \texttt{S} is the necessary values to instantiate \texttt{e}, together they can produce some output.
+  %Curried functions can also be seen this way, yet it remains an interesting observation.
+%\end{remark}
 
-\noindent Consider the previously discussed program and state in \autoref{eq:tabc}.
-\begin{align}
-  \texttt{\{x $\mapsto$ (S, z), y $\mapsto$ ($\Theta$, x), $\dots$\}($\lambda$x.y) g} \label{eq:tabc}
-\end{align}
-Performing the next two iterations such that the next states become \autoref{eq:tabd} and then finally \autoref{eq:tabe}.
-\begin{gather}
-  \texttt{\{x $\mapsto$ ($\Sigma$, g), y $\mapsto$ ($\Theta$, x), $\dots$\}y} \label{eq:tabd}\\
-  \texttt{$\Theta$ x} \label{eq:tabe}
-\end{gather}
-The program now evaluates as intended which is a consequence of binding all expressions with their environments.
+%\noindent Consider the previously discussed program and state in \autoref{eq:tabc}.
+%\begin{align}
+  %\texttt{\{x $\mapsto$ (S, z), y $\mapsto$ ($\Theta$, x), $\dots$\}($\lambda$x.y) g} \label{eq:tabc}
+%\end{align}
+%Performing the next two iterations such that the next states become \autoref{eq:tabd} and then finally \autoref{eq:tabe}.
+%\begin{gather}
+  %\texttt{\{x $\mapsto$ ($\Sigma$, g), y $\mapsto$ ($\Theta$, x), $\dots$\}y} \label{eq:tabd}\\
+  %\texttt{$\Theta$ x} \label{eq:tabe}
+%\end{gather}
+%The program now evaluates as intended which is a consequence of binding all expressions with their environments.
 
 %Surely \autoref{fig:subsapp} solves the problem of lazy substitutions, but alas this is not yet the case.
 %To reach a set of rules which will guarantee lazy substitutions and allow call by need, an additional ingredient is needed.
@@ -942,55 +1036,55 @@ The program now evaluates as intended which is a consequence of binding all expr
 %The problem of ambiguity between \textit{different} variables, that is, variables different places in the program with the same name and in recursion, can now be solved.
 %Once again, not breaking suspension remains as an interesting value.
 %In \autoref{fig:subrenam} the \texttt{fresh} function picks a new variable from $V_2$ and updates $V_2$ such that picked variable no longer exists in $V_2$.
-\begin{figure}[ht]
-    \begin{mdframed}[style=bigbox]
-        \vspace*{0.49cm}
-        \begin{subfigure}[b]{0.38\textwidth}
-            \begin{prooftree}
-                \AxiomC{}
-                \RightLabel{Abs}
-                \UnaryInfC{\texttt{S, ($\lambda$x.e) $\rightarrow$ S, ($\lambda$x.e)}}
-            \end{prooftree}   
-            \caption{}
-          \label{fig:rules:freshenv:abs}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.58\textwidth}
-            \begin{prooftree}
-              \AxiomC{\texttt{Sx $\equiv$ x}}
-                \RightLabel{Var (terminal)}
-                \UnaryInfC{\texttt{S, x $\rightarrow$ S, x}}
-            \end{prooftree}   
-            \caption{}
-          \label{fig:rules:freshenv:varterm}
-        \end{subfigure}
-        \begin{subfigure}[b]{1\textwidth}
-        \vspace*{0.49cm}
-            \begin{prooftree}
-              \AxiomC{\texttt{$\Theta$, y $\rightarrow$ $\Sigma$, e}}
-                \RightLabel{Var}
-                \UnaryInfC{\texttt{\{x $\mapsto$ ($\Theta$, y)\} $\cup$ S, x $\rightarrow$ \{x $\mapsto$ ($\Theta$, e)\} $\cup$ $\Sigma$, e}}
-            \end{prooftree}   
-            \caption{}
-          \label{fig:rules:freshenv:var}
-        \end{subfigure}
-        \begin{subfigure}[b]{1\textwidth}
-          \vspace*{0.4cm}
-              \vspace*{0.4cm}
-              \begin{prooftree}
-                \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-                \AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ ($\Sigma$ $\backslash$ \{x\}) $\cup$ S, y}}
-                  \RightLabel{App}
-                  \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
-              \end{prooftree}   
-          \caption{An application rule which binds the current environment to expressions}
-          \label{fig:rules:freshenv:app}
-        \end{subfigure}
-    \end{mdframed}
-    \caption{A set of rules which support the desired semantics}
-    \label{fig:subrenam}
-\end{figure}
-\begin{figure}[ht]
-\end{figure}
+%\begin{figure}[ht]
+    %\begin{mdframed}[style=bigbox]
+        %\vspace*{0.49cm}
+        %\begin{subfigure}[b]{0.38\textwidth}
+            %\begin{prooftree}
+                %\AxiomC{}
+                %\RightLabel{Abs}
+                %\UnaryInfC{\texttt{S, ($\lambda$x.e) $\rightarrow$ S, ($\lambda$x.e)}}
+            %\end{prooftree}   
+            %\caption{}
+          %\label{fig:rules:freshenv:abs}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{0.58\textwidth}
+            %\begin{prooftree}
+              %\AxiomC{\texttt{Sx $\equiv$ x}}
+                %\RightLabel{Var (terminal)}
+                %\UnaryInfC{\texttt{S, x $\rightarrow$ S, x}}
+            %\end{prooftree}   
+            %\caption{}
+          %\label{fig:rules:freshenv:varterm}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{1\textwidth}
+        %\vspace*{0.49cm}
+            %\begin{prooftree}
+              %\AxiomC{\texttt{$\Theta$, y $\rightarrow$ $\Sigma$, e}}
+                %\RightLabel{Var}
+                %\UnaryInfC{\texttt{\{x $\mapsto$ ($\Theta$, y)\} $\cup$ S, x $\rightarrow$ \{x $\mapsto$ ($\Theta$, e)\} $\cup$ $\Sigma$, e}}
+            %\end{prooftree}   
+            %\caption{}
+          %\label{fig:rules:freshenv:var}
+        %\end{subfigure}
+        %\begin{subfigure}[b]{1\textwidth}
+          %\vspace*{0.4cm}
+              %\vspace*{0.4cm}
+              %\begin{prooftree}
+                %\AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
+                %\AxiomC{\texttt{\{x $\mapsto$ (S, z)\} $\cup$ S, e $\rightarrow$ ($\Sigma$ $\backslash$ \{x\}) $\cup$ S, y}}
+                  %\RightLabel{App}
+                  %\BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
+              %\end{prooftree}   
+          %\caption{An application rule which binds the current environment to expressions}
+          %\label{fig:rules:freshenv:app}
+        %\end{subfigure}
+    %\end{mdframed}
+    %\caption{A set of rules which support the desired semantics}
+    %\label{fig:subrenam}
+%\end{figure}
+%\begin{figure}[ht]
+%\end{figure}
 
 %First consider the implications of an eager $\alpha$-conversion strategy in \autoref{eq:alpharep}.
 %Applying $\alpha$-conversions in applications eagerly ensures that all references to the applied to variable is are replaced (\autoref{fig:simpleappalpha}).
@@ -1018,220 +1112,220 @@ The program now evaluates as intended which is a consequence of binding all expr
 %In \autoref{subfig:red4} the application which contains \texttt{$\lambda$f'} and \texttt{f'} as children (the red node) must $\alpha$-convert \texttt{f'} in ``this scope''.
 %If \texttt{f'} is not $\alpha$-converted a circular dependency will arise $S = \{ \gamma \mapsto \texttt{f'} \}, \alpha = [ \texttt{f'} \mapsto \gamma ]$.
 
-\begin{exmp}
-  \autoref{fig:red:exmp} is an example of an iteration of \autoref{lst:recalpha}.
-\begin{figure}
-    \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                \node[draw=black] (app1) {\texttt{app}};
-                    \node[draw=black, below right = of app1] (var1) {\texttt{10}};
-                    \path[-] (app1) edge node[left] {} (var1);
+%\begin{exmp}
+  %\autoref{fig:red:exmp} is an example of an iteration of \autoref{lst:recalpha}.
+%\begin{figure}
+    %\centering
+    %\begin{subfigure}[b]{0.49\textwidth}
+        %\centering
+        %\begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                %\node[draw=black] (app1) {\texttt{app}};
+                    %\node[draw=black, below right = of app1] (var1) {\texttt{10}};
+                    %\path[-] (app1) edge node[left] {} (var1);
 
-                    \node[draw=black, below left = of app1] (app2) {\texttt{app}};
-                    \path[-] (app1) edge node[left] {} (app2);
-                        \node[draw=red, below left = of app2] (f1) {\texttt{f}};
-                        \path[-] (app2) edge node[left] {} (f1);
-                        \node[draw=black, below right = of app2] (f2) {\texttt{f}};
-                        \path[-] (app2) edge node[left] {} (f2);
+                    %\node[draw=black, below left = of app1] (app2) {\texttt{app}};
+                    %\path[-] (app1) edge node[left] {} (app2);
+                        %\node[draw=red, below left = of app2] (f1) {\texttt{f}};
+                        %\path[-] (app2) edge node[left] {} (f1);
+                        %\node[draw=black, below right = of app2] (f2) {\texttt{f}};
+                        %\path[-] (app2) edge node[left] {} (f2);
 
-                \node[draw,scale=1.3,fill=none,rectangle,fit=(app1)(f1)(var1)](fstB){};
-                \path (fstB.north east) -- (fstB.south east) coordinate[midway] (fstP);
-        \end{tikzpicture}
-        \caption{
-          \texttt{S = \{f $\mapsto$ ($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1))\}}
-        }
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                \node[draw=black] (app1) {\texttt{app}};
-                    \node[draw=black, below right = of app1] (var1) {\texttt{10}};
-                    \path[-] (app1) edge node[left] {} (var1);
+                %\node[draw,scale=1.3,fill=none,rectangle,fit=(app1)(f1)(var1)](fstB){};
+                %\path (fstB.north east) -- (fstB.south east) coordinate[midway] (fstP);
+        %\end{tikzpicture}
+        %\caption{
+          %\texttt{S = \{f $\mapsto$ ($\lambda$f'.$\lambda$x.if (x = 0) x else f' f' (x - 1))\}}
+        %}
+    %\end{subfigure}
+    %\begin{subfigure}[b]{0.49\textwidth}
+        %\centering
+        %\begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                %\node[draw=black] (app1) {\texttt{app}};
+                    %\node[draw=black, below right = of app1] (var1) {\texttt{10}};
+                    %\path[-] (app1) edge node[left] {} (var1);
 
-                    \node[draw=black, below left = of app1] (app2) {\texttt{app}};
-                    \path[-] (app1) edge node[left] {} (app2);
-                        \node[draw=red, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
-                        \path[-] (app2) edge node[left] {} (lam1);
-                            \node[draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
-                            \path[-] (lam1) edge node[left] {} (lam2);
-                                \node[draw=black, below = of lam2] (app3) {\texttt{app}};
-                                \path[-] (lam2) edge node[left] {} (app3);
-                                    \node[draw=black, below left = of app3] (app4) {\texttt{app}};
-                                    \path[-] (app3) edge node[left] {} (app4);
-                                        \node[draw=black, below left = of app4] (app5) {\texttt{app}};
-                                        \path[-] (app4) edge node[left] {} (app5);
-                                            \node[draw=black, below left = of app5] (if) {\texttt{if}};
-                                            \path[-] (app5) edge node[left] {} (if);
-                                            \node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
-                                            \path[-] (app5) edge node[left] {} (ifc);
-                                        \node[draw=black, below right = of app4] (ift) {\texttt{x}};
-                                        \path[-] (app4) edge node[left] {} (ift);
-                                    \node[draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ((x - 1) + (x - 1))}};
-                                    \path[-] (app3) edge node[left] {} (iff);
-                        \node[draw=black, below right = of app2] (f2) {\texttt{f}};
-                        \path[-] (app2) edge node[left] {} (f2);
+                    %\node[draw=black, below left = of app1] (app2) {\texttt{app}};
+                    %\path[-] (app1) edge node[left] {} (app2);
+                        %\node[draw=red, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
+                        %\path[-] (app2) edge node[left] {} (lam1);
+                            %\node[draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
+                            %\path[-] (lam1) edge node[left] {} (lam2);
+                                %\node[draw=black, below = of lam2] (app3) {\texttt{app}};
+                                %\path[-] (lam2) edge node[left] {} (app3);
+                                    %\node[draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    %\path[-] (app3) edge node[left] {} (app4);
+                                        %\node[draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        %\path[-] (app4) edge node[left] {} (app5);
+                                            %\node[draw=black, below left = of app5] (if) {\texttt{if}};
+                                            %\path[-] (app5) edge node[left] {} (if);
+                                            %\node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            %\path[-] (app5) edge node[left] {} (ifc);
+                                        %\node[draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        %\path[-] (app4) edge node[left] {} (ift);
+                                    %\node[draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ((x - 1) + (x - 1))}};
+                                    %\path[-] (app3) edge node[left] {} (iff);
+                        %\node[draw=black, below right = of app2] (f2) {\texttt{f}};
+                        %\path[-] (app2) edge node[left] {} (f2);
 
-                \node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](sndB){};
-                %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
-            \end{tikzpicture}
-            \caption{
-                \texttt{$\Sigma$ = S}
-            }
-    \end{subfigure}
-    %\tikz[overlay,remember picture]{\draw [->] (fstP) -- (fstP-|sndP);}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                                \node[draw=black, below = of lam2] (app3) {\texttt{app}};
-                                    \node[draw=black, below left = of app3] (app4) {\texttt{app}};
-                                    \path[-] (app3) edge node[left] {} (app4);
-                                        \node[draw=black, below left = of app4] (app5) {\texttt{app}};
-                                        \path[-] (app4) edge node[left] {} (app5);
-                                            \node[draw=black, below left = of app5] (if) {\texttt{if}};
-                                            \path[-] (app5) edge node[left] {} (if);
-                                            \node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
-                                            \path[-] (app5) edge node[left] {} (ifc);
-                                        \node[draw=black, below right = of app4] (ift) {\texttt{x}};
-                                        \path[-] (app4) edge node[left] {} (ift);
-                                    \node[draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
-                                    \path[-] (app3) edge node[left] {} (iff);
-                \node[draw,fill=none,scale=1.3,rectangle,fit=(app3)(if)(ifc)(iff)](fouB){};
-                %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
-            \end{tikzpicture}
-            \caption{
-                \\
-                \texttt{$\Theta_0$ = \{f' $\mapsto$ ($\Sigma$, f)\} $\cup$ $\Sigma$}\\
-                \texttt{$\Theta$ = \{x $\mapsto$ ($\Theta_0$, 10)\} $\cup$ $\Theta_0$}
-            }
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
-                \node[draw=blue] (app1) {\texttt{app}};
-                    \node[draw=black, below right = of app1] (var1) {\texttt{x - 1}};
-                    \path[-] (app1) edge node[left] {} (var1);
+                %\node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](sndB){};
+                %%\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
+            %\end{tikzpicture}
+            %\caption{
+                %\texttt{$\Sigma$ = S}
+            %}
+    %\end{subfigure}
+    %%\tikz[overlay,remember picture]{\draw [->] (fstP) -- (fstP-|sndP);}
+    %\begin{subfigure}[b]{0.49\textwidth}
+        %\centering
+        %\begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                                %\node[draw=black, below = of lam2] (app3) {\texttt{app}};
+                                    %\node[draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    %\path[-] (app3) edge node[left] {} (app4);
+                                        %\node[draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        %\path[-] (app4) edge node[left] {} (app5);
+                                            %\node[draw=black, below left = of app5] (if) {\texttt{if}};
+                                            %\path[-] (app5) edge node[left] {} (if);
+                                            %\node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            %\path[-] (app5) edge node[left] {} (ifc);
+                                        %\node[draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        %\path[-] (app4) edge node[left] {} (ift);
+                                    %\node[draw=blue, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
+                                    %\path[-] (app3) edge node[left] {} (iff);
+                %\node[draw,fill=none,scale=1.3,rectangle,fit=(app3)(if)(ifc)(iff)](fouB){};
+                %%\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
+            %\end{tikzpicture}
+            %\caption{
+                %\\
+                %\texttt{$\Theta_0$ = \{f' $\mapsto$ ($\Sigma$, f)\} $\cup$ $\Sigma$}\\
+                %\texttt{$\Theta$ = \{x $\mapsto$ ($\Theta_0$, 10)\} $\cup$ $\Theta_0$}
+            %}
+    %\end{subfigure}
+    %\begin{subfigure}[b]{0.49\textwidth}
+        %\centering
+        %\begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.15cm and 0.15cm]
+                %\node[draw=blue] (app1) {\texttt{app}};
+                    %\node[draw=black, below right = of app1] (var1) {\texttt{x - 1}};
+                    %\path[-] (app1) edge node[left] {} (var1);
 
-                    \node[draw=purple, below left = of app1] (app2) {\texttt{app}};
-                    \path[-] (app1) edge node[left] {} (app2);
-                        \node[draw=black, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
-                        \path[-] (app2) edge node[left] {} (lam1);
-                            \node[draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
-                            \path[-] (lam1) edge node[left] {} (lam2);
-                                \node[draw=black, below = of lam2] (app3) {\texttt{app}};
-                                \path[-] (lam2) edge node[left] {} (app3);
-                                    \node[draw=black, below left = of app3] (app4) {\texttt{app}};
-                                    \path[-] (app3) edge node[left] {} (app4);
-                                        \node[draw=black, below left = of app4] (app5) {\texttt{app}};
-                                        \path[-] (app4) edge node[left] {} (app5);
-                                            \node[draw=black, below left = of app5] (if) {\texttt{if}};
-                                            \path[-] (app5) edge node[left] {} (if);
-                                            \node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
-                                            \path[-] (app5) edge node[left] {} (ifc);
-                                        \node[draw=black, below right = of app4] (ift) {\texttt{x}};
-                                        \path[-] (app4) edge node[left] {} (ift);
-                                    \node[draw=black, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
-                                    \path[-] (app3) edge node[left] {} (iff);
-                        \node[draw=black, below right = of app2] (f2) {\texttt{f'}};
-                        \path[-] (app2) edge node[left] {} (f2);
-                \node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](fouB){};
-                %\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
-            \end{tikzpicture}
-            \caption{
-                \texttt{$\Delta = \Theta$}\\
-            }
-            \label{subfig:red4}
-    \end{subfigure}
-    \caption{Example of substitutions in recursive function.}
-    \label{fig:red:exmp}
-\end{figure}
-\end{exmp}
-%\tikz[overlay,remember picture]{\draw[-latex,thick] (fstB) -- (fstB-|sndB) node[midway,below,text width=0.5cm]{};} 
+                    %\node[draw=purple, below left = of app1] (app2) {\texttt{app}};
+                    %\path[-] (app1) edge node[left] {} (app2);
+                        %\node[draw=black, below left = of app2] (lam1) {\texttt{$\lambda$f'}};
+                        %\path[-] (app2) edge node[left] {} (lam1);
+                            %\node[draw=black, below = of lam1] (lam2) {\texttt{$\lambda$x}};
+                            %\path[-] (lam1) edge node[left] {} (lam2);
+                                %\node[draw=black, below = of lam2] (app3) {\texttt{app}};
+                                %\path[-] (lam2) edge node[left] {} (app3);
+                                    %\node[draw=black, below left = of app3] (app4) {\texttt{app}};
+                                    %\path[-] (app3) edge node[left] {} (app4);
+                                        %\node[draw=black, below left = of app4] (app5) {\texttt{app}};
+                                        %\path[-] (app4) edge node[left] {} (app5);
+                                            %\node[draw=black, below left = of app5] (if) {\texttt{if}};
+                                            %\path[-] (app5) edge node[left] {} (if);
+                                            %\node[draw=black, below right = of app5] (ifc) {\texttt{x = 0}};
+                                            %\path[-] (app5) edge node[left] {} (ifc);
+                                        %\node[draw=black, below right = of app4] (ift) {\texttt{x}};
+                                        %\path[-] (app4) edge node[left] {} (ift);
+                                    %\node[draw=black, below right = 0.15cm and 0.6cm of app3] (iff) {\texttt{f' f' ($\dots$)}};
+                                    %\path[-] (app3) edge node[left] {} (iff);
+                        %\node[draw=black, below right = of app2] (f2) {\texttt{f'}};
+                        %\path[-] (app2) edge node[left] {} (f2);
+                %\node[draw,fill=none,scale=1.3,rectangle,fit=(app1)(if)(ifc)(var1)(iff)](fouB){};
+                %%\path (sndB.north west) -- (sndB.south west) coordinate[midway] (sndP);
+            %\end{tikzpicture}
+            %\caption{
+                %\texttt{$\Delta = \Theta$}\\
+            %}
+            %\label{subfig:red4}
+    %\end{subfigure}
+    %\caption{Example of substitutions in recursive function.}
+    %\label{fig:red:exmp}
+%\end{figure}
+%\end{exmp}
+%%\tikz[overlay,remember picture]{\draw[-latex,thick] (fstB) -- (fstB-|sndB) node[midway,below,text width=0.5cm]{};} 
 
-\subsubsection{Lazy evaluation}
-Call by need requires an additional effort, since it requires more than a particular evaluation order to implement~\cite{levy1988sharing}.
-%Substitutions can be rewritten when a variable \texttt{x} maps to an application such that for some substitution mapping of the form $\{ \dots, \texttt{x} \mapsto Y E \}$ then the substituted to value is reduced.
-%When two substitutions are combined one should always choose the most reduced of the two, which is trivial since it becomes a matter of picking the ''newest`` version of the substituted value.
-An important observation which is discussed in~\cite{levy1988sharing} is that of \textit{object} duplication.
-Objects are the substituted to values which are lambda calculus terms.
-The term object is used to emphasize the uniqueness of lambda calculus terms.
-%A problem when sharing evaluation in the substitution mapping is that of transitive substitutions.
-%Transitive substitutions are not expressible since that causes non-linear evaluation times on some inputs.
-%Naturally when new mappings are introduced the mapped to values can be duplicated instead such that instead of $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto \gamma_1 \}$ then $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ which violates call by need.
-A lambda calculus expression $E$ can be labelled with some name $a$ when found in the evaluation process such that when some value with the label $a$ is evaluated then all duplications of $E$ can share the computed result, effectively adding another type of mapping.
-\begin{remark}
-    Sharing can also be implemented in a way which promotes more imperative constructs, such as mutable data.
-    When some object $E$ is discovered it is declared as a mutable pointer by the interpreter (or natively if implemented in a lazy language) such that all duplications effectively point to the same object.
-    An implementation which builds upon pointers are explored in Chapter 12 in~\cite{peyton1987implementation}.
-\end{remark}
+%\subsubsection{Lazy evaluation}
+%Call by need requires an additional effort, since it requires more than a particular evaluation order to implement~\cite{levy1988sharing}.
+%%Substitutions can be rewritten when a variable \texttt{x} maps to an application such that for some substitution mapping of the form $\{ \dots, \texttt{x} \mapsto Y E \}$ then the substituted to value is reduced.
+%%When two substitutions are combined one should always choose the most reduced of the two, which is trivial since it becomes a matter of picking the ''newest`` version of the substituted value.
+%An important observation which is discussed in~\cite{levy1988sharing} is that of \textit{object} duplication.
+%Objects are the substituted to values which are lambda calculus terms.
+%The term object is used to emphasize the uniqueness of lambda calculus terms.
+%%A problem when sharing evaluation in the substitution mapping is that of transitive substitutions.
+%%Transitive substitutions are not expressible since that causes non-linear evaluation times on some inputs.
+%%Naturally when new mappings are introduced the mapped to values can be duplicated instead such that instead of $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto \gamma_1 \}$ then $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ which violates call by need.
+%A lambda calculus expression $E$ can be labelled with some name $a$ when found in the evaluation process such that when some value with the label $a$ is evaluated then all duplications of $E$ can share the computed result, effectively adding another type of mapping.
+%\begin{remark}
+    %Sharing can also be implemented in a way which promotes more imperative constructs, such as mutable data.
+    %When some object $E$ is discovered it is declared as a mutable pointer by the interpreter (or natively if implemented in a lazy language) such that all duplications effectively point to the same object.
+    %An implementation which builds upon pointers are explored in Chapter 12 in~\cite{peyton1987implementation}.
+%\end{remark}
 
-The labelling technique can be realized quite elegantly whilst also simplifying the rule set further.
-Attempting to implement a labelling technique does not resolve the problem, the semantics in \autoref{fig:subrenam} do for instance not behave accordingly in scenarios which build upon sharing computation in deeply nested substitution mappings.
-The state in \autoref{eq:mulsub} poses a problem since the forcing of \texttt{y} from forcing \texttt{x} yields \autoref{eq:mulsubstep2}, and finally forces the computation of \texttt{y} once again.
-\begin{align}
-  &\texttt{\{x $\mapsto$ (\{y $\mapsto$ 1 + 1\}, y), z $\mapsto$ (\{y $\mapsto$ 1 + 1\}, y)\}x + (($\lambda$y.z) 0)} \label{eq:mulsub}\\
-  &\texttt{\{x $\mapsto$ ($\dots$, 2), z $\mapsto$ (\{y $\mapsto$ 1 + 1\}, y), y $\mapsto$ 2\}2 + (($\lambda$y.z) 0)} \label{eq:mulsubstep2}
-\end{align}
-Observe that forcing \texttt{z} recomputes \texttt{y}.
-Sharing the computed value of \texttt{y} is not an option either, since \texttt{y} may not be the same \texttt{y}, which is the reason for the introduction of bound substitution mappings in the first place.
-Fortunately we have yet to apply $\alpha$-conversions to the problem.
-Instead of binding the substitution mappings to expressions, $\alpha$-conversions should be bound to expressions.
-Bound $\alpha$-conversions have a very simple set of properties, such as 
+%The labelling technique can be realized quite elegantly whilst also simplifying the rule set further.
+%Attempting to implement a labelling technique does not resolve the problem, the semantics in \autoref{fig:subrenam} do for instance not behave accordingly in scenarios which build upon sharing computation in deeply nested substitution mappings.
+%The state in \autoref{eq:mulsub} poses a problem since the forcing of \texttt{y} from forcing \texttt{x} yields \autoref{eq:mulsubstep2}, and finally forces the computation of \texttt{y} once again.
+%\begin{align}
+  %&\texttt{\{x $\mapsto$ (\{y $\mapsto$ 1 + 1\}, y), z $\mapsto$ (\{y $\mapsto$ 1 + 1\}, y)\}x + (($\lambda$y.z) 0)} \label{eq:mulsub}\\
+  %&\texttt{\{x $\mapsto$ ($\dots$, 2), z $\mapsto$ (\{y $\mapsto$ 1 + 1\}, y), y $\mapsto$ 2\}2 + (($\lambda$y.z) 0)} \label{eq:mulsubstep2}
+%\end{align}
+%Observe that forcing \texttt{z} recomputes \texttt{y}.
+%Sharing the computed value of \texttt{y} is not an option either, since \texttt{y} may not be the same \texttt{y}, which is the reason for the introduction of bound substitution mappings in the first place.
+%Fortunately we have yet to apply $\alpha$-conversions to the problem.
+%Instead of binding the substitution mappings to expressions, $\alpha$-conversions should be bound to expressions.
+%Bound $\alpha$-conversions have a very simple set of properties, such as 
 
-\begin{figure}
-\begin{lstlisting}[language=ML,caption={Program which benifits from lazy evaluation},label={lst:lazyevalprog},mathescape=true]
-fun double x = x + x;
-let y = double 10;
-fun add z k = z + k;
-add y y;
-\end{lstlisting}
-\end{figure}
-\autoref{lst:lazyevalprog} is a program which under call by name computes \texttt{y} two times.
-By assigning a unique name to the expression of \texttt{y}, \texttt{a} for instance, the unique expression can be tracked.
-When \texttt{y + y} is computed, the first evaluation of \texttt{y} changes \texttt{a} in the substitution mapping such that \texttt{\{$\dots$, a $\mapsto$ 20\}}.
-%Furthermore, notice that the phrase ``assigning a unique name'' is exactly what $\alpha$-conversion does.
-By these rules sharing can be implemented very elegantly by also noticing that variable references are in fact, a dependency tree.
-Let a valid substitution mapping be \texttt{\{x $\mapsto$ 10 + 2, y $\mapsto$ (x + 1), z $\mapsto$ (y + 2)\}} with the originating program in \autoref{eq:lazyexmp}.
-\begin{align}
-  \texttt{($\lambda$x.($\lambda$y.($\lambda$z.E) (y + 2)) (x + 1)) (10 + 20)} \label{eq:lazyexmp}
-\end{align}
-If the lambda calculus sub-program in \texttt{E} forces \texttt{y}, then the substitution mapping should be updated with \texttt{\{y $\mapsto$ 13\}} which implies that x is also forced \texttt{\{x $\mapsto$ 12\}}.
+%\begin{figure}
+%\begin{lstlisting}[language=ML,caption={Program which benifits from lazy evaluation},label={lst:lazyevalprog},mathescape=true]
+%fun double x = x + x;
+%let y = double 10;
+%fun add z k = z + k;
+%add y y;
+%\end{lstlisting}
+%\end{figure}
+%\autoref{lst:lazyevalprog} is a program which under call by name computes \texttt{y} two times.
+%By assigning a unique name to the expression of \texttt{y}, \texttt{a} for instance, the unique expression can be tracked.
+%When \texttt{y + y} is computed, the first evaluation of \texttt{y} changes \texttt{a} in the substitution mapping such that \texttt{\{$\dots$, a $\mapsto$ 20\}}.
+%%Furthermore, notice that the phrase ``assigning a unique name'' is exactly what $\alpha$-conversion does.
+%By these rules sharing can be implemented very elegantly by also noticing that variable references are in fact, a dependency tree.
+%Let a valid substitution mapping be \texttt{\{x $\mapsto$ 10 + 2, y $\mapsto$ (x + 1), z $\mapsto$ (y + 2)\}} with the originating program in \autoref{eq:lazyexmp}.
+%\begin{align}
+  %\texttt{($\lambda$x.($\lambda$y.($\lambda$z.E) (y + 2)) (x + 1)) (10 + 20)} \label{eq:lazyexmp}
+%\end{align}
+%If the lambda calculus sub-program in \texttt{E} forces \texttt{y}, then the substitution mapping should be updated with \texttt{\{y $\mapsto$ 13\}} which implies that x is also forced \texttt{\{x $\mapsto$ 12\}}.
 
-Observe that the App rule in \autoref{fig:subrenam} is the only rule which introduces \textbf{new} variables to the substitution mapping.
-By using the App rule, one can introduce a variable which points to an expression.
-A reference is created to the originating expression, that is, two names which point to the same reference.
-For some function \texttt{f} which duplicates expressions and some state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ ($\dots$, ($\lambda$y.$\lambda$z.y+z))\}f x x} the only applicable rule is App.
-Using the App rule two times yields a new state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, y $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, x)\}}.
-\autoref{fig:expdep} gives clearer insight into how the expressions depend on each other.
-If any expression in \autoref{fig:expdep} is forced, then everything above will be forced.
-For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} would have to evaluate the reference to \texttt{x} which has been evaluated and added to the substitution mapping by \autoref{fig:rules:freshenv:var} since \texttt{x} is an ancestor of \texttt{y}.
-\begin{figure}
-  \centering
-  \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.25cm and 0.25cm]
-        \node[draw=black] (e) {\texttt{e}};
+%Observe that the App rule in \autoref{fig:subrenam} is the only rule which introduces \textbf{new} variables to the substitution mapping.
+%By using the App rule, one can introduce a variable which points to an expression.
+%A reference is created to the originating expression, that is, two names which point to the same reference.
+%For some function \texttt{f} which duplicates expressions and some state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ ($\dots$, ($\lambda$y.$\lambda$z.y+z))\}f x x} the only applicable rule is App.
+%Using the App rule two times yields a new state \texttt{\{x $\mapsto$ ($\dots$, e), f $\mapsto$ $\dots$, y $\mapsto$ ($\dots$, x), z $\mapsto$ ($\dots$, x)\}}.
+%\autoref{fig:expdep} gives clearer insight into how the expressions depend on each other.
+%If any expression in \autoref{fig:expdep} is forced, then everything above will be forced.
+%For instance if \texttt{y} was forced but \texttt{z} was not, then \texttt{z} would have to evaluate the reference to \texttt{x} which has been evaluated and added to the substitution mapping by \autoref{fig:rules:freshenv:var} since \texttt{x} is an ancestor of \texttt{y}.
+%\begin{figure}
+  %\centering
+  %\begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.25cm and 0.25cm]
+        %\node[draw=black] (e) {\texttt{e}};
 
-          \node[draw=black, below = of e] (x) {\texttt{x}};
-          \path[->] (x) edge node[left] {} (e);
+          %\node[draw=black, below = of e] (x) {\texttt{x}};
+          %\path[->] (x) edge node[left] {} (e);
             
-              %\node[draw=black, below left = of x] (gamma1) {$\gamma_1$};
-              %\path[->] (gamma1) edge node[left] {} (x);
+              %%\node[draw=black, below left = of x] (gamma1) {$\gamma_1$};
+              %%\path[->] (gamma1) edge node[left] {} (x);
 
-              \node[draw=black, below left = of x] (y) {\texttt{y}};
-              \path[->] (y) edge node[left] {} (x);
+              %\node[draw=black, below left = of x] (y) {\texttt{y}};
+              %\path[->] (y) edge node[left] {} (x);
 
-            %\node[draw=black, below right = of x] (gamma2) {$\gamma_2$};
-            %\path[->] (gamma2) edge node[left] {} (x);
+            %%\node[draw=black, below right = of x] (gamma2) {$\gamma_2$};
+            %%\path[->] (gamma2) edge node[left] {} (x);
 
-              \node[draw=black, below right = of x] (z) {\texttt{z}};
-              \path[->] (z) edge node[left] {} (x);
+              %\node[draw=black, below right = of x] (z) {\texttt{z}};
+              %\path[->] (z) edge node[left] {} (x);
 
-          \node[draw,fill=none,scale=1.3,rectangle,fit=(e)(z)(y)](fbb){};
-  \end{tikzpicture}
-  \caption{Expression dependencies}
-  \label{fig:expdep}
-\end{figure}
-We have now arrived at semantics which are very similar to the semantics described in~\cite{launchbury1993natural} (except concepts such as lazy substitutions).
+          %\node[draw,fill=none,scale=1.3,rectangle,fit=(e)(z)(y)](fbb){};
+  %\end{tikzpicture}
+  %\caption{Expression dependencies}
+  %\label{fig:expdep}
+%\end{figure}
+%We have now arrived at semantics which are very similar to the semantics described in~\cite{launchbury1993natural} (except concepts such as lazy substitutions).
 
 
 %Let $S = \{ \gamma_1 \mapsto E, \gamma_2 \mapsto E \}$ be the system without labels, then let \autoref{eq:labelsystem} be the labelled call by need system.
