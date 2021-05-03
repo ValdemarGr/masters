@@ -1,16 +1,16 @@
-
-type Maybe a = 
-  | Nothing
-  | Just a
-  | Two a a
+type List a = 
+  | Nil
+  | Cons a (List a)
 ;
 
-fun main = 
-  let o = Two 2 2;
-  let h = match o
-    | Just n -> n;
-    | Nothing -> 2;
-    | Two k v -> k + v;
+fun sum l =
+  match l
+    | Cons x xs ->
+      x + (sum xs);
+    | Nil -> 0;
   ;
-  h;
+
+fun main =
+  let l = Cons 1 (Cons 2 Nil);
+  sum l;
 

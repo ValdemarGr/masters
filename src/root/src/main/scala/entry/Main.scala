@@ -35,7 +35,7 @@ object Main extends IOApp {
     }
 
     val output = succ.map { decls =>
-      //inferProgram(decls)
+      inferProgram(decls)
       val transformed = LCTransform.entrypoint(decls)
       if (asScheme) 
         s"(define main ${emitter.LCEmitter.emitScheme(transformed)})\n(display main)" 
@@ -47,34 +47,48 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { b =>
-    val files = args.filter(x => x != asScheme)
-    //val stdinstream = stdinUtf8[IO](1024, b)
-    val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
-    val instream = fs2.Stream(streams: _*)
-      .lift[IO]
-      .flatten
-      .through(fs2.text.utf8Decode)
+    val parsed = Haskelly.parse("""
+      type List a = 
+        | Cons a (List a)
+        | Nil
+      ;
 
-    val folded = instream
-      .compile
-      .fold(""){ case (accum, next) => accum + next }
+      map :: ((a -> b) -> (List a) -> (List b));
+      f Nil = Nil;
+      f (Cons x xs) = (Cons (f x) (fold f xs));
+      ;
+      """)
+    parsed.foreach(println)
+    IO(ExitCode.Success)
 
-    val sch = args.find(_ == asScheme).isDefined
+    //val files = args.filter(x => x != asScheme)
+    ////val stdinstream = stdinUtf8[IO](1024, b)
+    //val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
+    //val instream = fs2.Stream(streams: _*)
+      //.lift[IO]
+      //.flatten
+      //.through(fs2.text.utf8Decode)
 
-    val compiledCode = folded.flatMap{ code =>
-      compile(code, sch)
-    }
+    //val folded = instream
+      //.compile
+      //.fold(""){ case (accum, next) => accum + next }
 
-    val outPipe = stdout[IO](b)
+    //val sch = args.find(_ == asScheme).isDefined
 
-    val written = fs2.Stream.eval(compiledCode)
-      .flatMap(x => fs2.Stream(x.getBytes: _*))
-      .through(outPipe)
+    //val compiledCode = folded.flatMap{ code =>
+      //compile(code, sch)
+    //}
 
-    written
-      .compile
-      .drain
-      .as(ExitCode.Success)
+    //val outPipe = stdout[IO](b)
+
+    //val written = fs2.Stream.eval(compiledCode)
+      //.flatMap(x => fs2.Stream(x.getBytes: _*))
+      //.through(outPipe)
+
+    //written
+      //.compile
+      //.drain
+      //.as(ExitCode.Success)
   }
 /*
     val p2 = """

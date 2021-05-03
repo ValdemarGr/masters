@@ -252,6 +252,8 @@ object Operations {
     case Nil => TypeAtom(AADT(name))
     case head :: tl =>
       head match {
+        case ParensType(inner) =>
+            TypeArrow(inferTypeConstructor(tps, name, inner.ids), inferTypeConstructor(tps, name, tl))
         case TypeName(cin) =>
           if (tps.contains(cin)) {
             TypeArrow(TypeVar(cin), inferTypeConstructor(tps, name, tl))
