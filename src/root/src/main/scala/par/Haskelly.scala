@@ -5,7 +5,7 @@ import com.codecommit.gll._
 import cats.data.NonEmptyList
 
 object Haskelly extends Parsers with RegexParsers {
-  object TokenTypes {
+  object ADTS {
     sealed trait Op
     case object Addition extends Op
 
@@ -17,7 +17,7 @@ object Haskelly extends Parsers with RegexParsers {
     final case class Let(name: String, e: Expression, next: Expression) extends Expression
 
     sealed trait Match
-    final case class TypeConstructorMatch(constructorName: String, subMatches: List[Match]) extends Match
+    final case class TypeConstructorMatch(constructorName: String, bindings: List[NameBindingMatch]) extends Match
     final case class NameBindingMatch(bindingName: String) extends Match
 
     final case class FunctionMeta(name: String, tpe: Option[TypeType])
@@ -31,7 +31,7 @@ object Haskelly extends Parsers with RegexParsers {
 
     final case class SumType(typename: String, typevars: List[String], products: NonEmptyList[ProductType])
   }
-  import TokenTypes._
+  import ADTS._
 
   val infixOp: Parser[Op] = (
     "+" ^^^ Addition
@@ -54,7 +54,7 @@ object Haskelly extends Parsers with RegexParsers {
   val binOp: Parser[BinOp] = expr ~ infixOp ~ expr ^^ { (l, o, r) => BinOp(l, o, r) }
   def expr: Parser[Expression] = parens | let | variable | constructor | binOp | app
 
-  val tcMatch: Parser[TypeConstructorMatch] = typeConstructorIdentifier ~ (matchE *) ^^ { (n, s) => TypeConstructorMatch(n, s) }
+  val tcMatch: Parser[TypeConstructorMatch] = typeConstructorIdentifier ~ (bindMatch *) ^^ { (n, s) => TypeConstructorMatch(n, s) }
   val bindMatch: Parser[NameBindingMatch] = identifier.map(NameBindingMatch)
   val parensMatch: Parser[Match] = "(" ~> matchE <~ ")"
   def matchE: Parser[Match] = parensMatch | tcMatch | bindMatch

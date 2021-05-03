@@ -57,8 +57,23 @@ object Main extends IOApp {
       f Nil = Nil;
       f (Cons x xs) = (Cons (f x) (fold f xs));
       ;
+
+      hey;
+      x = x;
+      ;
       """)
     parsed.foreach(println)
+    parsed match {
+      case x :: Nil =>
+        x match {
+          case f: Failure =>
+            throw new Exception(s"failed parsing with $f")
+          case Success(xs, _) =>
+            tt.CheckerV2.check(xs)
+        }
+      case xs => 
+        throw new Exception(s"did not find exactly 1 parsed program $xs")
+    }
     IO(ExitCode.Success)
 
     //val files = args.filter(x => x != asScheme)
