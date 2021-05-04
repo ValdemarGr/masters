@@ -1,223 +1,24 @@
-\documentclass[11pt,oneside,a4paper]{report}
-
-\begin{document}
-
-\section{Evaluation strategies}
-\label{sec:es}
-When evaluating the untyped lambda calculus one has to choose an evaluation strategy.
-The choice of evaluation strategy has a large impact on aspects such as complexity guarantees.
-Such strategies are \textit{call by value}, \textit{call by name} and \textit{call by need}.
-Call by value is most often the simplest and most natural way of assuming program execution.
-\begin{lstlisting}[language=ML,caption={Program that doubles values},label={lst:callbyvalue},mathescape=true]
-fun double x = x + x;
-let a = double 10;
-double 10;
-\end{lstlisting}
-By the call by value semantics, \autoref{lst:callbyvalue} eagerly evaluates every expression.
-Clearly the variable \texttt{a} is never used but under the call by value semantics everything is eagerly evaluated.
-Every expression is evaluated in logical order in the call by value evaluation strategy.
-\newline
-\begin{minipage}{\textwidth}
-\begin{lstlisting}[language=ML,caption={Implementation of call by name},label={lst:callbyname},mathescape=true]
-fun suspend x unit = x;
-fun force x = x 0;
-let value = suspend 10;
-fun double x = 
-    fun susExpensiveOp unit = 
-        (force x) + (force x);
-    susExpensiveOp;
-let a = double value;
-force (double value);
-\end{lstlisting}
-\end{minipage}
-The call by name semantics however does only evaluate expressions once they are needed.
-By the call by name semantics \texttt{a} is never evaluated since it is never used.
-In \autoref{lst:callbyname} call by name has been implemented by the use of various functions such as the two constant functions \texttt{suspend} and \texttt{force}.
-\texttt{susExpensiveOp} ensures that the forcing (evaluation) of \texttt{x} never occurs until the caller of \texttt{double} forces the result.
-By the aforementioned semantics of call by name in the context of the program in \autoref{lst:callbyname} \texttt{a} is never forced thus the computation is never performed.
-The implementation of call by name can become quite troublesome and therefore in most cases is a part of the native execution environment which will be discussed in \autoref{tbd}.
-
-The call by need strategy introduces \textit{lazy evaluation} semantics which is the same as call by name with one extra detail named \textit{sharing}.
-In \autoref{lst:callbyname} \texttt{force x} is computed twice which may be an expensive operation.
-Under call by need all results are saved for later use similar to techniques such as dynamic programming.
-\begin{figure}
-    \centering
-    \begin{subfigure}[b]{0.33\textwidth}
-        \centering
-        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.3cm and 0.3cm]
-                \node[circle, draw=black] (app1) {\texttt{app}};
-                    \node[circle, draw=black, below right = of app1] (force) {\texttt{force}};
-                    \path[-] (app1) edge node[left] {} (force);
-
-                    \node[circle, draw=black, below left = of app1] (app2) {\texttt{app}};
-                    \path[-] (app1) edge node[left] {} (app2);
-                        \node[circle, draw=black, below left = of app2] (value) {\texttt{value}};
-                        \path[-] (app2) edge node[left] {} (value);
-                        \node[circle, draw=black, below right = of app2] (double) {\texttt{double}};
-                        \path[-] (app2) edge node[left] {} (double);
-
-                \node[draw,scale=1.3,fill=none,rectangle,fit=(app1)(value)(force)](fstB){};
-        \end{tikzpicture}
-        \caption{The last expression of the program.}
-        \label{sub:eval:main}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.66\textwidth}
-        \centering
-        \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.3cm and 0.3cm]
-                \node[circle, draw=black] (lamx) {\texttt{$\lambda$x}};
-                    \node[circle, draw=black, below = of lamx] (lamu) {\texttt{$\lambda$unit}};
-                    \path[-] (lamx) edge node[left] {} (lamu);
-                        \node[circle, draw=black, below = of lamu] (app1) {\texttt{app}};
-                        \path[-] (lamu) edge node[left] {} (app1);
-                            \node[circle, draw=red, below right = of app1] (app2) {\texttt{app}};
-                            \path[-] (app1) edge node[left] {} (app2);
-                                \node[circle, draw=red, below right = of app2] (x1) {\texttt{x}};
-                                \path[-] (app2) edge node[left] {} (x1);
-                                \node[circle, draw=red, below = of app2] (force1) {\texttt{force}};
-                                \path[-] (app2) edge node[left] {} (force1);
-
-                            \node[circle, draw=black, below left = of app1] (app4) {\texttt{app}};
-                            \path[-] (app1) edge node[left] {} (app4);
-                                \node[circle, draw=black, below left = of app4] (add) {\texttt{+}};
-                                \path[-] (app4) edge node[left] {} (add);
-
-                                \node[circle, draw=red, below right = of app4] (app3) {\texttt{app}};
-                                \path[-] (app4) edge node[left] {} (app3);
-                                    \node[circle, draw=red, below = of app3] (x2) {\texttt{x}};
-                                    \path[-] (app3) edge node[left] {} (x2);
-                                    \node[circle, draw=red, below left = of app3] (force2) {\texttt{force}};
-                                    \path[-] (app3) edge node[left] {} (force2);
-                \node[draw,scale=1.3,fill=none,rectangle,fit=(lamx)(force2)(x1)(add)](fstB){};
-        \end{tikzpicture}
-    %\begin{tikzpicture}
-        %\node[circle, draw=black] (lamx) {$\lambda \texttt{x}$};
-
-        %\node[circle, draw=black, below = of lamx] (lamunit) {$\lambda \texttt{unit}$};
-
-        %\node[circle, draw=black, below = of lamunit] (addition) {$+$};
-
-        %\node[circle, draw=black, below left = of addition] (force1) {\texttt{force}};
-        %\node[circle, draw=black, below = of force1] (x1) {\texttt{x}};
-        
-        %\node[circle, draw=black, below right = of addition] (force2) {\texttt{force}};
-        %\node[circle, draw=black, below = of force2] (x2) {\texttt{x}};
-
-        %\path[->] (lamx) edge node[left] {} (lamunit);
-        %\path[->] (lamunit) edge node[left] {} (addition);
-
-        %\path[->] (addition) edge node[left] {} (force1);
-        %\path[->] (addition) edge node[left] {} (force2);
-
-        %\path[->] (force1) edge node[left] {} (x1);
-        %\path[->] (force2) edge node[left] {} (x2);
-    %\end{tikzpicture}
-        \caption{The expression tree for \texttt{double}}
-        \label{sub:eval:double}
-    \end{subfigure}
-    \caption{}
-    \label{fig:evalexpr}
-\end{figure}
-To understand this better observe the expression tree for \autoref{lst:callbyname} in \autoref{fig:evalexpr}.
-Clearly the two red subtrees in \autoref{sub:eval:double} are identical thus they may be memoized such that the forcing of \texttt{x} only occurs once.
-More generally if the execution environment supports lazy evaluation, once an expression has been forced it is remembered.
-
-\section{Runtime environments}
-Now that the untyped lambda calculus has been introduced, implemented and validated efficiently the question of execution naturally follows.
-There exists many different well understood strategies to implement an execution environment for the untyped lambda calculus.
-Naively it may seem straightforward to evaluate the untyped lambda calculus mechanically by $\beta$-reductions, but doing so brings upon some problems when implementing an interpreter.
-%When applying the term $f x$ in $\lambda f . \lambda x . f x$ such that $f[? := x]$ where $?$ is the parameter name of $f$ it should become clear why a naive strategy is not enough since the parameters of $f$ are anonymous.
-
-\section{Combinator reducers}
-\label{sec:comb}
-One of the most prominent techniques for evaluating functional programs is that of \textit{combinator graphs reductions}.
-Formally a combinator is a function that has no free variables which is convenient since the problem of figuring out closures and parameter substitutions in applications never arises.
-\begin{align}
-    x \label{eq:comb:x}\\
-    F \label{eq:comb:F}\\
-    Y E \label{eq:comb:app}
-\end{align}
-There are three types of terms in combinator logic; the variable much like the lambda calculus (\autoref{eq:comb:x}), application (\autoref{eq:comb:app}) and the combinator (\autoref{eq:comb:F}).
-The SKI calculus is a very simple set of combinators which are powerful enough to be turing complete and translate to and from the lambda calculus.
-In SKI $F ::= S \,\,|\,\, K \,\,|\,\, I$ where the equivalent lambda calculus combinators for $S = \lambda x . \lambda y . \lambda z . x z (y z)$, $K = \lambda x . \lambda y . x$ and $I = \lambda x . x$.
-Evaluating an SKI program is a straightforward reduction where $F'_F$ denotes combinator $F'$ has been partially applied with combinator $F$.
-\begin{exmp}
-    \begin{align}
-        &SKSI\\
-        = &KI(SI)\tag*{}\\
-        = &K_I(SI)\tag*{}\\
-        = &I\tag*{}
-    \end{align}
-\end{exmp}
-
-The algorithm for converting a lambda calculus program into a SKI combinator program is a straightforward mechanical one.
-The evaluation context is always an abstraction $\lambda x . E$.
-\begin{pcases}
-    \pcase{$E = x$ then rewrite $\lambda x . E$ to $I$.}
-    \pcase{$E = y$ where $y \neq x$ and $y$ is a variable then rewrite $\lambda x . y$ to $Ky$.}
-    \pcase{$E = Y E'$ then rewrite $\lambda x . Y E'$ to $S(\lambda x . Y)(\lambda x . E')$ since applying some $y$ to $\lambda x . Y E'$ must lambda lift $y$ as a parameter named $x$ to both $Y$ and $E'$ such that the lifted expression becomes $((\lambda x . Y)y)((\lambda x . E')y) = S(\lambda x . Y)(\lambda x . E')y$.
-    Then recurse in both branches.
-    }
-    \pcase{$E = \lambda x . E'$ then first rewrite $E'$ with the appropriate cases recursively such that $E'$ becomes either $x$, $y$ or $Y E$ such that Case 1, 2 or 3 can be applied.}
-\end{pcases}
-The termination of the rewriting to SKI is guaranteed since abstractions are always eliminated and the algorithm never introduce any additional abstractions.
-When translating the untyped lambda calculus to SKI the ''magic`` variable names $\sigma, \kappa$ and $\iota$ are used as placeholder functions for the SKI combinators since the translation requires a lambda calculus form.
-When the translation has been completed then replace $\sigma \mapsto S, \kappa \mapsto K, \iota \mapsto I$.
-\subsection{Combinator translation growth}
-Before proving that the SKI translation algorithm produces a program of larger size the notion of size must be established.
-Size in terms of lambda calculus are the number of lambda terms (\autoref{lc:lang:abs}, \autoref{lc:lang:var} and \autoref{lc:lang:app}) that make up a program.
-For instance $\lambda x . x$ has a size of two since it is composed of an abstraction and a variable term.
-The size of an SKI combinator program is in terms of the number of combinators.
-\begin{lemma}
-    There exists a family of lambda calculus programs of size $n$ which are translated into SKI-expressions of size $\Omega(n^2)$.
-\end{lemma}
-\begin{proof}
-\begin{pcases}
-    \pcase{\label{eval:case:1} Rewriting $\lambda x . x$ to $I$ is a reduction of one.}
-    \pcase{\label{eval:case:2} Rewriting $\lambda x . y$ to $Ky$ is equivalent in terms of size.}
-    \pcase{Rewriting $\lambda x . YE$ to $S(\lambda x . Y)(\lambda x . E)$ is the interesting case.
-        To induce the worst case size \autoref{eval:case:1} must be avoided.
-        If $x \notin \textit{Free}(Y)$ and $x \notin \textit{Free}(E)$ then for every non-recursive term in $Y$ and $E$ \autoref{eval:case:2} is the only applicable rewrite rule which means that an at least equal size is guaranteed.
-        Furthermore observe that by introducing unused parameters one can add one $K$ term to \textit{every} non-recursive case.
-        Observe the instance $\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1)$ where the two unused parameters are used to add $K$ terms to all non-recursive cases in \autoref{eq:eval:red2} such that the amount of extra K terms minus the I becomes $\text{variable\_references} * (\text{unused\_abstractions} - 1) = 3*(3-1)$:
-        \begin{gather}
-            S(S(KKI)(KKI))(KKI)\label{eq:eval:red2}
-        \end{gather}
-        Now let the number of variable references be $n$ and the unused abstractions also be $n$ clearly $\Omega(n * (n - 1)) = \Omega(n^2)$
-    }
-    \pcase{Rewriting $\lambda x . E'$ is not a translation rule so the cost is based on what $E'$ becomes.}
-\end{pcases}
-    \vspace*{0.5cm}
-Notice that the applications $f_1 f_1 \dots f_1$ can in fact be changed to $f_1 f_2 \dots f_n$ since for every $f_k$ where $0 < k \leq n$ there are $n - 1$ parameters that induce a K combinator.
-Let $P_n$ be family of programs with $n$ abstractions and $n$ applications.
-$\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1) \in P_3$ and in fact for any $p$ where $\forall n \in \mathbb{Z}^+$ and $p \in P_n$, $p$ translates into SKI-expressions of size $\Omega(n^2)$.
-\end{proof}
-\begin{exmp}
-    Observe the size of \autoref{eq:eval:comp1} in comparison to \autoref{eq:evaltime}.
-\begin{align}
-    &\lambda f_1 . \lambda f_2 . f_1 f_2 \label{eq:eval:comp1}\\
-    =&\lambda f_1 . \sigma(\lambda f_2 . f_1)(\lambda f_2 . f_2) \tag*{} \\
-    =&\lambda f_1 . (\sigma(\kappa f_1))(\iota) \tag*{} \\
-    =&\sigma (\lambda f_1 . \sigma (\kappa f_1)) (\lambda f_1 . \iota) \tag*{} \\
-    =&\sigma (\sigma (\lambda f_1 . \sigma) (\lambda f_1 . \kappa f_1)) (\kappa \iota) \tag*{} \\
-    =&\sigma (\sigma (\kappa \sigma) (\sigma (\lambda f_1 . \kappa) (\lambda f_1 . f_1))) (\kappa \iota) \tag*{} \\
-    =&\sigma (\sigma (\kappa \sigma) (\sigma (\kappa \kappa) (\iota))) (\kappa \iota) \tag*{} \\
-    =&S (S (K S) (S (K K) (I))) (K I) \tag*{}
-\end{align}
-\end{exmp}
-It should become clear that many programs suffer from this consequence such as \texttt{let add = ($\lambda$x.$\lambda$y.(+ x) y)} $\in P_2$ where the program is written in prefix notation.
-Translating the lambda calculus into the SKI-expressions does indeed increase the size significantly but does not warrant a write off entirely.
-More advanced techniques exist to translate the lambda calculus to linearly sized SKI-expressions with the introduction of more complicated combinators~\cite{kiselyov2018lambda}.
-
 \section{Reduction strategies}
 Reductions in the context of the lambda calculus are a small set of well-defined rules for rewriting such that a program is proved or evaluated.
 The techniques required to correctly prove and evaluate a program are a bit more complicated than the SKI calculus but are rewarding in flexibility and performance.
 Throughout this section we will explore what difficulties lie within proving and evaluating the untyped lambda calculus via reduction strategies.
 The first section will interest itself with the semantics of proving the untyped lambda calculus, whilst the second will implement a machine capable of evaluating a result.
 
+\subsection{Symbols and notation}
+The following sections will have many variables with different meaning, therefore symbols are constrained to certain types of values as described in \autoref{eq:redstrat:sym}.
+\begin{align}
+  \texttt{x, y, z, f, v, $\gamma$ }&\texttt{:= Var}\label{eq:redstrat:sym}\\
+  \texttt{e, p, l, o }&\texttt{:= Exp}\tag*{}\\
+  \texttt{$\Gamma$, $\Sigma$, $\Theta$, S }&\texttt{:= Heap}\tag*{}\\
+  \texttt{E, $\mathcal{E}$ }&\texttt{:= Environment}\tag*{}
+\end{align}
+\texttt{Exp} is any expression, expressible in both untyped lambda calculus and future extensions.
+
+
 \subsection{The abstract evaluation model}
-The substitution mapping, denoted $S$, is a set of variable names to their value denoted $\{ x \mapsto \lambda y . y \}$ meaning ``the value of variable $x$ is $\lambda y . y$''.
+The environment is a set of substitutions, that is, a set of variable names to their value denoted \texttt{\{x $\mapsto$ $\lambda$y.y\}} meaning ``the value of variable \texttt{x} is \texttt{$\lambda$y.y}''.
 \begin{remark}
-  In the section regarding the semantics of reduction strategies, substitutions will exist as singleton sets.
+  In the section regarding the semantics of reduction strategies, environments will exist as singleton sets, named \textit{substitutions}.
 \end{remark}
 %Substitutions mappings can be combined $S \cup \Sigma$, if a variable name occurs in both $S$ and $\Sigma$ then the variable in the rightmost mapping is chosen ($\Sigma$).
 \begin{align}
@@ -226,7 +27,7 @@ The substitution mapping, denoted $S$, is a set of variable names to their value
 Substitutions are performed like shown in \autoref{eq:subsem}, which states ``x is substituted by y''.
 %In $(\lambda f . \lambda x . \lambda y. \texttt{ let } a = f x \texttt{ in } a + y)(\lambda y . y) \,\, 10 \,\, 20$ when evaluating $f x$ where the substitution are $[f \mapsto \lambda y . y, x \mapsto 10, y \mapsto 20]$ there must be taken great care that $x$ is mapped to $y$ in $\lambda y . y$.
 
-Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strategy since the choice of evaluation strategy changes the order in which terms are evaluated.
+Evaluation strategies (\autoref{sec:es}) are a core part of the reduction strategy since the choice of evaluation strategy determines the order in which terms are evaluated.
 %A \textit{redex} is a reducible expression in the context of some set of reduction rules.
 %The two interesting evaluation orders are \textit{applicative order} and \textit{normal order}~\cite{sestoft2002demonstrating}.
 %The most interesting evaluation order is 
@@ -236,7 +37,7 @@ The order of evaluation decides the evaluation strategy and also the final form 
 Before delving into more complicated evaluation strategies such as call by need, call by name will be considered.
 
 A reduction strategy would involve substituting variables, once they are applied.
-When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be substituted by \texttt{5} such that the expression becomes \texttt{x + 5} with the substitution mapping \texttt{\{x $\mapsto$ 5\}}.
+When evaluating a term such as \texttt{($\lambda$x.x) y}, \texttt{x} must be substituted by \texttt{y} such that the expression then becomes \texttt{x} with the substitution \texttt{\{x $\mapsto$ y\}} and finally becomes \texttt{y} after the substitution has occurred.
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \vspace*{0.49cm}
@@ -263,9 +64,9 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
         \begin{subfigure}[b]{1\textwidth}
             \vspace*{0.4cm}
               \begin{prooftree}
-                \AxiomC{\texttt{\{x $\mapsto$ e\} y $\rightarrow$ z}}
+                \AxiomC{\texttt{\{x $\mapsto$ e\} p $\rightarrow$ l}}
                   \RightLabel{Let}
-                  \UnaryInfC{\texttt{let x = e in y $\rightarrow$ z}}
+                  \UnaryInfC{\texttt{let x = e in p $\rightarrow$ l}}
               \end{prooftree}   
           \caption{}
           \label{fig:simplelet}
@@ -273,10 +74,10 @@ When evaluating a term such as \texttt{($\lambda$x.x + 5) 5}, \texttt{x} must be
         \begin{subfigure}[b]{1\textwidth}
             \vspace*{0.4cm}
               \begin{prooftree}
-                \AxiomC{\texttt{f $\rightarrow$ ($\lambda$x.e)}}
-                \AxiomC{\texttt{\{x $\mapsto$ z\} e $\rightarrow$ y}}
+                \AxiomC{\texttt{l $\rightarrow$ ($\lambda$x.e)}}
+                \AxiomC{\texttt{\{x $\mapsto$ p\} e $\rightarrow$ o}}
                   \RightLabel{App}
-                  \BinaryInfC{\texttt{f z $\rightarrow$ y}}
+                  \BinaryInfC{\texttt{l p $\rightarrow$ o}}
               \end{prooftree}   
           \caption{A simple application rule}
           \label{fig:simpleapp}
@@ -289,15 +90,15 @@ The rules in \autoref{fig:scbn} display a simple set of rules for proving call b
 \begin{itemize}
 \item The Abs and Var rules (\autoref{eq:simpleabs} and \autoref{eq:simplevar}) are rules which act as terminal cases of a proof.
       Abs and Var both state that if either of them occur then the expression must be an axiom by their identity.
-\item The App rule (\autoref{fig:simpleapp}) states that ``\texttt{f z} can be proved to evaluate to \texttt{y} if \texttt{f} can be proved to be \texttt{($\lambda$x.e)} and \texttt{e} can be proved to be \texttt{y}, where \texttt{x} has been replaced with \texttt{z} in \texttt{e}''.
+\item The App rule (\autoref{fig:simpleapp}) states that ``\texttt{l p} can be proved to evaluate to \texttt{o} if \texttt{l} can be proved to be \texttt{($\lambda$x.e)} and \texttt{e} can be proved to evaluate to \texttt{o}, where \texttt{x} has been replaced by \texttt{p} in \texttt{e}''.
 \item The Let rule has the same function as the App rule, but will have an important role in a more refined version of the semantics.
 \end{itemize}
 We must introduce rules for how substitutions should act upon encountering lambda calculus terms (\autoref{eq:subsem}).
 \begin{align}
-  &\texttt{\{x $\mapsto$ y\}x = y} \label{eq:subsem}\\
-  &\texttt{\{x $\mapsto$ y\}z = z}  \tag*{}\\
-  &\texttt{S(f z) = (Sf)(Sz)} \tag*{}\\
-  &\texttt{S($\lambda$x.e) = ($\lambda$x.Se) } \label{eq:subsemrem}%\\
+  &\texttt{\{x $\mapsto$ e\}x = e} \label{eq:subsem}\\
+  &\texttt{\{x $\mapsto$ e\}p = p}  \tag*{}\\
+  &\texttt{E(l p) = (El)(Ep)} \tag*{}\\
+  &\texttt{E($\lambda$x.e) = ($\lambda$x.Ee) } \label{eq:subsemrem}%\\
 \end{align}
 
 \subsubsection{Ambiguous programs}
@@ -330,8 +131,8 @@ Clearly this system is not sound, thus requires some further refinement.
 %Which eventually evaluates to \texttt{2}, which clearly is not the intended result.
 Removing the rule \autoref{eq:subsemrem} and adding the two rules in \autoref{eq:subsemfixed} solves this type.
 \begin{align}
-  &\texttt{S($\lambda$x.e) = ($\lambda$x.Se)} & \texttt{(x $\mapsto$ y) $\notin$ S} \label{eq:subsemfixed}\\
-  &\texttt{S($\lambda$x.e) = ($\lambda$x.(S$\backslash$\{x $\mapsto$ y\})e)} & \texttt{(x $\mapsto$ y) $\in$ S} \tag*{}
+  &\texttt{E($\lambda$x.e) = ($\lambda$x.Ee)} & \texttt{(x $\mapsto$ p) $\notin$ S} \label{eq:subsemfixed}\\
+  &\texttt{E($\lambda$x.e) = ($\lambda$x.(E$\backslash$\{x $\mapsto$ p\})e)} & \texttt{(x $\mapsto$ p) $\in$ S} \tag*{}
 \end{align}
 This is a simple instance of variable ambiguity, a more problematic variant exists which goes by the name of variable capture.
 This evaluation model is indeed powerful enough to evaluate \textbf{most} call by name lambda calculus programs.
@@ -473,9 +274,9 @@ $\alpha$-conversions will be further explored in future refinements of \autoref{
 %\end{remark}
 \subsubsection{The heap}
 Heaps, like environments in typing (\autoref{eq:env}), define what ``state'' is required to evaluate some expression.
-A heap contains mappings from variables to expressions, much like the substitution mapping.
+A heap contains mappings from variables to expressions, much like the environment which performs substitutions, except it acts like a store.
 Heaps are a requirement for call by need semantics.
-A simple modification to the rules in \autoref{fig:rules:env}, implies that the system must bring a heap along. 
+A simple modification to the rules in \autoref{fig:rules:env}, introduces a heap which states that that the semantics must bring a heap along. 
 \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
         \vspace*{0.49cm}
@@ -483,7 +284,7 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies that the 
             \begin{prooftree}
                 \AxiomC{}
                 \RightLabel{Abs}
-                \UnaryInfC{\texttt{S, ($\lambda$x.e) $\rightarrow$ S, ($\lambda$x.e)}}
+                \UnaryInfC{\texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)}}
             \end{prooftree}   
             \caption{}
           \label{fig:rules:env:abs}
@@ -491,9 +292,9 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies that the 
         \begin{subfigure}[b]{0.49\textwidth}
             \vspace*{0.4cm}
               \begin{prooftree}
-                \AxiomC{\texttt{S $\cup$ \{x $\mapsto$ e\}, y $\rightarrow$ $\Theta$, z}}
+                \AxiomC{\texttt{$\Gamma$ $\cup$ \{x $\mapsto$ e\}, p $\rightarrow$ $\Theta$, l}}
                   \RightLabel{Let}
-                  \UnaryInfC{\texttt{S, let x = e in y $\rightarrow$ $\Theta$, z}}
+                  \UnaryInfC{\texttt{$\Gamma$, let x = e in p $\rightarrow$ $\Theta$, l}}
               \end{prooftree}   
           \caption{}
           \label{fig:rules:env:let}
@@ -501,10 +302,10 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies that the 
         \begin{subfigure}[b]{1\textwidth}
           \vspace*{0.4cm}
           \begin{prooftree}
-            \AxiomC{\texttt{$\Theta$, f $\rightarrow$ S, ($\lambda$x.e)}}
-            \AxiomC{\texttt{S, \{x $\mapsto$ z\}e $\rightarrow$ $\Sigma$, y}}
+            \AxiomC{\texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)}}
+            \AxiomC{\texttt{$\Theta$, \{x $\mapsto$ p\}e $\rightarrow$ $\Sigma$, o}}
               \RightLabel{App}
-              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow$ $\Sigma$, y}}
+              \BinaryInfC{\texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o}}
           \end{prooftree}   
           \caption{}
           \label{fig:rules:env:app}
@@ -512,9 +313,9 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies that the 
         \begin{subfigure}[b]{1\textwidth}
           \vspace*{0.4cm}
             \begin{prooftree}
-                \AxiomC{\texttt{S, e $\rightarrow$ $\Theta$, y}}
+                \AxiomC{\texttt{$\Gamma$, e $\rightarrow$ $\Theta$, p}}
                 \RightLabel{Var}
-                \UnaryInfC{\texttt{S $\cup$ \{x $\mapsto$ e\}, x $\rightarrow$ $\Theta$ $\cup$ \{x $\mapsto$ e\}, y}}
+                \UnaryInfC{\texttt{$\Gamma$ $\cup$ \{x $\mapsto$ e\}, x $\rightarrow$ $\Theta$ $\cup$ \{x $\mapsto$ e\}, p}}
             \end{prooftree}   
             \caption{}
           \label{fig:rules:env:var}
@@ -526,6 +327,7 @@ A simple modification to the rules in \autoref{fig:rules:env}, implies that the 
 The rules in \autoref{fig:rules:env} are quite different from the rules in \autoref{fig:scbn}.
 \begin{itemize}
   \item Var is no longer terminal, it now inspects the heap for a replacement value for some \texttt{x}.
+    Notice that Var now removes the mapping from the heap $\Gamma$ such that recursively defined expressions cannot occur.
   \item Let now has a role which is distinct from App.
     Let now introduces values to the heap, but does not induce a substitution.
   \item App remains the same by eagerly substituting, but now augmented with a heap.
@@ -573,9 +375,9 @@ A rule which encapsulates ``when evaluating a value for a variable, save the eva
 \begin{figure}[ht]
   \begin{mdframed}
     \begin{prooftree}
-      \AxiomC{\texttt{S, e $\rightarrow$ $\Theta$, y}}
+      \AxiomC{\texttt{$\Gamma$, e $\rightarrow$ $\Theta$, p}}
       \RightLabel{Var}
-      \UnaryInfC{\texttt{S $\cup$ \{x $\mapsto$ e\}, x $\rightarrow$ $\Theta$ $\cup$ \{x $\mapsto$ y\}, y}}
+      \UnaryInfC{\texttt{$\Gamma$ $\cup$ \{x $\mapsto$ e\}, x $\rightarrow$ $\Theta$ $\cup$ \{x $\mapsto$ p\}, p}}
     \end{prooftree}
   \end{mdframed}
   \caption{}
@@ -625,16 +427,16 @@ Consider a previous case of variable capture \autoref{eq:ambg:cap}.
 \end{align}
 None of the changes so far have any impact on the falsity of the expression.
 Consider that \texttt{x} and \texttt{y} must have entered the heap through a Let expression.
-Consider also that some variable \texttt{k} cannot be subject to variable capture if \texttt{k $\notin$ Bound($\lambda$v.e)}.
+Consider also that some variable \texttt{k} cannot be subject to variable capture if \texttt{k $\notin$ Bound($\lambda$x.e)}.
 Naturally if \texttt{k} is unique, that is, it is introduced through the \texttt{fresh} function from \autoref{sec:alpha} then \texttt{k} can never occur bound.
 The obvious rule from these considerations must be new Let rule defined in \autoref{fig:eval:letrename}.
 \begin{figure}[ht]
   \begin{mdframed}
     \begin{prooftree}
-      \AxiomC{\texttt{S $\cup$ \{$\gamma$ $\mapsto$ e\}, \{x $\mapsto$ $\gamma$\}y $\rightarrow$ $\Theta$, z}}
+      \AxiomC{\texttt{$\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, \{x $\mapsto$ $\gamma$\}p $\rightarrow$ $\Theta$, l}}
       \AxiomC{\texttt{$\gamma$ = fresh}}
         \RightLabel{Let}
-        \BinaryInfC{\texttt{S, let x = e in y $\rightarrow$ $\Theta$, z}}
+        \BinaryInfC{\texttt{$\Gamma$, let x = e in p $\rightarrow$ $\Theta$, l}}
     \end{prooftree}   
   \end{mdframed}
   \caption{}
@@ -690,9 +492,9 @@ Clearly this rule is not encoded into the aforementioned rules, but can be model
         \begin{subfigure}[b]{1\textwidth}
         \vspace*{0.49cm}
             \begin{prooftree}
-                \AxiomC{\texttt{x $\in \mathbb{Z^+}$}}
+                \AxiomC{\texttt{n $\in \mathbb{Z^+}$}}
                 \RightLabel{Num}
-                \UnaryInfC{\texttt{S, x $\rightarrow$ S, x}}
+                \UnaryInfC{\texttt{S, n $\rightarrow$ S, n}}
             \end{prooftree}   
         \end{subfigure}
   \end{mdframed}
@@ -700,6 +502,9 @@ Clearly this rule is not encoded into the aforementioned rules, but can be model
   \label{fig:oplusrule}
 \end{figure}
 Notice that \autoref{fig:oplusrule} also must accompany a Num rule which introduces integers to the system.
+\begin{remark}
+  Notice that the Bin op rule in \autoref{fig:oplusrule} uses \texttt{x} and \texttt{y} which are in the domain of variables, since all non-trivial expressions must be bound to fresh names through Let.
+\end{remark}
 
 \begin{exmp}
 Now that rules have been established which avoid variable ambiguity through renaming and support lazy evaluation, an example seems natural.
@@ -1501,17 +1306,17 @@ A garbage collection rule as described in \autoref{fig:letrelease} works, but is
 Introducing a garbage collection rule which can be placed at any one step of the proof requires some additional work for various reasons.
 Foremost, introspection of expressions becomes necessary since the rule must determine what gets to stay in the heap.
 Furthermore, rules which branch such as the App rule and Bin op rule requires the tracing of expressions which are pending.
-More precisely, when evaluating \texttt{f} in the App rule in \autoref{fig:rules:env:app}, the expression \texttt{z} should not be released since it must be present for the right branch (\texttt{\{x $\mapsto$ z\}e}).
+More precisely, when evaluating \texttt{l} in the App rule in \autoref{fig:rules:env:app}, the expression \texttt{p} should not be released since it must be present for the right branch (\texttt{\{x $\mapsto$ p\}e}).
 All branching rules must record expressions which are needed for further branches, this is done by introducing a set of expressions \texttt{N}, such that all evaluations are written $\rightarrow_{\texttt{N}}$ (\autoref{fig:branchrules}).
 \begin{figure}[ht]
   \begin{mdframed}[style=style1]
     \begin{subfigure}[b]{1\textwidth}
     \vspace*{0.19cm}
           \begin{prooftree}
-            \AxiomC{\texttt{$\Theta$, f $\rightarrow_{\texttt{(N $\cup$ \{z\})}}$ S, ($\lambda$x.e)}}
-            \AxiomC{\texttt{S, \{x $\mapsto$ z\}e $\rightarrow_{\texttt{N}}$ $\Sigma$, y}}
+            \AxiomC{\texttt{$\Gamma$, f $\rightarrow_{\texttt{(N $\cup$ \{z\})}}$ $\Theta$, ($\lambda$x.e)}}
+            \AxiomC{\texttt{$\Theta$, \{x $\mapsto$ z\}e $\rightarrow_{\texttt{N}}$ $\Sigma$, l}}
               \RightLabel{App}
-              \BinaryInfC{\texttt{$\Theta$, f z $\rightarrow_{\texttt{N}}$ $\Sigma$, y}}
+              \BinaryInfC{\texttt{$\Gamma$, f z $\rightarrow_{\texttt{N}}$ $\Sigma$, l}}
           \end{prooftree}   
     \end{subfigure}
     \begin{subfigure}[b]{1\textwidth}
@@ -1531,10 +1336,10 @@ In addition to \autoref{fig:branchrules}, there must also be an accompanying rul
 \begin{figure}[ht]
   \begin{mdframed}
     \begin{prooftree}
-            \AxiomC{\texttt{$\Theta$, e $\rightarrow_{\texttt{N}}$ S, y}}
+            \AxiomC{\texttt{$\Gamma$, e $\rightarrow_{\texttt{N}}$ $\Theta$, p}}
             \AxiomC{\texttt{x $\notin$ R($\Theta$, N, e)}}
               \RightLabel{GC}
-              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ S, y}}
+              \BinaryInfC{\texttt{$\Gamma$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ $\Theta$, p}}
     \end{prooftree}   
   \end{mdframed}
   \caption{A rule which filters by used values}
@@ -1545,10 +1350,10 @@ One could also define the garbage collection rule more compactly if the granular
 \begin{figure}[ht]
   \begin{mdframed}
     \begin{prooftree}
-            \AxiomC{\texttt{$\Sigma$, e $\rightarrow_{\texttt{N}}$ S, y}}
-            \AxiomC{\texttt{$\Sigma$ = Prune($\Theta$, N)}}
+            \AxiomC{\texttt{$\Gamma$, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
+            \AxiomC{\texttt{$\Sigma$ = Prune($\Gamma$, N)}}
               \RightLabel{GC}
-              \BinaryInfC{\texttt{$\Theta$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ S, y}}
+              \BinaryInfC{\texttt{$\Gamma$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
     \end{prooftree}   
   \end{mdframed}
   \caption{A rule which prunes unused values}
@@ -1557,8 +1362,8 @@ One could also define the garbage collection rule more compactly if the granular
 \autoref{fig:gcmacro} defines a garbage collection algorithm which prunes all unreachable values, where \texttt{Prune} is the minimal set of required values to continue program evaluation.
 \texttt{Prune} can be defined as in \autoref{eq:prune}
 \begin{align}
-  &\texttt{Prune($\Theta$, \{\}) = \{\}} \label{eq:prune}\\
-  &\texttt{Prune($\Theta$, \{e\} $\cup$ N) = \{x $\mapsto$ y | x $\in$ free(e), x $\mapsto$ y $\in$ $\Theta$\} $\cup$ Prune($\Theta$, N)} \tag*{}
+  &\texttt{Prune($\Gamma$, \{\}) = \{\}} \label{eq:prune}\\
+  &\texttt{Prune($\Gamma$, \{e\} $\cup$ N) = \{x $\mapsto$ y | x $\in$ free(e), x $\mapsto$ y $\in$ $\Gamma$\} $\cup$ Prune($\Gamma$, N)} \tag*{}
 \end{align}
 
 %Garbage collection (as in any method which frees memory that is no longer in use), in purely functional languages is different from imperative languages like C, since manual memory management is often abstracted away. 
@@ -1650,7 +1455,50 @@ One could also define the garbage collection rule more compactly if the granular
 
 \subsection{Interpreting programs}
 Now that the semantics for evaluation of the lambda calculus have been presented, a machine naturally follows.
-One can implement the machine very closely to what the semantics describe, as an initial implementation.
+One can implement a machine functions very closely to what the semantics describe.
+An algorithm which is very alike the natural semantics is presented in \autoref{fig:eval:laznaive}.
+\begin{figure}
+\begin{mdframed}
+\begin{align}
+  \texttt{subst(f, t, $\lambda$x.e) }&\texttt{= } 
+  \begin{cases}
+    \texttt{$\lambda$x.e }& \texttt{if x $\equiv$ f}\\
+    \texttt{$\lambda$x.subst(f, t, e) }&
+  \end{cases}\tag*{}\\
+  \texttt{subst(f, t, x) }&\texttt{= }
+  \begin{cases}
+    \texttt{t }& \texttt{if x $\equiv$ f}\\
+    \texttt{x }&
+  \end{cases}\tag*{}\\
+  \texttt{subst(f, t, x e) }&\texttt{= subst(f, t, x) subst(f, t, e)}\tag*{}\\
+  \texttt{subst(f, t, x $\oplus$ e) }&\texttt{= subst(f, t, x) $\oplus$ subst(f, t, e)}\tag*{}
+\end{align}
+\end{mdframed}
+  \caption{A function \texttt{subst} which states ``substitute \texttt{f} in with \texttt{t} in some expression''}
+  \label{fig:eval:subst}
+\end{figure}
+\begin{figure}
+\begin{mdframed}[style=style1]
+\begin{align}
+  \texttt{eval($\Gamma$, $\lambda$x.e) }&\texttt{= ($\Gamma$, $\lambda$x.e)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, f z) }&\texttt{= eval($\Theta$, subst(x, z, e))}\tag*{}\\
+  \wherecase{($\Theta$, $\lambda$x.e) = eval($\Gamma$, f)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$ $\cup$ \{x $\mapsto$ e\}, x)}&\texttt{= ($\Theta$ $\cup$ \{x $\mapsto$ y\}, y)}\tag*{}\\
+  \wherecase{($\Theta$, y) = eval($\Gamma$, e)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, let x = e in p) }&\texttt{= eval($\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, l)}\tag*{}\\
+  \wherecase{$\gamma$ = fresh,}\tag*{}\\
+  \extracase{l = subst(x, $\gamma$, p)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, x $\oplus$ y) }&\texttt{= (S, n $\oplus$ t)}\tag*{}\\
+  \wherecase{($\Sigma$, n) = eval($\Gamma$, x),}\tag*{}\\
+  \extracase{(S, t) = eval($\Sigma$, y)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, n $\in$ $\mathbb{Z^+}$) }&\texttt{= ($\Gamma$, n)}\tag*{}
+\end{align}
+\end{mdframed}
+  \caption{An algorithm for evaluating the lazy lambda calculus}
+  \label{fig:eval:laznaive}
+\end{figure}
+The algorithm in \autoref{fig:eval:laznaive} is correct and minimal but suffers from some practical issues.
+In the true spirit of suspended computations, a suspended computation should have no impact on the performance characteristics.
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
@@ -1857,4 +1705,3 @@ Evaluating \texttt{foldl} on a list of size \texttt{n} with the addition functio
     %&
 %\end{align}
 
-\end{document}

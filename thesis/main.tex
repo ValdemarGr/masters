@@ -53,6 +53,12 @@
     \tag{\theequation \hspace*{0.1cm} - #1}
 }
 
+\newcommand{\wherecase}[1]{
+  \texttt{whe}&\texttt{re #1}
+}
+\newcommand{\extracase}[1]{
+  &\hspace{0.62cm}\texttt{#1}
+}
 
 \mdfdefinestyle{style1}{leftmargin=-0.5cm,rightmargin=-0.5cm,skipbelow=1cm,skipabove=1cm,
    innertopmargin=0pt}
@@ -121,6 +127,10 @@
 \end{titlepage}
 
 \tableofcontents
+
+\clearpage
+
+\input{intro/intro}
 
 \part{Compilers and languages}
 

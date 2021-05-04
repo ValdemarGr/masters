@@ -1,0 +1,18 @@
+\section{Notation}
+\subsection{Functions and implementations}
+Some functions are written in pattern matching style.
+Functions which have parameters that can take different values or shapes can implement a case for each value or shape.
+For instance, a function which finds the cardinality of a set can be implemented as in \autoref{eq:notation:card}.
+\begin{align}
+  \texttt{card($\emptyset$) }&\texttt{= 0} \label{eq:notation:card} \\
+  \texttt{card(\{x\} $\cup$ S) }&\texttt{= 1 + card(S)} \tag*{}
+\end{align}
+Inevitably, to allow complicated functions, like algorithms, some functions may require subexpressions.
+Subexpressions are denoted with \texttt{where} when some expression is a composite of multiple expressions like in \autoref{eq:notation:fib}.
+\begin{align}
+  \texttt{fib(0) }&\texttt{= 0} \label{eq:notation:fib} \\
+  \texttt{fib(1) }&\texttt{= 1} \tag*{} \\
+  \texttt{fib(n) }&\texttt{= F$_\texttt{n-1}$ + F$_\texttt{n-2}$} \tag*{} \\
+  \wherecase{F$_\texttt{n-1}$ = fib(n - 1)},\tag*{}\\
+  \extracase{F$_\texttt{n-2}$ = fib(n - 2)}\tag*{}
+\end{align}
