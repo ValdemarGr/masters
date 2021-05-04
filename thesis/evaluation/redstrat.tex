@@ -1455,7 +1455,8 @@ One could also define the garbage collection rule more compactly if the granular
 
 \subsection{Interpreting programs}
 Now that the semantics for evaluation of the lambda calculus have been presented, a machine naturally follows.
-One can implement a machine functions very closely to what the semantics describe.
+The machine which is presented is originally derived in~\cite{sestoft1997deriving}.
+One can implement a machine which functions very closely to what the semantics describe.
 An algorithm which is very alike the natural semantics is presented in \autoref{fig:eval:laznaive}.
 \begin{figure}
 \begin{mdframed}
@@ -1497,8 +1498,10 @@ An algorithm which is very alike the natural semantics is presented in \autoref{
   \caption{An algorithm for evaluating the lazy lambda calculus}
   \label{fig:eval:laznaive}
 \end{figure}
-The algorithm in \autoref{fig:eval:laznaive} is correct and minimal but suffers from some practical issues.
-In the true spirit of suspended computations, a suspended computation should have no impact on the performance characteristics.
+The algorithm in \autoref{fig:eval:laznaive} is correct (which will not be proven since it will have a successor shortly) and minimal but suffers from some practical issues.
+In the true spirit of suspended computations, a suspended computation should have no impact on the performance characteristics, if not evaluated.
+The \texttt{subst} function in \autoref{fig:eval:laznaive} is defined to be eager, which naturally does not follow the philosophy of lazy computation. 
+
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
