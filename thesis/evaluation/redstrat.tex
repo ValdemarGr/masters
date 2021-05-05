@@ -341,7 +341,7 @@ The basis for sharing evaluated expressions is rooted in a labelling problem~\ci
 Before delving into a set of rules which use a labelling technique, consider that sharing can be viewed as a dependency graph of expressions.
 Let \autoref{fig:dependencygraph} be a depiction of the dependency graph of \autoref{eq:xyk} under the rules in \autoref{fig:rules:env}.
 \begin{align}
-  &\texttt{let k = (1 + 1) in }\label{eq:xyk}\\
+  &\texttt{let k = ($\lambda$z.z) ($\lambda$f.f) in }\label{eq:xyk}\\
   &\texttt{let x = k in }\tag*{}\\
   &\texttt{let y = k in }\tag*{}\\
   &\texttt{x + y}\tag*{}
@@ -349,7 +349,7 @@ Let \autoref{fig:dependencygraph} be a depiction of the dependency graph of \aut
 \begin{figure}[ht]
   \centering
   \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.25cm and 0.25cm]
-      \node[draw=black] (e) {\texttt{(1 + 1)}};
+      \node[draw=black] (e) {\texttt{($\lambda$z.z) ($\lambda$f.f)}};
 
           \node[draw=black, below = of e] (k) {\texttt{k}};
           \path[->] (k) edge node[left] {} (e);
@@ -385,11 +385,11 @@ A rule which encapsulates ``when evaluating a value for a variable, save the eva
 \end{figure}
 The rule in \autoref{fig:eval:share} replaces the Var rule, and introduces a subtle difference; when a variable reference occurs the value which the variable evaluates to is saved as the new reference.
 Introducing shareable expressions through Let is in it's essence a labelling of an expression.
-Evaluating \autoref{eq:xyk} under the new rules reveals that evaluating \texttt{x} forces \texttt{k} to be evaluated which then forces \texttt{(1 + 1)}, which becomes \texttt{2} and is then saved as the new value of \texttt{k} and then as \texttt{x}, thus the dependency tree becomes \autoref{fig:dependencygraphv2}.
+Evaluating \autoref{eq:xyk} under the new rules reveals that evaluating \texttt{x} forces \texttt{k} to be evaluated which then forces \texttt{($\lambda$z.z) ($\lambda$f.f)}, which becomes \texttt{($\lambda$f.f)} and is then saved as the new value of \texttt{k} and then as \texttt{x}, thus the dependency tree becomes \autoref{fig:dependencygraphv2}.
 \begin{figure}[ht]
   \centering
   \begin{tikzpicture}[ scale=0.8, every node/.style={scale=0.8}, node distance = 0.25cm and 0.25cm]
-      \node[draw=black] (e) {\texttt{2}};
+      \node[draw=black] (e) {\texttt{($\lambda$f.f)}};
 
           \node[draw=black, below left = of e] (k) {\texttt{k}};
           \path[->] (k) edge node[left] {} (e);
@@ -1457,7 +1457,7 @@ One could also define the garbage collection rule more compactly if the granular
 Now that the semantics for evaluation of the lambda calculus have been presented, a machine naturally follows.
 The machine which is presented is originally derived in~\cite{sestoft1997deriving}.
 One can implement a machine which functions very closely to what the semantics describe.
-An algorithm which is very alike the natural semantics is presented in \autoref{fig:eval:laznaive}.
+An algorithm which is very alike the natural semantics is presented in \autoref{fig:eval:laznaive} where the \texttt{subst} function is defined as in \autoref{fig:eval:subst}.
 \begin{figure}
 \begin{mdframed}
 \begin{align}
@@ -1498,7 +1498,65 @@ An algorithm which is very alike the natural semantics is presented in \autoref{
   \caption{An algorithm for evaluating the lazy lambda calculus}
   \label{fig:eval:laznaive}
 \end{figure}
-The algorithm in \autoref{fig:eval:laznaive} is correct (which will not be proven since it will have a successor shortly) and minimal but suffers from some practical issues.
+%The algorithm in \autoref{fig:eval:laznaive} is correct (which will not be proven since it will have a successor shortly) and minimal but suffers from some practical issues.
+The algorithm in \autoref{fig:eval:laznaive} is minimal but suffers from some practical issues.
+\subsubsection{A CPS machine}
+The algorithm in \autoref{fig:eval:laznaive} cannot evaluate infinite programs, since it's recursive invocations is not in tail call position.
+In the machine introduced in~\cite{sestoft1997deriving} (which will be named the \textit{stack machine}), the algorithm is implemented via a stack which is used to record state in recursive invocations that either branch or require sharing.
+\cite{sestoft1997deriving} argues that stack testing in the stack machine; testing the top element of the stack to determine the next computation, is a property best eliminated.
+The \textit{app1} and \textit{app2} rules from the stack machine, displayed in \autoref{fig:stackmachine:a1a2} respectively, give insight into some properties that we can use to eliminate stack testing.
+\begin{figure}
+\begin{mdframed}
+\begin{align}
+  \texttt{eval($\Gamma$, S, l p) }&\texttt{= eval($\Gamma$, p :S, l)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, p :S, $\lambda$x.e) }&\texttt{= eval($\Gamma$, S, subst(x, p, e))}\tag*{}
+\end{align}
+\end{mdframed}
+  \caption{The \textit{app1} and \textit{app2} rules from the stack machine.\\
+  \texttt{p :S} means that \texttt{p} is pushed to the stack \texttt{S}, if on the right hand side of \texttt{=}, and popped from \texttt{S}, if on the left hand side of \texttt{=}.}
+  \label{fig:stackmachine:a1a2}
+\end{figure}
+The basis for performing stack testing is the missing information regarding what rule an expression originated from.
+To eliminate stack testing in the stack machine we can translate the stack machine into a \textit{continuation-passing style} machine, CPS machine for short.
+A stack will be used for the CPS machine, but the stack will have different role.
+In the CPS machine the stack holds continuations of the type $cont: \Gamma \times S \times \lambda \rightarrow \lambda$, that is, there is no returning.
+There must be catalogue of appropriate continuations for each rule that either branches or requires state and a terminal function \texttt{continue} which either continues by popping a continuation from the stack or returns the expression if the stack is empty \autoref{fig:eval:cps}.
+\begin{figure}
+\begin{mdframed}[style=style1]
+\begin{align}
+  \texttt{continue($\Gamma$, [], e) }&\texttt{= e}\tag*{}\\
+  \spacecase
+  \texttt{continue($\Gamma$, cont :S, e) }&\texttt{= cont($\Gamma$, S, e)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, $\lambda$x.e) }&\texttt{= continue($\Gamma$, S, $\lambda$x.e)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, l p) }&\texttt{= eval($\Gamma$, cont :S, l)}\tag*{}\\
+  \wherecase{cont($\Sigma$, S', $\lambda$x.e) = }\tag*{}\\
+  \extracase{ eval($\Sigma$, S', subst(x, p, e))}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$ $\cup$ \{x $\mapsto$ e\}, S, x) }&\texttt{= eval($\Gamma$, cont :S, e)}\tag*{}\\
+  \wherecase{cont($\Sigma$, S', p) = }\tag*{}\\
+  \extracase{ continue($\Sigma$ $\cup$ \{x $\mapsto$ p\}, S', p)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, let x = e in p) }&\texttt{= eval($\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, S, l)}\tag*{}\\
+  \wherecase{$\gamma$ = fresh,}\tag*{}\\
+  \extracase{l = subst(x, $\gamma$, p)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, x $\oplus$ y) }&\texttt{= eval($\Gamma$, cont :S, x)}\tag*{}\\
+  \wherecase{cont($\Sigma$, S', n) = }\tag*{}\\
+  \extracase{ eval($\Sigma$, cont' :S', y)}\tag*{}\\
+  \extracase{ \hspace*{-0.8cm}where cont'($\Theta$, S'', t) = }\tag*{}\\
+  \extracase{\hspace*{0.65cm} continue($\Theta$, S'', n + t)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, n $\in$ $\mathbb{Z^+}$) }&\texttt{= continue($\Gamma$, S, n)}\tag*{}
+\end{align}
+\end{mdframed}
+  \caption{A CPS algorithm for a evaluating the lazy lambda calculus}
+  \label{fig:eval:cps}
+\end{figure}
+In it's essence, the algorithm in \autoref{fig:eval:cps} evaluates terms in normal order, recording sharing (Var) and branching (App, Bin op), until it reaches a terminal expression.
+When \autoref{fig:eval:cps} reaches a terminal expression, the most recently pushed continuation must naturally be the expression which is the most recent expression that is subject to the rules Var, App or Bin op.
+
 In the true spirit of suspended computations, a suspended computation should have no impact on the performance characteristics, if not evaluated.
 The \texttt{subst} function in \autoref{fig:eval:laznaive} is defined to be eager, which naturally does not follow the philosophy of lazy computation. 
 
