@@ -4,20 +4,97 @@
 \section{Types and validation}
 \label{sec:types}
 The spell checking equivalent for computer programs could be type checking; a subproblem of validating a programmer's intuition of a program's intent.
-Types also have other properties than simply validating they can in fact be related to theorems to which an implementation is the proof~\cite{howard1980formulae}.
-\begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl},mathescape=true]
-$\texttt{fun head l: List a} \rightarrow \texttt{a =}$
-    $\texttt{match l}$
-        $\texttt{| Cons x \_ } \rightarrow \texttt{x;}$
-        $\texttt{| Nil} \rightarrow \texttt{?;}$
-    ;
-\end{lstlisting}
-For instance, consider the implementation of the fuction with type $\texttt{List a} \rightarrow \texttt{a}$ in \autoref{lst:headimpl}.
-A total implementation of the function cannot exist.
+Types can take properties that make them very powerful since types are, in their essence, a set of logical formulas in which we can use natural deduction to prove their validity~\cite{howard1980formulae}.
+\subsection{Notation}
+In the world of type theory we use natural deduction to prove type validity.
+Natural deduction is expressed by \textit{inference rules}, which consist of one or more premises and a conclusion.
+For instance the modus ponens rule which states that if ``if \texttt{a} implies \texttt{b} and \texttt{a}, then \texttt{b}'', can easily be written in inference rules, where \texttt{a $\rightarrow$ b} and \texttt{a} are the permises and \texttt{b} is the conclusion (\autoref{fig:not:inf}).
+\begin{figure}
+  \begin{mdframed}
+  \begin{prooftree}
+    \AxiomC{\texttt{a $\rightarrow$ b}}
+    \AxiomC{\texttt{a}}
+    \BinaryInfC{\texttt{b}}
+  \end{prooftree}
+  \end{mdframed}
+  \caption{}
+  \label{fig:not:inf}
+\end{figure}
+Conditions can also occur rules which state what conditions must be met for the rule to apply (\autoref{fig:not:notdead}).
+\begin{figure}
+  \begin{mdframed}
+  \begin{prooftree}
+    \AxiomC{\texttt{P}}
+    \AxiomC{\texttt{P} is not dead}
+    \BinaryInfC{\texttt{P} is alive}
+  \end{prooftree}
+  \end{mdframed}
+  \caption{}
+  \label{fig:not:notdead}
+\end{figure}
+Furthermore, hypotheses are written $\Gamma \vdash p$ which states that under the assumption of $\Gamma$ then $p$.
 
-The type system for the $L$ language will be the Hindley-Milner type system~\cite{hindley1969principal,milner1978theory}.
+%\begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl},mathescape=true]
+%$\texttt{fun head l: List a} \rightarrow \texttt{a =}$
+    %$\texttt{match l}$
+        %$\texttt{| Cons x \_ } \rightarrow \texttt{x;}$
+        %$\texttt{| Nil} \rightarrow \texttt{?;}$
+    %;
+%\end{lstlisting}
+%For instance, consider the implementation of the fuction with type $\texttt{List a} \rightarrow \texttt{a}$ in \autoref{lst:headimpl}.
+%A total implementation of the function cannot exist.
+
+%The type system for the $L$ language will be the Hindley-Milner type system~\cite{hindley1969principal,milner1978theory}.
 
 \subsection{The language of types}
+The untyped lambda calculus is exactly that, untyped.
+For it to become typed, we must introduce how types occur.
+A very simple type system for the how typed lambda calculus can be proved must introduce a rule for each of the lambda calculus term types Var, Let, App and Abs.
+Types occur in programs, as such, programs are the assumption for a proof of such a program's types such that the assumption for types will become a set of program variables $\{x_1 \dots x_n\}$ paired with their respective type $\Gamma = \{(x_1 : \tau_1)\}, \dots (x_n : \tau_n)\}$.
+Stating that it is assumed that a variable $x$ of type $\tau$ occurs in $\Gamma$ is written $\Gamma, x: \tau$
+
+With the aforementioned knowledge, we can develop a simple set of inference rules which can be used to prove programs with types (\autoref{fig:simpletyped}).
+\begin{figure}
+  \begin{mdframed}
+    \begin{subfigure}[b]{0.33\textwidth}
+		\begin{prooftree}
+			\AxiomC{$x: \tau \in \Gamma$}
+			\LeftLabel{Var}
+			\UnaryInfC{$\Gamma\vdash x:\tau$}
+		\end{prooftree}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.65\textwidth}
+		\begin{prooftree}
+			\AxiomC{$\Gamma \vdash e_1 : \tau_1 \rightarrow \tau_2$}
+			\LeftLabel{App}
+			\AxiomC{$\Gamma \vdash e_2 : \tau_1$}
+			\BinaryInfC{$\Gamma \vdash e_1 e_2 : \tau_2$}
+		\end{prooftree}
+    \end{subfigure}
+		\begin{prooftree}
+			\AxiomC{$\Gamma, x: \tau_1 \vdash e : \tau_2$}
+			\LeftLabel{Abs}
+			\UnaryInfC{$\Gamma \vdash \lambda x . e : \tau_1 \rightarrow \tau_2$}
+		\end{prooftree}
+		\begin{prooftree}
+			\AxiomC{$\Gamma \vdash e_1 : \tau_1$}
+			\LeftLabel{Let}
+			\AxiomC{$\Gamma ,x : \tau_1 \vdash e_2 : \tau_2$}
+			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau_2$}
+		\end{prooftree}
+  \end{mdframed}
+  \caption{A simple set of rules for the simply typed lambda calculus}
+  \label{fig:simpletyped}
+\end{figure}
+\begin{itemize}
+  \item Var states that if $x$ has type $\tau$ in $\Gamma$ then it is assumed that $x$ has type $\tau$.
+  \item App states that if $e_1$ can be proved to have type $\tau_1 \rightarrow \tau_2$ and $e_2$ can be proved to have type $\tau_1$, then $e_1 e_2$ must be of type $\tau_2$.
+  \item Abs states that if $e$ has type $\tau_2$ under the assumption that $x$ has some type $\tau_1$, then $\lambda x.e$ must be of type $\tau_1 \rightarrow \tau_2$.
+  \item Let does not yet have an important role, since let does the exact same as a combination of App and Abs.
+    Once polymorphism is introduced, Let will play an important role.
+    Currently Let states that if $e_1$ has type $\tau_1$, and $e_2$ has type $\tau_2$ under the assumption that $x$ has type $\tau_1$ (from the proof that $e_1: \tau_1$ since $x = e_1$) then \texttt{let $x = e_1$ in $e_2$} must have inhabit the type $\tau_2$.
+\end{itemize}
+
 Before delving into types, the lambda calculus defined in \autoref{sec:lc} must be augmented with the \textit{let expression} (\autoref{eq:letb}).
 \begin{align}
 	\texttt{let } x = Y \texttt{ in } E
