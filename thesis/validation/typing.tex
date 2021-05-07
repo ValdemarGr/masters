@@ -50,8 +50,8 @@ Furthermore, hypotheses are written $\Gamma \vdash p$ which states that under th
 The untyped lambda calculus is exactly that, untyped.
 For it to become typed, we must introduce how types occur.
 A very simple type system for the how typed lambda calculus can be proved must introduce a rule for each of the lambda calculus term types Var, Let, App and Abs.
-Types occur in programs, as such, programs are the assumption for a proof of such a program's types such that the assumption for types will become a set of program variables $\{x_1 \dots x_n\}$ paired with their respective type $\Gamma = \{(x_1 : \tau_1)\}, \dots (x_n : \tau_n)\}$.
-Stating that it is assumed that a variable $x$ of type $\tau$ occurs in $\Gamma$ is written $\Gamma, x: \tau$
+Types must occur in programs to prove correctness, as such, program variables and types are the assumption for a proof of such a program's composite expressions such that the assumption for types will become a set the program variables $\{x_1 \dots x_n\}$ paired with their respective type $\Gamma = \{(x_1 : \tau_1)\}, \dots (x_n : \tau_n)\}$.
+Stating ``it is assumed that a variable $x$ of type $\tau$ occurs in $\Gamma$'' is written $\Gamma, x: \tau$.
 
 With the aforementioned knowledge, we can develop a simple set of inference rules which can be used to prove programs with types (\autoref{fig:simpletyped}).
 \begin{figure}
@@ -83,9 +83,6 @@ With the aforementioned knowledge, we can develop a simple set of inference rule
 			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau_2$}
 		\end{prooftree}
   \end{mdframed}
-  \caption{A simple set of rules for the simply typed lambda calculus}
-  \label{fig:simpletyped}
-\end{figure}
 \begin{itemize}
   \item Var states that if $x$ has type $\tau$ in $\Gamma$ then it is assumed that $x$ has type $\tau$.
   \item App states that if $e_1$ can be proved to have type $\tau_1 \rightarrow \tau_2$ and $e_2$ can be proved to have type $\tau_1$, then $e_1 e_2$ must be of type $\tau_2$.
@@ -94,20 +91,57 @@ With the aforementioned knowledge, we can develop a simple set of inference rule
     Once polymorphism is introduced, Let will play an important role.
     Currently Let states that if $e_1$ has type $\tau_1$, and $e_2$ has type $\tau_2$ under the assumption that $x$ has type $\tau_1$ (from the proof that $e_1: \tau_1$ since $x = e_1$) then \texttt{let $x = e_1$ in $e_2$} must have inhabit the type $\tau_2$.
 \end{itemize}
+  \caption{A simple set of rules for the simply typed lambda calculus}
+  \label{fig:simpletyped}
+\end{figure}
+\begin{exmp}
+  With the rules for the simply typed lambda calculus, it becomes possible to prove the types for programs.
+  Let $\lambda f.\lambda x.f x$ be a program with the type $(\tau_1 \rightarrow \tau_2) \rightarrow (\tau_1 \rightarrow \tau_2)$, the proof to which is seen in \autoref{fig:exmp:simpletyped}.
+  \begin{figure}[ht]
+    \begin{mdframed}[style=bigbox]
+      \begin{prooftree}
+                \AxiomC{$f: \tau_1 \rightarrow \tau_2 \in \{(x: \tau_1), (f: \tau_1 \rightarrow \tau_2)\}$}
+              \RightLabel{Var}
+              \UnaryInfC{$\{(x: \tau_1), (f: \tau_1 \rightarrow \tau_2)\} \vdash f: \tau_1 \rightarrow \tau_2$}
+                \AxiomC{$x: \tau_1 \in \{(x: \tau_1), (f: \tau_1 \rightarrow \tau_2)\}$}
+              \RightLabel{Var}
+              \UnaryInfC{$\{(x: \tau_1), (f: \tau_1 \rightarrow \tau_2)\} \vdash x: \tau_1$}
+            \BinaryInfC{$\{(x: \tau_1), (f: \tau_1 \rightarrow \tau_2)\} \vdash f x: \tau_2$}
+          \LeftLabel{Abs}
+          \UnaryInfC{$\{(f: \tau_1 \rightarrow \tau_2)\} \vdash (\lambda x. f x): \tau_1 \rightarrow \tau_2$}
+        \LeftLabel{Abs}
+        \UnaryInfC{$\{\} \vdash \lambda f.(\lambda x.f x): (\tau_1 \rightarrow \tau_2) \rightarrow (\tau_1 \rightarrow \tau_2)$}
+      \end{prooftree}
+    \end{mdframed}
+    \caption{The proof for $\lambda f. \lambda x . fx$}
+    \label{fig:exmp:simpletyped}
+  \end{figure}
+\end{exmp}
 
-Before delving into types, the lambda calculus defined in \autoref{sec:lc} must be augmented with the \textit{let expression} (\autoref{eq:letb}).
-\begin{align}
-	\texttt{let } x = Y \texttt{ in } E
-	\label{eq:letb}
-\end{align}
-It should be noted that the let binding can be expressed by abstraction and application (\autoref{eq:letaa}).
-\begin{align}
-	(\lambda x . E) (Y)
-	\label{eq:letaa}
-\end{align}
-The let expression has a nice property that will become apparent later when typing rules are introduced.
+The simply typed lambda calculus is straightforward, but is missing some ingredients that most programming language users cannot do without, namely \textit{polymorphism}.
+For instance, in the simply typed lambda calculus one would have to define an identity function \textbf{for each} different type that uses it.
+If one were to bind an identity function to \textit{id}, say $\texttt{let } \textit{id} = \lambda x. x \texttt{ in } \dots$ with type $\tau_1 \rightarrow \tau_1$, where $\tau_1$ is not determined yet.
+Clearly some $f: \tau_2 \rightarrow \tau_3$ and some $y: \tau_3$ cannot both be applied to \textit{id} since if $\tau_3 \equiv \tau_1$ and $(\tau_2 \rightarrow \tau_3) \equiv \tau_1$ then an infinite type must exist $\tau_2 \rightarrow (\tau_2 \rightarrow (\tau_2 \dots))$.
+What we actually want is to say that $\tau_1$ can become \textbf{any} type $\tau_4$ if for every application, every instance of $\tau_1$ is replaced by $\tau_4$ in $\tau_1 \rightarrow \tau_1$.
+As such, when applying \textit{id f} then the type of \textit{id} must become $(\tau_2 \rightarrow \tau_3) \rightarrow (\tau_2 \rightarrow \tau_3)$, but only for this application.
+More generally the type for \textit{id} becomes \textit{generalized} and as such has the universally quantified type $\forall \tau_1. \tau_1 \rightarrow \tau_1$.
 
-Types are an artificial layer atop of a program just as spell checking is an artificial layer atop text.
+Generally, introducing polymorphism directly to the simply typed lambda calculus lifts the type system to one called System F.
+System F in undecidable, and as such, the Hindley-Milner type system will be of interest instead.
+
+%Before delving into types, the lambda calculus defined in \autoref{sec:lc} must be augmented with the \textit{let expression} (\autoref{eq:letb}).
+%\begin{align}
+	%\texttt{let } x = Y \texttt{ in } E
+	%\label{eq:letb}
+%\end{align}
+%It should be noted that the let binding can be expressed by abstraction and application (\autoref{eq:letaa}).
+%\begin{align}
+	%(\lambda x . E) (Y)
+	%\label{eq:letaa}
+%\end{align}
+%The let expression has a nice property that will become apparent later when typing rules are introduced.
+
+%Types are an artificial layer atop of a program just as spell checking is an artificial layer atop text.
 There are two variants of types in the Hindley-Milner type system, the \textit{monotype} and the \textit{polytype}.
 A monotype is either a type variable, an abstraction of two monotypes or an application of a type constructor (\autoref{eq:mono}).
 \begin{align}
@@ -137,16 +171,19 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 	poly \,\, \sigma = \tau \,|\, \forall a . \sigma
 	\label{eq:poly}
 \end{align}
-Polymorphic types either take the shape of a type variable or introduce a type which all types $a$ adhere to. 
+Polymorphic types either take the shape of a type variable or universally quantify some type, naming the quantifier $a$.
 This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only type variables that are not free.
 Many types may adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
-The concept of adherence in types is commonly called \textit{subtyping}.
-Every subtype is a \textit{at least} an implementation of it's supertype.
-Since this concept can be difficult to grasp from just text, observe \autoref{fig:polytree}.
+
+The type hierarchy of the Hindley-Milner type-system is shown in \autoref{fig:polytree}.
+%The concept of adherence in types is commonly called \textit{subtyping}.
+%Every subtype is a \textit{at least} an implementation of it's supertype.
+%Subtyping does not occur in the same granularity in Hindley-Milner as in languages which support inheritance and down casting.
+%Since this concept can be difficult to grasp from just text, observe \autoref{fig:polytree}.
 \begin{figure}[ht]
     \centering
         \begin{tikzpicture}
-            \node[draw=none] (sigma) {$\sigma$};
+            %\node[draw=none] (sigma) {$\sigma$};
 
             \node[draw=none, below = of sigma] (top) {$\top$};
 
@@ -156,7 +193,7 @@ Since this concept can be difficult to grasp from just text, observe \autoref{fi
 
             \node[draw=none, below = of tv] (bot) {$\bot$};
 
-            \path [->] (sigma) edge node[left] {} (top);
+            %\path [->] (sigma) edge node[left] {} (top);
 
             \path [->] (top) edge node[left] {} (arr);
             \path [->] (top) edge node[left] {} (tv);
@@ -169,8 +206,8 @@ Since this concept can be difficult to grasp from just text, observe \autoref{fi
     \caption{The type hierarchy of Hindley-Milner.}
     \label{fig:polytree}
 \end{figure}
-Note that $\sigma$ is controversial to introduce to the type hierarchy and has only been so to illustrate the point of subtyping.
-$\sigma$ is but a mechanism to prove type systems, $\sigma$ is never a specific type.
+The lack of $\sigma$ in \autoref{fig:polytree} since is controversial to introduce to the type hierarchy; $\sigma$ is but a mechanism to prove type systems.
+%$\sigma$ is but a mechanism to prove type systems, $\sigma$ is never a specific type.
 \begin{remark}
     \label{remark:polyimpl}
 An important implementation detail which should be noted is that of the polymorphic type.
