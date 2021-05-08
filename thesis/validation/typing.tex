@@ -5,6 +5,11 @@
 \label{sec:types}
 The spell checking equivalent for computer programs could be type checking; a subproblem of validating a programmer's intuition of a program's intent.
 Types can take properties that make them very powerful since types are, in their essence, a set of logical formulas in which we can use natural deduction to prove their validity~\cite{howard1980formulae}.
+
+A type system and algorithm which shortly will become the main interest is the Hindley-Milner type system and the Damas-Milner Algorithm W.
+The Hindley-Milner type system are the natural semantics which the Damas-Milner Algoritm W (or any other inference algorithm) must adhere to.
+The Damas-Milner Algorithm W is a child of an observation, that one can traverse the typing rules of Hindley-Milner backwards.
+The Damas-Milner Algorithm W reconstructs types by first introducing types as unknowns, and then constraining these unknown types as more information is gathered by unifying.
 \subsection{Notation}
 In the world of type theory we use natural deduction to prove type validity.
 Natural deduction is expressed by \textit{inference rules}, which consist of one or more premises and a conclusion.
@@ -127,7 +132,7 @@ As such, when applying \textit{id f} then the type of \textit{id} must become $(
 More generally the type for \textit{id} becomes \textit{generalized} and as such has the universally quantified type $\forall \tau_1. \tau_1 \rightarrow \tau_1$.
 
 Generally, introducing polymorphism directly to the simply typed lambda calculus lifts the type system to one called System F.
-System F in undecidable, and as such, the Hindley-Milner type system will be of interest instead.
+System F in undecidable, and as such, the Hindley-Milner type system will be of interest instead, since it introduces polymorphism like System F, but in a restricted way such that it becomes decidable.
 
 %Before delving into types, the lambda calculus defined in \autoref{sec:lc} must be augmented with the \textit{let expression} (\autoref{eq:letb}).
 %\begin{align}
@@ -141,6 +146,7 @@ System F in undecidable, and as such, the Hindley-Milner type system will be of 
 %\end{align}
 %The let expression has a nice property that will become apparent later when typing rules are introduced.
 
+\subsection{Polymorphism and Hindley-Milner}
 %Types are an artificial layer atop of a program just as spell checking is an artificial layer atop text.
 There are two variants of types in the Hindley-Milner type system, the \textit{monotype} and the \textit{polytype}.
 A monotype is either a type variable, an abstraction of two monotypes or an application of a type constructor (\autoref{eq:mono}).
@@ -173,7 +179,8 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 \end{align}
 Polymorphic types either take the shape of a type variable or universally quantify some type, naming the quantifier $a$.
 This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only type variables that are not free.
-Many types may adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
+The notion of free type variables and polymorphism will be explored further once the definition of free has been introduced.
+%Many types may adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
 
 The type hierarchy of the Hindley-Milner type-system is shown in \autoref{fig:polytree}.
 %The concept of adherence in types is commonly called \textit{subtyping}.
@@ -185,7 +192,7 @@ The type hierarchy of the Hindley-Milner type-system is shown in \autoref{fig:po
         \begin{tikzpicture}
             %\node[draw=none] (sigma) {$\sigma$};
 
-            \node[draw=none, below = of sigma] (top) {$\top$};
+            \node[draw=none] (top) {$\top$};
 
             \node[draw=none, below = of top] (tv) {$\tau$};
             \node[draw=none, left = of tv] (arr) {$\tau_1 \rightarrow \tau_2$};
@@ -199,6 +206,9 @@ The type hierarchy of the Hindley-Milner type-system is shown in \autoref{fig:po
             \path [->] (top) edge node[left] {} (tv);
             \path [->] (top) edge node[left] {} (tc);
 
+            \path [->] (tv) edge node[left] {} (arr);
+            \path [->] (tv) edge node[left] {} (tc);
+
             \path [->] (tv) edge node[left] {} (bot);
             \path [->] (arr) edge node[left] {} (bot);
             \path [->] (tc) edge node[left] {} (bot);
@@ -206,22 +216,22 @@ The type hierarchy of the Hindley-Milner type-system is shown in \autoref{fig:po
     \caption{The type hierarchy of Hindley-Milner.}
     \label{fig:polytree}
 \end{figure}
-The lack of $\sigma$ in \autoref{fig:polytree} since is controversial to introduce to the type hierarchy; $\sigma$ is but a mechanism to prove type systems.
+Notice the lack of $\sigma$ in \autoref{fig:polytree} since $\sigma$ is but a mechanism to prove type systems.
 %$\sigma$ is but a mechanism to prove type systems, $\sigma$ is never a specific type.
 \begin{remark}
     \label{remark:polyimpl}
 An important implementation detail which should be noted is that of the polymorphic type.
 Polymorphic types can be regarded as being a pair of bound types and monotype.
-Instead of keeping track of what types cannot occur, keeping track of the ones than can occur simplifies the implementation.
+Instead of keeping track of what types cannot occur, which will grow as the typing algorithm continues, keeping track of the ones that do occur in the monotype simplifies the implementation.
 This representation is convenient for the \textbf{Gen} rule.
 \end{remark}
 
-A principal component of typing in Hindley-Milner is the \textit{environment}.
-The environment $\Gamma$ is a set of pairs of variable names and polytype (\autoref{eq:env}).
-$\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can take the type $\sigma$.
+A principal component of typing in Hindley-Milner is the \textit{environment}, the environment is nothing more than a more context aware name for the hypotheses.
+The environment $\Gamma$ is now a set of pairs of program variable and polytype (\autoref{eq:env}), in contrast to a set of pairs of program variables and monotypes (\autoref{fig:exmp:simpletyped}).
+Now $\Gamma \vdash x: \sigma$ signifies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can take the \textbf{poly}type $\sigma$.
 \begin{remark}
     \label{remark:judgpoly}
-    Judging a type does not necessarily mean that the judged type is the only type that $x$ may take, it states that it is one \textit{possible} type that $x$ may take.
+    Notice that judging a type now, does not necessarily mean that the judged type is the only type that $x$ may take, it states that it is one \textit{possible} type that $x$ may take.
     The property of taking multiple possible types is what allows polymorphism.
     This is made more apparent in \autoref{exmp:letpoly} where \texttt{id} may take the type of either $\forall a . a \rightarrow a$, $\texttt{Int} \rightarrow \texttt{Int}$ or $\forall a . (a \rightarrow a) \rightarrow (a \rightarrow a)$.
 \end{remark}
@@ -231,58 +241,66 @@ $\Gamma \vdash x: \sigma$ implies a \textit{typing judgment}, meaning that given
 \end{align}
 
 Like in the untyped lambda calculus, types also have notions of free and bound type variables.
-Bound type variables are ones that explicitly have been introduced to the type system by either let or abstraction in the context of some expression.
-Type variables are bound when they have been introduced by a quantification or exist in the environment.
+%Bound type variables are ones that explicitly have been introduced to the type system by either let or abstraction in the context of some expression.
+Type variables occur bound when they are bound by some let expression or abstraction, when they occur quantified or when they occur in the environment.
+Type variables occur free when they are not introduced by a quantification and they do not occur in the environment.
 \begin{align}
-	 & \textit{free}(a) = \{ a \}                                                              \\
-	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i = 1}^n \textit{free}(\tau_i)           \\
-     & \textit{free}(\tau_1 \rightarrow \tau_2) = \textit{free}(\tau_1) \cup \textit{free}(\tau_2)          \\
-	 & \textit{free}(\Gamma) = \bigcup_{x:\sigma \in \Gamma} \textit{free}(\sigma)             \\
-	 & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     
-	 %& \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma)
+	 & \textit{free}(a) = \{ a \}                                                              \tag*{}\\
+	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i = 1}^n \textit{free}(\tau_i)           \tag*{}\\
+     & \textit{free}(\tau_1 \rightarrow \tau_2) = \textit{free}(\tau_1) \cup \textit{free}(\tau_2)  \tag*{}        \\
+	 & \textit{free}(\Gamma) = \bigcup_{x:\sigma \in \Gamma} \textit{free}(\sigma)             \tag*{}\\
+   & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     \tag*{}\\
+   & \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma) \label{eq:diffeq}
 \end{align}
-\begin{exmp}
-Consider the type for the function \texttt{fst} in \autoref{lst:fstimpl}.
-\begin{lstlisting}[language=ML,caption={First function},label={lst:fstimplbad},mathescape=true]
-fun fst a b: $\forall$A.$\forall$B.A $\rightarrow$ B $\rightarrow$ A = a;
-\end{lstlisting}
-\begin{lstlisting}[language=ML,caption={First function in lambda calculus},label={lst:fstimpl},mathescape=true]
-let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
-\end{lstlisting}
-    The type for \texttt{fst} is $\forall A \forall B . A \rightarrow B \rightarrow A$.
+The last rule of when type variables are free can be a bit tricky to grasp without understanding how monotypes occur in $\Gamma$.
+Monotypes are just polytypes without any quantifier, such that they always occur free in $\Gamma$.
+\autoref{eq:diffeq} defines the free variables for some $\sigma$ under the assumption of some $\Gamma$ such that the definition states ``all free variables in $\sigma$, that are not monovars in $\Gamma$''.
+This rule is important, since the system may not arbitrarily generalize over monovars.
+\begin{remark}
+  When implementing type inference, generalization builds upon the idea of avoiding generalization of monovars.
+\end{remark}
+%\begin{exmp}
+%Consider the type for the function \texttt{fst} in \autoref{lst:fstimpl}.
+%\begin{lstlisting}[language=ML,caption={First function},label={lst:fstimplbad},mathescape=true]
+%fun fst a b: $\forall$A.$\forall$B.A $\rightarrow$ B $\rightarrow$ A = a;
+%\end{lstlisting}
+%\begin{lstlisting}[language=ML,caption={First function in lambda calculus},label={lst:fstimpl},mathescape=true]
+%let fst = $\lambda$a.(let f = $\lambda$b.a in f) in fst
+%\end{lstlisting}
+    %The type for \texttt{fst} is $\forall A \forall B . A \rightarrow B \rightarrow A$.
 
-    Note that a naive typing could look like $\forall A  . A \rightarrow (\forall B . B \rightarrow A)$ but rank-2 polymorphism is not typable in Hindley-Milner.
-    An important realization is the context from where the type analysis is made.
-    If type analysis is made from within the bounded context of \texttt{f} the type of \texttt{f} becomes $\forall B . B \rightarrow A$ and the type variable $A$ is free.
-\end{exmp}
-The variables which may appear in a quantification have an important role in \autoref{eq:substitution}, since only free variables may be substituted.
-Free variables are also a core part of generalizing a type for inference algorithms (\autoref{subsec:algw}).
-When modelling polymorphic types with a technique such as \autoref{remark:polyimpl} finding the set of bound variables is trivial.
-\begin{align}
-    & \textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma)
-\end{align}
-When generalizing a type $\tau$ all types which do not occur in $\Gamma$ must be quantified.
-\begin{exmp}
-\begin{gather}
-    \Gamma = \{ (\textit{x}, \gamma) \} \label{eq:monoeq}\\
-\begin{align}
-    \textit{bound}(\tau \rightarrow \gamma) &= \{\tau , \gamma\} - \textit{free}(\Gamma)\\
-    &= \{\tau , \gamma\} - \{ \gamma \} = \{ \tau \}\tag*{}
-\end{align}
-\end{gather}
-Clearly the only bound type variable in the context of $\tau \rightarrow \gamma$ is $\tau$ such that it may become $\forall \tau. \tau \rightarrow \gamma$ in the instance that the type represents a polymorphic let expression.
-    Note that $\texttt{x:}\gamma$ in \autoref{eq:monoeq} does not contain $\gamma$ as a quantified type since it has been introduced by an abstraction and \textbf{Abs} only introduces monomorphic types (\autoref{fig:hmrules}).
-    An interesting observation is that there can only exist one implementation of the above type system if $\tau \rightarrow \gamma$ is to be introduced by a polymorphic let expression which is displayed in \autoref{lst:theoremsforfree}~\cite{wadler1989theorems}.
-\begin{lstlisting}[language=ML,caption={Implementation of type state},label={lst:theoremsforfree},mathescape=true]
-$\lambda$x.
-    let z = ($\lambda$y.x) in
-    $\dots$
-\end{lstlisting}
-\end{exmp}
+    %Note that a naive typing could look like $\forall A  . A \rightarrow (\forall B . B \rightarrow A)$ but rank-2 polymorphism is not typable in Hindley-Milner.
+    %An important realization is the context from where the type analysis is made.
+    %If type analysis is made from within the bounded context of \texttt{f} the type of \texttt{f} becomes $\forall B . B \rightarrow A$ and the type variable $A$ is free.
+%\end{exmp}
+%The variables which may appear in a quantification have an important role in \autoref{eq:substitution}, since only free variables may be substituted.
+%Free variables are also a core part of generalizing a type for inference algorithms (\autoref{subsec:algw}).
+%When modelling polymorphic types with a technique such as \autoref{remark:polyimpl} finding the set of bound variables is trivial.
+%\begin{align}
+    %& \textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma)
+%\end{align}
+%When generalizing a type $\tau$ all types which do not occur in $\Gamma$ must be quantified.
+%\begin{exmp}
+%\begin{gather}
+    %\Gamma = \{ (\textit{x}, \gamma) \} \label{eq:monoeq}\\
+%\begin{align}
+    %\textit{bound}(\tau \rightarrow \gamma) &= \{\tau , \gamma\} - \textit{free}(\Gamma)\\
+    %&= \{\tau , \gamma\} - \{ \gamma \} = \{ \tau \}\tag*{}
+%\end{align}
+%\end{gather}
+%Clearly the only bound type variable in the context of $\tau \rightarrow \gamma$ is $\tau$ such that it may become $\forall \tau. \tau \rightarrow \gamma$ in the instance that the type represents a polymorphic let expression.
+    %Note that $\texttt{x:}\gamma$ in \autoref{eq:monoeq} does not contain $\gamma$ as a quantified type since it has been introduced by an abstraction and \textbf{Abs} only introduces monomorphic types (\autoref{fig:hmrules}).
+    %An interesting observation is that there can only exist one implementation of the above type system if $\tau \rightarrow \gamma$ is to be introduced by a polymorphic let expression which is displayed in \autoref{lst:theoremsforfree}~\cite{wadler1989theorems}.
+%\begin{lstlisting}[language=ML,caption={Implementation of type state},label={lst:theoremsforfree},mathescape=true]
+%$\lambda$x.
+    %let z = ($\lambda$y.x) in
+    %$\dots$
+%\end{lstlisting}
+%\end{exmp}
 
 \section{Hindley-Milner}
 With the now introduced primitives, the Hindley-Milner type system is but a set of rules composed by said primitives.
-\begin{figure}[ht]
+\begin{figure}
 	\begin{mdframed}
 		\begin{prooftree}
 			\AxiomC{$x: \sigma \in \Gamma$}
@@ -323,164 +341,301 @@ With the now introduced primitives, the Hindley-Milner type system is but a set 
 	\end{mdframed}
 	\caption{Hindley-Milner type rules}
 	\label{fig:hmrules}
-\end{figure}
-There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules}.
 \begin{itemize}
     \item \textbf{Var} states that if some variable $x$ with type $\sigma$ exists in the environment, the type can be judged.
         In practice, when $x: \sigma$ is encountered in the expression tree it is added to the environment.
     \item \textbf{App} decides that if $e_1 : \tau_1 \rightarrow \tau_2$ and $e_2 : \tau_1$ has been judged to exist then $e_1 e_2$ implies the removal of $\tau_1$ from $\tau_1 \rightarrow \tau_2$ such that $e_1 e_2: \tau_2$.
     \item \textbf{Abs} is the typing rule of lambda abstractions.
-        If $x : \tau_1$ exists in the environment from some type analysis of $e$ and the abstraction's body $e$ has been judged to be of type $\tau_2$ then the abstraction of $x$ must take the type of $x$ to create the type of the body $e$.
-    \item \textbf{Let} states that if $e_1$ has been judged to have type $\sigma$ then the let expression's identifier $x: \sigma$ must exist in the environment when deriving the type of $e_2$.
-        Observe that \textbf{Let} introduces a polymorphic type to the environment while \textbf{Abs} introduces a monomorphic one.
-        Note that by \autoref{remark:judgpoly} $x$ may be polymorphic in $e_2$.
+        Under the assumption that $x : \tau_1$ exists in the environment, if there is a proof of $e$ having type $\tau_2$, then the abstraction of $x$ must take the type of $x$ to create the type of the body $e$; $\tau_1 \rightarrow \tau_2$.
+    \item \textbf{Let} states that if $e_1$ can be proven to have type $\sigma$ under the environment $\Gamma$, and if $e_2$ can be proven to have the type $\tau$ under the environment $\Gamma, x: \sigma$, then \texttt{let $x = e_1$ in $e_2$} must have type $\tau$.
+    %\item \textbf{Let} states that if $e_1$ has been judged to have type $\sigma$ then the let expression's identifier $x: \sigma$ must exist in the environment when deriving the type of $e_2$.
+        %Observe that \textbf{Let} introduces a polymorphic type to the environment while \textbf{Abs} introduces a monomorphic one.
+        %Note that by \autoref{remark:judgpoly} $x$ may be polymorphic in $e_2$.
     \item \textbf{Inst} specializes some polymorphic type (in regard to the type system implementation) to a more specific polymorphic type.
-        $\sqsubseteq$ is the partial order of types where the binary relation between two types compares the descriptiveness of types.
-        \begin{exmp}
-            In $L$ the smallest element is the top of the type hierarchy (\autoref{fig:polytree}), the polymorphic type.
-        \end{exmp}
-    \item \textbf{Gen} generalizes over all bound variables $a$.
+        $\sqsubseteq$ is the partial order of types where the binary relation between two types of how ``specific'' types are.
+        In Hindley-Milner there are only universally quantified types and monomorphic types, thus $\sqsubseteq$ specifies a polytype to a monotype or a polytype to a polytype.
+        For instance $\forall a . a \rightarrow a \sqsubseteq b \rightarrow b$ or $\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$.
+    \item \textbf{Gen} generalizes $\sigma$ over the type variable $a$, where $a$ must not occur free in $\Gamma$, that is, $a$ must not occur as a monomorphic type variable.
 \end{itemize}
+\end{figure}
+There are six rules in the Hindley-Milner rules outlined in \autoref{fig:hmrules}.
+Notice that \textbf{Let} introduces types to the environment as polymorphic, which is called \textit{let polymorphism}.
+In contrast, \textbf{Abs} introduces types to the environment as monomorphic.
+
+Additionally, rules which introduce numbers and arithmetic operations can easily be introduced by rules such as \autoref{fig:hm:extranum}.
+\begin{figure}
+  \begin{mdframed}
+    \begin{subfigure}[b]{0.60\textwidth}
+    \begin{prooftree}
+      \AxiomC{$\Gamma \vdash x: \texttt{Int}$}
+      \AxiomC{$\Gamma \vdash y: \texttt{Int}$}
+      \LeftLabel{Bin op}
+      \BinaryInfC{$\Gamma \vdash x + y: \texttt{Int}$}
+    \end{prooftree}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.38\textwidth}
+    \begin{prooftree}
+      \AxiomC{$n \in \mathbb{Z}$}
+      \LeftLabel{Num}
+      \UnaryInfC{$\Gamma \vdash n: \texttt{Int}$}
+    \end{prooftree}
+    \end{subfigure}
+  \end{mdframed}
+  \caption{}
+  \label{fig:hm:extranum}
+\end{figure}
 Let polymorphism is exemplified in \autoref{exmp:letpoly}.
 
-\begin{exmp}
-\label{exmp:letpoly}
-Throughout this example the convenient syntax $(x, z)$ is the pair of the variables $x$ and $z$ which can be implemented by algebraic data structures or a combinator.
+\begin{exmp} 
+  \label{exmp:letpoly}
+  Now that polymorphism has been introduced through the Hindley-Milner type system, an example naturally follows.
+  Let \autoref{fig:hm:exmp1} be the proof that the program $\texttt{let } \textit{id } = (\lambda x.x) \texttt{ in let } \textit{id}_2 = (\textit{id } \textit{id}) \texttt{ in } \textit{id}_2 \, 0$ has type \texttt{Int}.
+  \begin{figure}
+    \begin{mdframed}[style=bigbox]
+    \vspace*{0.48cm}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+                \AxiomC{$0 \in \mathbb{Z}$}
+              \LeftLabel{Num}
+              \UnaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1), \textit{id}_2: \forall \tau_2. \tau_2 \rightarrow \tau_2\} \vdash 0: \texttt{Int}$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:exmp:letpoly:r4}
+      \end{subfigure}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+                \AxiomC{$\textit{id}_2: \forall \tau_2. \tau_2 \rightarrow \tau_2 \in \{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1), \textit{id}_2: \forall \tau_2. \tau_2 \rightarrow \tau_2\}$}
+              \LeftLabel{Var}
+              \UnaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1), \textit{id}_2: \forall \tau_2. \tau_2 \rightarrow \tau_2\} \vdash \textit{id}_2: \forall \tau_2. \tau_2 \rightarrow \tau_2$}
+              \AxiomC{$\forall \tau_2 . \tau_2 \rightarrow \tau_2 \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
+            \LeftLabel{Gen}
+            \BinaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1), \textit{id}_2: \forall \tau_2. \tau_2 \rightarrow \tau_2\} \vdash \textit{id}_2\, : \texttt{Int} \rightarrow \texttt{Int}$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:exmp:letpoly:l3}
+      \end{subfigure}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+            \AxiomC{\autoref{fig:exmp:letpoly:l3}}
+            \AxiomC{\autoref{fig:exmp:letpoly:r4}}
+          \LeftLabel{App}
+          \BinaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1), \textit{id}_2: \forall \tau_2. \tau_2 \rightarrow \tau_2\} \vdash \textit{id}_2 \, 0: \texttt{Int}$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:exmp:letpoly:r2}
+      \end{subfigure}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+                \AxiomC{$\textit{id }: \forall \tau_1 . \tau_1 \rightarrow \tau_1 \in \{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\}$}
+              \LeftLabel{Var}
+              \UnaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\} \vdash \textit{id }: \forall \tau_1 . \tau_1 \rightarrow \tau_1$}
+            \AxiomC{$\forall \tau_1 . \tau_1 \rightarrow \tau_1 \sqsubseteq \tau_2 \rightarrow \tau_2$}
+          \LeftLabel{Gen}
+          \BinaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\} \vdash \textit{id } : \tau_2 \rightarrow \tau_2$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:exmp:letpoly:r3}
+      \end{subfigure}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+            \AxiomC{$\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1) \in \{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\}$}
+            \LeftLabel{Var}
+            \UnaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\} \vdash \textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)$}
+                  \AxiomC{$\forall \tau_1. \tau_1 \rightarrow \tau_1 \sqsubseteq (\tau_2 \rightarrow \tau_2) \rightarrow (\tau_2 \rightarrow \tau_2)$}
+                \LeftLabel{Inst}
+                \BinaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\} \vdash \textit{id}: (\tau_2 \rightarrow \tau_2) \rightarrow (\tau_2 \rightarrow \tau_2)$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:exmp:letpoly:l2}
+      \end{subfigure}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+                \AxiomC{\autoref{fig:exmp:letpoly:l2}}
+                \AxiomC{\autoref{fig:exmp:letpoly:r3}}
+              \LeftLabel{App}
+              \BinaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\} \vdash (\textit{id } \textit{id}): \tau_2 \rightarrow \tau_2$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:exmp:letpoly:l1}
+      \end{subfigure}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+          \AxiomC{\autoref{fig:exmp:letpoly:l1}}
+              \AxiomC{$\tau_2 \notin \textit{free}(\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\})$}
+            \LeftLabel{Gen}
+            \BinaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\} \vdash (\textit{id } \textit{id}): \forall \tau_2. \tau_2 \rightarrow \tau_2$}
+            \AxiomC{\autoref{fig:exmp:letpoly:r2}}
+          \LeftLabel{Let}
+          \BinaryInfC{$\{\textit{id }: (\forall \tau_1 . \tau_1 \rightarrow \tau_1)\} \vdash \texttt{let } \textit{id}_2 = (\textit{id } \textit{id}) \texttt{ in } \textit{id}_2 \, 0: \texttt{Int}$}
+        \end{prooftree}
+        \caption{}
+        \label{fig:exmp:letpoly:r1}
+      \end{subfigure}
+      \begin{subfigure}[b]{1\textwidth}
+        \begin{prooftree}
+                  \AxiomC{$x: \tau_1 \in \{x: \tau_1\}$}
+                \LeftLabel{Var}
+                \UnaryInfC{$\{x: \tau_1\} \vdash x: \tau_1$}
+              \LeftLabel{Abs}
+              \UnaryInfC{$\{\} \vdash (\lambda x.x): \tau_1 \rightarrow \tau_1$}
+              \AxiomC{$\tau_1 \notin \textit{free}(\{\})$}
+            \LeftLabel{Gen}
+            \BinaryInfC{$\{\} \vdash (\lambda x.x): \forall \tau_1 . \tau_1 \rightarrow \tau_1$}
+            \AxiomC{\autoref{fig:exmp:letpoly:r1}}
+          \LeftLabel{Let}
+          \BinaryInfC{$\{\} \vdash \texttt{let } \textit{id } = (\lambda x.x) \texttt{ in let } \textit{id}_2 = (\textit{id } \textit{id}) \texttt{ in } \textit{id}_2 \, 0: \texttt{Int}$}
+        \end{prooftree}
+      \end{subfigure}
+    \vspace*{0.48cm}
+    \end{mdframed}
+  \end{figure}
+  \cation{}
+  \label{fig:hm:exmp1}
+\end{exmp}
+%\begin{exmp}
+%\label{exmp:letpoly}
+%Throughout this example the convenient syntax $(x, z)$ is the pair of the variables $x$ and $z$ which can be implemented by algebraic data structures or a combinator.
 
-The identity function is a common example to illustrate type systems (\autoref{lst:idfun}).
-\begin{lstlisting}[language=ML,caption={Identity function in $L$},label={lst:idfun}]
-fun id x = x;
-id 4;
-\end{lstlisting}
-\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus with let},label={lst:idfunlam},mathescape=true]
-let id = ($\lambda x . x$) in
-id 4
-\end{lstlisting}
-Stating that id has the type $\forall a.a \rightarrow a$ and $4$ has the type \texttt{Int} is \autoref{lst:idfunlam} program correct?
-By applying the Hindley-Milner rules one can prove or disprove this statement.
-A correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampleid}.
+%The identity function is a common example to illustrate type systems (\autoref{lst:idfun}).
+%\begin{lstlisting}[language=ML,caption={Identity function in $L$},label={lst:idfun}]
+%fun id x = x;
+%id 4;
+%\end{lstlisting}
+%\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus with let},label={lst:idfunlam},mathescape=true]
+%let id = ($\lambda x . x$) in
+%id 4
+%\end{lstlisting}
+%Stating that id has the type $\forall a.a \rightarrow a$ and $4$ has the type \texttt{Int} is \autoref{lst:idfunlam} program correct?
+%By applying the Hindley-Milner rules one can prove or disprove this statement.
+%A correct proof of \autoref{lst:idfun} must be \autoref{fig:typeexampleid}.
 
-\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus by abstraction},label={lst:idfunlamabs},mathescape=true]
-($\lambda$id.id 4)($\lambda$x.x)
-\end{lstlisting}
-\autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} are two equivalent programs with slightly different proofs which raises the question of why the let expression is even needed.
-If \autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} were to be slightly changed such that two new programs \autoref{lst:idfunlam2} and \autoref{lst:idfunlamabs2} were to be proved, \autoref{lst:idfunlamabs2} would not be provable while \autoref{lst:idfunlam2} would.
-\begin{lstlisting}[language=ML,caption={Identity function with two applications},label={lst:idfunlam2},mathescape=true]
-let id = ($\lambda$x.x) in
-(id 4, id id)
-\end{lstlisting}
-\begin{lstlisting}[language=ML,caption={Identity function with two applications as abstraction},label={lst:idfunlamabs2},mathescape=true]
-($\lambda$id.(id 4, id id)($\lambda$x.x)
-\end{lstlisting}
-In \autoref{lst:idfunlamabs2} \texttt{id} cannot adhere to polymorphism by \textbf{Abs} in \autoref{fig:hmrules} whilst \textbf{Let} can.
+%\begin{lstlisting}[language=ML,caption={Identity function in lambda calculus by abstraction},label={lst:idfunlamabs},mathescape=true]
+%($\lambda$id.id 4)($\lambda$x.x)
+%\end{lstlisting}
+%\autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} are two equivalent programs with slightly different proofs which raises the question of why the let expression is even needed.
+%If \autoref{lst:idfunlam} and \autoref{lst:idfunlamabs} were to be slightly changed such that two new programs \autoref{lst:idfunlam2} and \autoref{lst:idfunlamabs2} were to be proved, \autoref{lst:idfunlamabs2} would not be provable while \autoref{lst:idfunlam2} would.
+%\begin{lstlisting}[language=ML,caption={Identity function with two applications},label={lst:idfunlam2},mathescape=true]
+%let id = ($\lambda$x.x) in
+%(id 4, id id)
+%\end{lstlisting}
+%\begin{lstlisting}[language=ML,caption={Identity function with two applications as abstraction},label={lst:idfunlamabs2},mathescape=true]
+%($\lambda$id.(id 4, id id)($\lambda$x.x)
+%\end{lstlisting}
+%In \autoref{lst:idfunlamabs2} \texttt{id} cannot adhere to polymorphism by \textbf{Abs} in \autoref{fig:hmrules} whilst \textbf{Let} can.
+%%\begin{figure}[ht]
+    %%\begin{mdframed}[style=bigbox]
+        %%\begin{subfigure}[b]{1\textwidth}
+        %%\begin{prooftree}
+                            %%\AxiomC{$x : a \in \Gamma$}
+                            %%\LeftLabel{Var}
+                        %%\UnaryInfC{$\Gamma \vdash x : a$}
+                    %%\LeftLabel{Abs}
+                %%\UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
+                    %%\LeftLabel{Gen}
+                    %%\AxiomC{$a \notin \textit{free}(\Gamma)$}
+                %%\BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
+                %%\AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
+            %%\LeftLabel{Inst}
+            %%\BinaryInfC{$\Gamma \vdash (\lambda x . x) : \texttt{Int} \rightarrow \texttt{Int}$}
+        %%\end{prooftree}
+        %%\caption{}
+        %%\label{fig:typewrongexampleid:1}
+        %%\end{subfigure}
+        %%\begin{subfigure}[b]{0.49\textwidth}
+        %%\begin{prooftree}
+                    %%\AxiomC{$\text{id} : \texttt{Int} \rightarrow \texttt{Int} \in \Gamma$}
+                    %%\LeftLabel{Var}
+                %%\UnaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
+                    %%\AxiomC{$4 : \texttt{Int} \in \Gamma$}
+                    %%\RightLabel{Var}
+                %%\UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
+            %%\RightLabel{App}
+            %%\BinaryInfC{$\Gamma, \text{ id} : \texttt{Int} \rightarrow \texttt{Int} \vdash $ id 4 : \texttt{Int}}
+        %%\end{prooftree}
+        %%\caption{}
+        %%\label{fig:typewrongexampleid:2}
+        %%\end{subfigure}
+        %%\begin{subfigure}[b]{0.49\textwidth}
+        %%\begin{prooftree}
+                %%\AxiomC{\ref{fig:typewrongexampleid:1}}
+                %%\AxiomC{\ref{fig:typewrongexampleid:2}}
+            %%\LeftLabel{Let}
+            %%\BinaryInfC{$\Gamma \vdash $ \texttt{let} id = $(\lambda x . x)$ \texttt{in} id 4: \texttt{Int}}
+        %%\end{prooftree}
+        %%\caption{}
+        %%\label{fig:typewrongexampleid:3}
+        %%\end{subfigure}
+    %%\end{mdframed}
+    %%\caption{Incorrect identity function instantiation proof}
+    %%\label{fig:typewrongexampleid}
+%%\end{figure}
 %\begin{figure}[ht]
     %\begin{mdframed}[style=bigbox]
         %\begin{subfigure}[b]{1\textwidth}
         %\begin{prooftree}
-                            %\AxiomC{$x : a \in \Gamma$}
+                            %\AxiomC{$\text{id} : \forall a . a \rightarrow a \in \Gamma$}
                             %\LeftLabel{Var}
-                        %\UnaryInfC{$\Gamma \vdash x : a$}
-                    %\LeftLabel{Abs}
-                %\UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
-                    %\LeftLabel{Gen}
-                    %\AxiomC{$a \notin \textit{free}(\Gamma)$}
-                %\BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
-                %\AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
-            %\LeftLabel{Inst}
-            %\BinaryInfC{$\Gamma \vdash (\lambda x . x) : \texttt{Int} \rightarrow \texttt{Int}$}
+                        %\UnaryInfC{$\Gamma \vdash \text{id} : \forall a . a \rightarrow a$}
+                        %\AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
+                    %\LeftLabel{Inst}
+                    %\BinaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
+                        %\AxiomC{$4 : \texttt{Int} \in \Gamma$}
+                        %\RightLabel{Var}
+                    %\UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
+                %\RightLabel{App}
+                %\BinaryInfC{$\Gamma, \text{ id} : \forall a . a \rightarrow a \vdash $ id 4 : \texttt{Int}}
         %\end{prooftree}
         %\caption{}
-        %\label{fig:typewrongexampleid:1}
+        %\label{fig:typeexampleid:2}
         %\end{subfigure}
         %\begin{subfigure}[b]{0.49\textwidth}
         %\begin{prooftree}
-                    %\AxiomC{$\text{id} : \texttt{Int} \rightarrow \texttt{Int} \in \Gamma$}
-                    %\LeftLabel{Var}
-                %\UnaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
-                    %\AxiomC{$4 : \texttt{Int} \in \Gamma$}
-                    %\RightLabel{Var}
-                %\UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
-            %\RightLabel{App}
-            %\BinaryInfC{$\Gamma, \text{ id} : \texttt{Int} \rightarrow \texttt{Int} \vdash $ id 4 : \texttt{Int}}
+                                %\AxiomC{$x : a \in \Gamma$}
+                                %\LeftLabel{Var}
+                            %\UnaryInfC{$\Gamma \vdash x : a$}
+                        %\LeftLabel{Abs}
+                    %\UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
+                        %\LeftLabel{Gen}
+                        %\AxiomC{$a \notin \textit{free}(\Gamma)$}
+                    %\BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
         %\end{prooftree}
         %\caption{}
-        %\label{fig:typewrongexampleid:2}
+        %\label{fig:typeexampleid:1}
         %\end{subfigure}
         %\begin{subfigure}[b]{0.49\textwidth}
         %\begin{prooftree}
-                %\AxiomC{\ref{fig:typewrongexampleid:1}}
-                %\AxiomC{\ref{fig:typewrongexampleid:2}}
+                %\AxiomC{\ref{fig:typeexampleid:1}}
+                %\AxiomC{\ref{fig:typeexampleid:2}}
             %\LeftLabel{Let}
             %\BinaryInfC{$\Gamma \vdash $ \texttt{let} id = $(\lambda x . x)$ \texttt{in} id 4: \texttt{Int}}
         %\end{prooftree}
         %\caption{}
-        %\label{fig:typewrongexampleid:3}
+        %\label{fig:typeexampleid:3}
         %\end{subfigure}
     %\end{mdframed}
-    %\caption{Incorrect identity function instantiation proof}
-    %\label{fig:typewrongexampleid}
+    %\caption{Identity function instantiation proof}
+    %\label{fig:typeexampleid}
 %\end{figure}
-\begin{figure}[ht]
-    \begin{mdframed}[style=bigbox]
-        \begin{subfigure}[b]{1\textwidth}
-        \begin{prooftree}
-                            \AxiomC{$\text{id} : \forall a . a \rightarrow a \in \Gamma$}
-                            \LeftLabel{Var}
-                        \UnaryInfC{$\Gamma \vdash \text{id} : \forall a . a \rightarrow a$}
-                        \AxiomC{$\forall a . a \rightarrow a \sqsubseteq \texttt{Int} \rightarrow \texttt{Int}$}
-                    \LeftLabel{Inst}
-                    \BinaryInfC{$\Gamma \vdash \text{id} : \texttt{Int} \rightarrow \texttt{Int}$}
-                        \AxiomC{$4 : \texttt{Int} \in \Gamma$}
-                        \RightLabel{Var}
-                    \UnaryInfC{$\Gamma \vdash 4 : \texttt{Int}$}
-                \RightLabel{App}
-                \BinaryInfC{$\Gamma, \text{ id} : \forall a . a \rightarrow a \vdash $ id 4 : \texttt{Int}}
-        \end{prooftree}
-        \caption{}
-        \label{fig:typeexampleid:2}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.49\textwidth}
-        \begin{prooftree}
-                                \AxiomC{$x : a \in \Gamma$}
-                                \LeftLabel{Var}
-                            \UnaryInfC{$\Gamma \vdash x : a$}
-                        \LeftLabel{Abs}
-                    \UnaryInfC{$\Gamma \vdash (\lambda x . x) : a \rightarrow a$}
-                        \LeftLabel{Gen}
-                        \AxiomC{$a \notin \textit{free}(\Gamma)$}
-                    \BinaryInfC{$\Gamma \vdash (\lambda x . x) : \forall a . a \rightarrow a$}
-        \end{prooftree}
-        \caption{}
-        \label{fig:typeexampleid:1}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.49\textwidth}
-        \begin{prooftree}
-                \AxiomC{\ref{fig:typeexampleid:1}}
-                \AxiomC{\ref{fig:typeexampleid:2}}
-            \LeftLabel{Let}
-            \BinaryInfC{$\Gamma \vdash $ \texttt{let} id = $(\lambda x . x)$ \texttt{in} id 4: \texttt{Int}}
-        \end{prooftree}
-        \caption{}
-        \label{fig:typeexampleid:3}
-        \end{subfigure}
-    \end{mdframed}
-    \caption{Identity function instantiation proof}
-    \label{fig:typeexampleid}
-\end{figure}
-\end{exmp}
+%\end{exmp}
 
 
 
 \subsection{Damas-Milner Algorithm W}
 \label{subsec:algw}
-Typing rules are by themselves not that useful since they need all type information declared ahead of checking, inference attempts to guess types such that the rules are satisfied.
-Type inference is the technique of automatically deriving types, of which there exist many algorithms.
-One of the most common inference algorithms that produce typings which the Hindley-Milner rules accept is the Damas-Milner Algorithm W inference algorithm~\cite{damas1984type,damas1982principal}.
+Typing rules are by themselves not that useful since they need all type information declared ahead of checking and one must deduct what types are necessary to complete a proof.
+Luckily type inference is a well studied technique.
+Type inference is the technique of automatically deriving types from minimal information, of which there exist many algorithms.
+One of the most common inference algorithms that produce typings which adhere to the Hindley-Milner rules, is the Damas-Milner Algorithm W inference algorithm~\cite{damas1984type,damas1982principal}.
+When the Damas-Milner Algorithm W discovers a new variable, it assumes that it is the most general type.
+When the Damas-Milner Algorithm W discovers constraints on types, they are unified into a substitution such that the type is specified further.
+
+For instance, in an abstraction such as $\lambda x.x + 1$ the algorithm will introduce $x$ as some type variable $\tau_1$.
+When the algorithm discovers $x + 1$, it must constrain $\tau$ to have a type which must be the unification of $\tau$ and \texttt{Int}, since $+$ requires both arguments to be of type \texttt{Int}, such that $\tau$ must be substituted with the type \texttt{Int} written $\tau \mapsto \texttt{Int}$.
 
 The Damas-Milner Algorithm W rules (\autoref{fig:dmrules}) introduce some new concepts such as \textit{fresh variables}, \textit{most general unifier}, and the \textit{substitution set}.
 Fresh variables are introduced by picking a variable that has not been picked before from the infinite set $\tau_1, \tau_2 \dots $.
-Fresh variables are introduced when unknown types are discovered and later unified.
-The substitution set is a mapping from type variables to types (\autoref{eq:substitution}).
+In the earlier example where $x$ had type $\tau$, $\tau$ was a fresh variable.
+The substitution set is a mapping from type variables to types (\autoref{eq:substitution}), which in the earlier example had the instance $\tau \mapsto \texttt{Int}$.
 \begin{align}
     S = \{ a_1 \mapsto \tau_1, a_2 \mapsto \tau_2 \dots , a_n \mapsto \tau_n \} 
     \label{eq:substitution}
@@ -493,7 +648,7 @@ A substitution written $S T$ where $T$ is an arbitrary component of Hindley-Miln
     &S \sigma  = 
         \begin{cases}
             S \tau & \text{if } \sigma \equiv \tau\\
-            \{ a' \mapsto \tau_1 \,\,|\,\, (a', \tau_1) \in S \,\,|\,\, (a, *) \notin S \} \sigma' & \text{if } \sigma \equiv \forall a . \sigma'
+            \{ a' \mapsto \tau_1 \,\,|\,\, (a', \tau_1) \in S \land (a, *) \notin S \} \sigma' & \text{if } \sigma \equiv \forall a . \sigma'
         \end{cases}
     \tag{Poly}\\
     &S (\tau_1 \rightarrow \tau_2) = S\tau_1 \rightarrow S\tau_2 \tag{Arrow}\\
@@ -506,7 +661,7 @@ A substitution written $S T$ where $T$ is an arbitrary component of Hindley-Miln
     &S C \tau_1 \dots \tau_n = C S\tau_1 \dots S\tau_n \tag{Constructor}
 \end{align}
 \end{mdframed}
-    \caption{Substitution semantics}
+    \caption{Substitutions}
     \label{fig:subsem}
 \end{figure}
 Substitution sets can also be combined $S_1 \cdot S_2$ with well defined-semantics.
@@ -517,48 +672,77 @@ The combination of substitution sets is a key component for the correctness of t
 \end{align}
 \begin{remark}
 By the substitution set combination operator transitive and circular substitutions cannot occur since type variables in $S_1$ will inherit all the mappings from $S_2$ by union.
-Trasitivity is avoided by substituting all instances of type variables values (the mapped to type variables) in $S_2$ with ones that occur in $S_1$.
+Transitivity is avoided by substituting all instances of type variables values (the mapped to type variables) in $S_2$ with ones that occur in $S_1$.
 The properties ensured by the combination semantics also induce the property of idempotence.
 This property is enforced by the Damas-Milner Algorithm W inference rules.
 \end{remark}
 Unification is performed differently based on the context.
 Unification is performed on monotypes, each of which can take one of three forms (\autoref{eq:mono}).
-Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} are commutative.
+Unification in the context of the Hindley-Milner type system are outlined in \autoref{fig:mgu}.
+%Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} are commutative.
 \begin{figure}
-	\begin{mdframed}
+  \begin{mdframed}[style=bigbox]
+		%\begin{prooftree}
+			%\AxiomC{$S, \{ (\tau_1 \rightarrow \tau_2, \gamma_1 \rightarrow \gamma_2) \} \cup T $}
+			%\LeftLabel{Arrow}
+			%\UnaryInfC{$S,T \cup \{ (\tau_1, \gamma_1), (\tau_2, \gamma_2) \}$}
+		%\end{prooftree}
+
+		%\begin{prooftree}
+            %\AxiomC{$\tau_1, \tau_2$}
+            %\LeftLabel{Intro}
+			%\UnaryInfC{$\emptyset, \{ (\tau_1, \tau_2) \}$}
+		%\end{prooftree}
+		%\begin{prooftree}
+			%\AxiomC{$S, \{ (a, \tau_1) \} \cup T$}
+			%\AxiomC{$a \equiv \tau_1$}
+			%\LeftLabel{
+				%Var empty
+			%}
+			%\BinaryInfC{$S, T $}
+		%\end{prooftree}
+
+		%\begin{prooftree}
+			%\AxiomC{$S, \{ (a, \tau_1) \} \cup T $}
+			%\AxiomC{$a \notin \textit{free}(\tau_1)$}
+			%\LeftLabel{Var sub}
+			%\BinaryInfC{$S \cup \{ a \mapsto S\tau_1 \}, \{ a \mapsto S\tau_1 \} \cup T$}
+		%\end{prooftree}
+    \vspace*{0.48cm}
+
 		\begin{prooftree}
-			\AxiomC{$S, \{ (\tau_1 \rightarrow \tau_2, \gamma_1 \rightarrow \gamma_2) \} \cup T $}
+      \AxiomC{}
+			\LeftLabel{Var equiv}
+      \UnaryInfC{$\{\}, a = a$}
+		\end{prooftree}
+
+		\begin{prooftree}
+      \AxiomC{$a \notin \textit{free}(\tau)$}
+			\LeftLabel{Right}
+      \UnaryInfC{$\{a \mapsto \tau\}, \tau = a$}
+		\end{prooftree}
+
+		\begin{prooftree}
+      \AxiomC{$a \notin \textit{free}(\tau)$}
+			\LeftLabel{Left}
+      \UnaryInfC{$\{a \mapsto \tau\}, a = \tau$}
+		\end{prooftree}
+
+		\begin{prooftree}
+			\AxiomC{$S_1, \tau_1 = \gamma_1$}
+			\AxiomC{$S_2, S_1 \tau_2 = S_1 \gamma_2$}
 			\LeftLabel{Arrow}
-			\UnaryInfC{$S,T \cup \{ (\tau_1, \gamma_1), (\tau_2, \gamma_2) \}$}
+			\BinaryInfC{$S_2 \cdot S_1, \tau_1 \rightarrow \tau_2 = \gamma_1 \rightarrow \gamma_2$}
 		\end{prooftree}
 
 		\begin{prooftree}
-            \AxiomC{$\tau_1, \tau_2$}
-            \LeftLabel{Intro}
-			\UnaryInfC{$\emptyset, \{ (\tau_1, \tau_2) \}$}
-		\end{prooftree}
-		\begin{prooftree}
-			\AxiomC{$S, \{ (a, \tau_1) \} \cup T$}
-			\AxiomC{$a \equiv \tau_1$}
-			\LeftLabel{
-				Var empty
-			}
-			\BinaryInfC{$S, T $}
-		\end{prooftree}
-
-		\begin{prooftree}
-			\AxiomC{$S, \{ (a, \tau_1) \} \cup T $}
-			\AxiomC{$a \notin \textit{free}(\tau_1)$}
-			\LeftLabel{Var sub}
-			\BinaryInfC{$S \cup \{ a \mapsto S\tau_1 \}, \{ a \mapsto S\tau_1 \} \cup T$}
-		\end{prooftree}
-
-		\begin{prooftree}
-			\AxiomC{$S,C_1 \tau_1 \dots \tau_n,C_2 \gamma_1 \dots \gamma_n \cup T$}
+      \AxiomC{$S, \tau_1 \rightarrow (\tau_2 \dots \rightarrow \tau_n) = \gamma_1 \rightarrow (\gamma_2 \dots \rightarrow \gamma_n)$}
 			\AxiomC{$C_1 \equiv C_2$}
-			\LeftLabel{Atom}
-			\BinaryInfC{$S , \{ (\tau_1, \gamma_1) \dots , (\tau_n, \gamma_n)\} \cup T$}
+			\LeftLabel{Type constructor}
+			\BinaryInfC{$S, C_1 \tau_1, \tau_2 \dots , \tau_n = C_2 \gamma_1, \gamma_2 \dots , \gamma_n$}
 		\end{prooftree}
+
+    \vspace*{0.48cm}
 	\end{mdframed}
 	\caption{Rules for most general unification}
 	\label{fig:mgu}
@@ -590,7 +774,7 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
     After the set of constraints $C$ has been generated it then traverses the constraints and generates type variable substitutions.
     It is argued that error reporting is significantly easier in such an approach.
 \end{remark}
-\begin{figure}[ht]
+\begin{figure}
 	\begin{mdframed}[style=style1]
 		\begin{prooftree}
 			\AxiomC{$x: \sigma \in \Gamma$}
@@ -619,15 +803,15 @@ Note that the Var rules for most general unifier outlined in \autoref{fig:mgu} a
 			\AxiomC{$\Gamma \vdash e_1 : \tau_1, S_1$}
 			\AxiomC{$S_1 \Gamma , x : S_1 \Gamma(\tau_1) \vdash e_2 : \tau_2, S_2$}
 			\LeftLabel{Let}
-			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau_2, S_1 \cdot S_2$}
+			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau_2, S_2 \cdot S_1$}
 		\end{prooftree}
 	\end{mdframed}
 	\caption{Algorithm W}
 	\label{fig:dmrules}
 \end{figure}
-\begin{remark}
-In the language $L$ a function \texttt{fun} translates to a let expressions while \texttt{let} translates to abstraction and application.
-\end{remark}
+%\begin{remark}
+%In the language $L$ a function \texttt{fun} translates to a let expressions while \texttt{let} translates to abstraction and application.
+%\end{remark}
 \subsection{Instantiation}
 Another interesting addition introduced by algorithm W in \autoref{fig:dmrules} is \textit{inst}.
 \textit{inst} naturally follows from the \textbf{Inst} rule in \autoref{fig:hmrules} but has a slightly different behaviour.
