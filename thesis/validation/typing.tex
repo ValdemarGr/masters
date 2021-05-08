@@ -488,9 +488,9 @@ Let polymorphism is exemplified in \autoref{exmp:letpoly}.
       \end{subfigure}
     \vspace*{0.48cm}
     \end{mdframed}
+    \caption{}
+    \label{fig:hm:exmp1}
   \end{figure}
-  \cation{}
-  \label{fig:hm:exmp1}
 \end{exmp}
 %\begin{exmp}
 %\label{exmp:letpoly}
@@ -795,7 +795,7 @@ Unification in the context of the Hindley-Milner type system are outlined in \au
 		\vspace{-0.7cm}
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \tau_1, S_1 \,\,\,\, \tau_3 = \textit{fresh}$}
-			\AxiomC{$S_1 \Gamma \vdash e_2 : \tau_2, S_2 \,\,\,\, S_3 = \textit{mgu}(S_2 \tau_1, \tau_2 \rightarrow \tau_3)$}
+			\AxiomC{$S_1 \Gamma \vdash e_2 : \tau_2, S_2 \,\,\,\, S_3 = \textit{unify}(S_2 \tau_1, \tau_2 \rightarrow \tau_3)$}
 			\BinaryInfC{$\Gamma \vdash e_1 e_2 : S_3 \tau_3, S_3 \cdot S_2 \cdot S_1$}
 		\end{prooftree}
 
@@ -823,15 +823,20 @@ The \textit{inst} function does not specify types anymore but simply makes unifi
 \textit{inst} (\autoref{eq:inst}) maps all bound type variables to fresh type variables in the polytype $\sigma$.
 \textit{inst} is an important component to allow polymorphic types to remain polymorphic since no bound type variables may be substituted.
 \begin{exmp}
-    Performing some type analysis on \autoref{lst:polyid} yields a very rich example of why \textit{inst} is necessary.
-    \newline
-    \begin{minipage}{\textwidth}
-\begin{lstlisting}[language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
-fun id x = x;
-fun ap x f = f x;
-fun doubleid x = id (id (x + 1));
-\end{lstlisting}
-    \end{minipage}
+    Performing some type analysis on \autoref{eq:polyid} yields a very rich example of why \textit{inst} is necessary.
+    \begin{align}
+      &\texttt{let } \textit{id } = (\lambda x.x) \texttt{ in } \label{eq:polyid}\\
+      &\texttt{let } \textit{ap } = (\lambda x . \lambda f . f x) \texttt{ in } \tag*{}\\
+      &\texttt{let } \textit{doubleid } = (\lambda x.id (id (x + 1))) \texttt{ in } \textit{doubleid} \tag*{}
+    \end{align}
+    %\newline
+    %\begin{minipage}{\textwidth}
+%\begin{lstlisting}[language=ML,caption={Polymorphic id},label={lst:polyid},mathescape=true]
+%fun id x = x;
+%fun ap x f = f x;
+%fun doubleid x = id (id (x + 1));
+%\end{lstlisting}
+    %\end{minipage}
     After inferring \texttt{id} and \texttt{ap} the environment will contain id $\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta)\}$.
     Typing the function \texttt{doubleid} without the use of \textit{inst}; begin by looking at the introduced parameter \texttt{x} and then the innermost expression \texttt{id (x + 1)}. 
 \begin{align}
@@ -863,7 +868,7 @@ fun doubleid x = id (id (x + 1));
 \end{align}
     Clearly $a$ cannot map to two types which cannot be unified which is a violation of the type system.
     The apparent problem is that \texttt{id} is specialized within the whole of \texttt{doubleid}.
-    By instantiating quantified types when they are needed cases such as this can be avoided (it also makes the algorithm correct).
+    By instantiating quantified types when they are needed cases such as this can be avoided.
     \begin{align}
         &\textit{unify}(\textit{inst}(\forall a . a \rightarrow a), \textit{inst}(\forall \tau . \tau \rightarrow \mu))\\
         & = \textit{unify}(\gamma \rightarrow \gamma, \varphi \rightarrow \mu) \tag*{}\\
@@ -875,12 +880,12 @@ Recursion is a trivial matter once the primitives of the Hindley-Milner type sys
 Recall that in \autoref{sec:lamrec} recursion (along with mutual recursion) was shown to be implementable by introducing functions to their own scope, the same is true for types.
 Allowing recursive functions in Hindley-Milner type inference systems is a matter of letting the function be present in the environment when inferring the function's own body.
 \begin{exmp}
-If the function \texttt{f} defined in \autoref{lst:recplus1} were to be typed it would need to be introduced as an unknown type to the environment before typing the body of \texttt{f}.
-\begin{lstlisting}[language=ML,caption={Recursive function},label={lst:recplus1},mathescape=true]
-fun f x = (f x) + 1;
-\end{lstlisting}
+If the function \texttt{f} defined in \autoref{eq:recplus1} were to be typed it would need to be introduced as an unknown type to the environment before typing the body of \texttt{f}.
+\begin{align}
+  \texttt{let } f = (\lambda x. (f x) + 1) \label{eq:recplus1}
+\end{align}
 Let $\Gamma = \{ \texttt{f} : \forall \tau . \tau, \texttt{x} : \forall \mu . \mu \}$.
-From the application \texttt{f x} the unification \texttt{unify}$(\tau, \gamma \rightarrow \mu) = \{ \tau \mapsto \mu \rightarrow \gamma \}$ must be performed, and the resulting type for the expression is $\gamma$.
+From the application \texttt{f x} the unification \texttt{unify}$(\tau, \mu \rightarrow \gamma) = \{ \tau \mapsto \mu \rightarrow \gamma \}$ must be performed, and the resulting type for the expression is $\gamma$.
 The addition operation forces \texttt{unify}$(\texttt{Int}, \gamma) = \{ \gamma \mapsto \texttt{Int} \}$.
 Finally the application of the addition function $+: \texttt{Int} \rightarrow \texttt{Int} \rightarrow \texttt{Int}$ and the two expressions \texttt{f x} and $1$ such that the resulting expression type is \texttt{Int}.
 
@@ -935,14 +940,26 @@ Decision can be implemented in a variety of ways such as in \autoref{lst:adtdeci
 \end{figure}
 Rather decision can be implemented by more conventional methods than combinator logic by introducing more inference rules as in \autoref{fig:decision}.
 Additional language syntax features can in most cases be implemented as decision can.
-\subsection{Algebraic data structures}
+\subsection{Algebraic data structures and type constructors}
 To implement rules for algebraic data structures one must first decide on what the type of an algebraic data structure is.
 If algebraic data structures were implemented as in \autoref{sec:adt} the type of an algebraic data structure like Boolean in \autoref{lst:adtdecision} would be \texttt{a -> a -> a} since \texttt{BFalse} and \texttt{BTrue} must have a handler each.
 Implementing algebraic data structures by this method does not introduce anything to the inference algorithm since every algebraic data structure becomes a function.
-It is more common to introduce algebraic data structures as new type constructor types since such an implementation yields descriptive errors in comparison to generated function types.
-Fortunately type constructors are trivial to model in Hindley-Milner since a type constructor is a type lambda and rank-1 type lambdas are simply quantified types.
-\autoref{lst:listadt} introduces the type constructor \texttt{a $\rightarrow$ List a} with value constructors \texttt{Cons: $\forall$a.a $\rightarrow$ List a $\rightarrow$ List a} and \texttt{Nil: $\forall$a.List a}.
-For instance let some program be \texttt{Cons 1 (Cons 2 Nil)} such that inference becomes a matter of first unifying the type of \texttt{Cons} and \texttt{$\forall$a.Int $\rightarrow$ List a $\rightarrow \tau_1$} using the application rule and then unifying \texttt{$\forall$a.Int $\rightarrow \tau_1 \rightarrow \tau_2$} with \texttt{Cons} again by application.
+It is more common to introduce algebraic data structures as type constructors and sum types, since such an implementation yields descriptive errors in comparison to generated function types.
+Fortunately type constructors are present in Hindley-Milner such that it becomes a matter of implementing sum-types.
+
+For instance, the \texttt{List} algebraic data type introduced in \autoref{lst:listadt} has the constructor \texttt{Cons} which requires a value of type \texttt{a} and another \texttt{List}.
+To infer \texttt{Cons}, we must acquire a fresh variable $\gamma$ for each type constructor parameter of \texttt{List}, that is, \texttt{a} such that the type becomes \texttt{List} $\gamma$.
+Now all instances of \texttt{a} in the constructor declaration of \texttt{Cons} must be substituted by $\gamma$, which luckily, is already defined by the rules of substitution, such that \texttt{Cons $\gamma$ (List $\gamma$)}.
+
+In the case of construction, the product type \texttt{Cons $\gamma$ (List $\gamma$)} must be unified with the inferred type of the constructor.
+When the subsequent \texttt{List} sum-type appears in the constructor, the appropriate case is handled by substituting the type parameters in the product type declaration like above.
+
+In the case of matching, the program variables are introduced into $\Gamma$, such that for a case of \texttt{Cons x xs} the types are introduced monomorphically into $\Gamma$ as $\Gamma,x:\gamma,xs:(\texttt{List } \gamma)$.
+
+%Fortunately type constructors are trivial to model in Hindley-Milner since a type constructor is a type lambda and rank-1 type lambdas are simply quantified types.
+%Type con
+%\autoref{lst:listadt} introduces the type constructor \texttt{a $\rightarrow$ List a} with value constructors \texttt{Cons: $\forall$a.a $\rightarrow$ List a $\rightarrow$ List a} and \texttt{Nil: $\forall$a.List a}.
+%For instance let some program be \texttt{Cons 1 (Cons 2 Nil)} such that inference becomes a matter of first unifying the type of \texttt{Cons} and \texttt{$\forall$a.Int $\rightarrow$ List a $\rightarrow \tau_1$} using the application rule and then unifying \texttt{$\forall$a.Int $\rightarrow \tau_1 \rightarrow \tau_2$} with \texttt{Cons} again by application.
 
 
 \section{The cost of expressiveness}
