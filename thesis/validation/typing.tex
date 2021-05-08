@@ -980,29 +980,39 @@ As it will turn out, Hindley-Milner also suffers an explosive worst case induced
 \begin{proof}
     The basis of the blowup stems from the introduced fresh type variables in the polymorphic \texttt{Let} inference rule.
     If the number of type variables can be shown to be exponential, the running time must be at least the same by operations, such as subsection set combination and unification.
-\begin{minipage}{\textwidth}
-\begin{lstlisting}[language=ML,caption={Nested dup},label={lst:pairproof},mathescape=true]
-fun dup a f = f a a;
-fun deep x = dup (dup (dup ($\dots$ x)));
-\end{lstlisting}
-\end{minipage}
-    \autoref{lst:pairproof} builds a large function signature for \texttt{deep}.
-    The innermost \texttt{dup} invocation will have its signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$, if \texttt{a} has type $x$ and \texttt{f} has type $x \rightarrow x \rightarrow \tau$ for some unknown $\tau$ by the App rule in \autoref{fig:dmrules}.
-    The second innermost \texttt{dup} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
-    Naively one might judge \autoref{lst:pairproof} to run in $\Omega(2^n)$ but an important observation for why \autoref{lst:pairproof} does not induce exponential blowup is the uniqueness of the type variables.
-    If an efficient representation of \texttt{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the number introduced type variables would be $O(n)$.
-\begin{lstlisting}[language=ML,caption={Nested tuples with different type variables},label={lst:pairproofexp},mathescape=true]
-fun tuple a b f = f a b;
-fun one = tuple tuple tuple;
-fun two = tuple one one;
-fun three = tuple two two;
-$\dots$
-\end{lstlisting}
-    The trick to induce an exponential running time is demonstrated with the pathological program in \autoref{lst:pairproofexp}.
-    By allowing \texttt{tuple} to be polymorphic and have having two polymorphic parameters, every time \texttt{tuple} is instantiated, it will contain only fresh variables.
-    The type of \texttt{tuple} is $a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c$.
-    Clearly this looks very much like \autoref{lst:pairproof}, but has the subtle difference of letting the parameters \texttt{a} and \texttt{b} (within the type instantiation of the let expression \texttt{tuple})be polymorphic and introducing every ''step`` as a polymorphic let expression.
-    The return type of \texttt{one} (the type of \texttt{f}) is displayed in \autoref{eq:instexp}.
+    \begin{align}
+      &\texttt{let } \textit{dup } = (\lambda a .\lambda f . f a a) \texttt{ in } \label{eq:ppe}\\
+      &\texttt{let } \textit{deep } = (\lambda x . \textit{dup } (\textit{dup } (\textit{dup } (\dots)))) \texttt{ in } \dots \tag*{}\\
+    \end{align}
+%\begin{minipage}{\textwidth}
+%\begin{lstlisting}[language=ML,caption={Nested dup},label={lst:pairproof},mathescape=true]
+%fun dup a f = f a a;
+%fun deep x = dup (dup (dup ($\dots$ x)));
+%\end{lstlisting}
+%\end{minipage}
+    \autoref{eq:ppe} builds a large function signature for \textit{deep}.
+    The innermost \textit{dup} invocation will have its signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$, if \texttt{a} has type $x$ and \texttt{f} has type $x \rightarrow x \rightarrow \tau$ for some unknown $\tau$ by the App rule in \autoref{fig:dmrules}.
+    The second innermost \textit{dup} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
+    Naively one might judge \autoref{eq:ppe} to run in $\Omega(2^n)$ but an important observation for why \autoref{eq:ppe} does not induce exponential blowup is the uniqueness of the type variables.
+    If an efficient representation of \textit{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the number introduced type variables would be $O(n)$.
+    \begin{align}
+      &\texttt{let } \textit{tuple } = (\lambda a . \lambda b . \lambda f . f a b) \texttt{ in } \label{eq:ppexp}\\
+      &\texttt{let } \textit{one } = \textit{tuple } \textit{tuple } \textit{tuple } \texttt{ in } \tag*{}\\
+      &\texttt{let } \textit{two } = \textit{tuple } \textit{one } \textit{one } \texttt{ in } \tag*{}\\
+      &\texttt{let } \textit{three } = \textit{tuple } \textit{two } \textit{two } \texttt{ in } \tag*{}
+    \end{align}
+%\begin{lstlisting}[language=ML,caption={Nested tuples with different type variables},label={lst:pairproofexp},mathescape=true]
+%fun tuple a b f = f a b;
+%fun one = tuple tuple tuple;
+%fun two = tuple one one;
+%fun three = tuple two two;
+%$\dots$
+%\end{lstlisting}
+    The trick to induce an exponential running time is demonstrated with the pathological program in \autoref{eq:ppexp}.
+    By allowing \textit{tuple} to be polymorphic and have having two polymorphic parameters, every time \textit{tuple} is instantiated, it will contain only fresh variables.
+    The type of \textit{tuple} is $a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c$.
+    Clearly this looks very much like \autoref{eq:ppexp}, but has the subtle difference of letting the parameters \textit{a} and \textit{b} (within the type instantiation of the let expression \textit{tuple}) be polymorphic and introducing every ''step`` as a polymorphic let expression.
+    The return type of \textit{one} (the type of \textit{f}) is displayed in \autoref{eq:instexp}.
     \begin{align}
         \textit{inst}(a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c) \rightarrow \textit{inst}(a \rightarrow b \rightarrow (a \rightarrow b \rightarrow c) \rightarrow c) \rightarrow \gamma \rightarrow \gamma.
         \label{eq:instexp}
@@ -1014,10 +1024,18 @@ $\dots$
     \end{align}
 \end{proof}
 An interesting observation is that by increasing the amount of polymorphic parameters to some $c$ the number of type variables becomes $\Omega(c^n)$.
-This observation does not have any significant impact since $O(f(n)) \supseteq \Omega(n^n)$ where $f$ is the algorithm for type inference, such that the problem of type inference in Hindley-Milner is at least in EXPTIME which solvable in both $O(2^n)$ and $O(n^n)$.
+This observation does not have any significant impact since $O(f(n)) \supseteq \Omega(n^n)$ where $f$ is the algorithm for type inference, such that the problem of type inference in Hindley-Milner is at least in EXPTIME, which contains problems solvable in both $O(2^n)$ and $O(n^n)$.
 The upper bound which states that type inference in Hindley-Milner is in fact \text{EXPTIME-complete} was justified in~\cite{kfoury1990ml,mairson1989deciding}.
 Running the program \autoref{lst:pairproofexp} in $L$ yields a blowup of $2^n$ (\autoref{lst:appedix:bigexp}).
 \autoref{fig:expplot} shows the relationship between the program typed in $L$ and the theoretical time of $2^n$.
+\begin{lstlisting}[language=ML,caption={Nested tuples with different type variables},label={lst:pairproofexp},mathescape=true]
+fun tuple a b f = f a b;
+fun one = tuple tuple tuple;
+fun two = tuple one one;
+fun three = tuple two two;
+fun four = tuple three three;
+fun main = 0;
+\end{lstlisting}
 \begin{figure}[ht]
     \centering
 \begin{tikzpicture}
