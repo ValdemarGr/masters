@@ -1,6 +1,3 @@
-\documentclass[11pt,oneside,a4paper]{report}
-
-\begin{document}
 \clearpage
 \section{Untyped lambda calculus}\label{sec:lc}
 The \textit{untyped lambda calculus} is a model of computation developed by Alanzo Church\cite{church1936unsolvable}.
@@ -21,11 +18,11 @@ Context is important when discussing \textit{free} and \textit{bound} variables 
 Free varables are determined by \autoref{eq:freevarvar}, \autoref{eq:freevarabs} and \autoref{eq:freevarapp}.
 \begin{align}
     \label{eq:freevarvar}
-    &Free(x) = \{ x \}\\
+    &\textit{free}(x) = \{ x \}\\
     \label{eq:freevarabs}
-    &Free(\lambda x . E) = Free(E) \backslash \{ x \}\\
+    &\textit{free}(\lambda x . E) = \textit{free}(E) \backslash \{ x \}\\
     \label{eq:freevarapp}
-    &Free(Y E) = Free(Y) \cup Free(E)
+    &\textit{free}(Y E) = \textit{free}(Y) \cup \textit{free}(E)
 \end{align}
 \begin{exmp}
     \begin{align}
@@ -37,83 +34,109 @@ Free varables are determined by \autoref{eq:freevarvar}, \autoref{eq:freevarabs}
 
 In \autoref{lc:lang:app} the \textit{application} term is displayed.
 An application of two terms can be interpreted as substituting the variable in the left abstraction $Y$ with the right term $E$.
-It is also common to introduce the \textit{let binding} to the untyped lambda calculus which will be further discussed when introducing typing in \autoref{sec:types}.
+
+It is also common to introduce the \textit{let binding} to the untyped lambda calculus, which does not make the untyped lambda calculus any more powerful, but it allows defining different behaviours for introducing bindings through either abstraction or let binding in typing and evaluation.
+The let binding (also commonly named let expression) is written \texttt{let $x$ = Y in E} where \texttt{Y} and \texttt{E} are arbitrary lambda calculus terms.
+When evaluated, the term \texttt{E} should have every instance of $x$ replaced by \texttt{Y} such that \texttt{let $x$ = Y in E $\equiv$ \{$x$ $\mapsto$ Y\}E}.
+When the let binding does not introduce unique semantics, it can simply be expressed as abstraction and application \texttt{let $x$ = Y in E $\equiv$ ($\lambda$x.E) Y}.
 
 \begin{exmp}
 \label{ex:application}
 Let $Y$ be $\lambda x . T$ and $E$ be $z$ then $Y E$ is $(\lambda x . T) z$.
-Furtermore substituteing $x$ for $E$ such that $Y$ becomes $T[x := E]$.
-Since $E = z$ then substitute $E$ for $z$ such that $T[x := z]$ read as ``Every instance of $x$ in $T$ should be substituted by $z$''.
+Furthermore substituting $x$ for $E$ such that $Y$ becomes $\{x \mapsto E\}T$.
+Since $E = z$ then substitute $E$ for $z$ such that $\{x \mapsto z\}T$ read as ``Every instance of $x$ in $T$ should be substituted by $z$''.
 \end{exmp}
 \begin{remark}
-Substituting lambda terms is a popular method of evaluateing lambda calculus programs.
-Languages like Miranda Clean and general purpose evaluation programs like the G-machine implement \textit{combinator graph rewriting} which is similar and will be introduced in \autoref{sec:comb}.
+Substituting lambda terms is a popular method of evaluating lambda calculus programs.
+Languages like Miranda and Clean implement \textit{combinator graph rewriting} which is introduces a new representation of programs, and will be introduced in \autoref{sec:comb}.
 \end{remark}
 
 A remarkable fact about the untyped lambda calculus is that it is turing complete; any algorithm that can be evaluated by a computer can be encoded in the untyped lambda calculus.
-The turing completeness of the untyped lambda calculus can be realized by modelling numerics, boolean logic and recursion with the \textit{Y-combitator}.
+The turing completeness of the untyped lambda calculus can be realized by modelling numerics, boolean logic and recursion with a fixed-point combinator like the \textit{Y-combitator}.
 Church encoding is the encoding of numerics, arithmetic expressions and boolean logic~\cite{church1985calculi}.
 Church encoding may prove the power of the untyped lambda calculus but has terrible running time for numerics since to represent some $n \in \mathbb{Z}$ it requires $n$ applications.
 For the remainder of the dissertation ordinary arithmetic expressions are written in traditional mathematics.
 The simplicity of lambda calculus makes it an excellent language to transpile to which is a common technique.
 
-\section{Translation to lambda calculus}
+\section{The high-level language}
+The programming language $L$ is similar to the lambda calculus, but introduces some additional features.
+$L$ introduces the keyword \texttt{fun} for introducing functions and \texttt{let} for introducing program variables.
+Expressions in $L$ such as \texttt{let} are terminated with \texttt{;}.
+
+Moreover, the $L$ language also introduces numerics and arithmetic operations.
+Numerics are expressions written as constants such as \texttt{1} and \texttt{42}.
+Arithmetic operations exist as infix binary operators between expressions such as \texttt{x + 2}.
+
+\texttt{fun} defines a name for the function and the parameters such as \texttt{fun id x = x;}, which translates into $\texttt{let } \textit{id } = (\lambda x.x) \texttt{ in } E$.
+The special function \texttt{main} is a function with no parameters that is the last expression in the toplevel.
+
+\texttt{let} can be defined anywhere and becomes a program variable introduced through abstraction such that \texttt{fun add x y = let a = x + y; a} translates into $\letexp{id}{(\lambda x. \lambda y. (\lambda a.a) (x + y))}{\dots}$.
+It may seem a bit strange that \texttt{fun} becomes a let binding and \texttt{let} becomes an abstraction, but functions must be introduced as polymorphic and program variables must be introduced as monomorphic, which are concepts that will be introduced in typing.
+
+Furthermore, the language $L$ allows algebraic data structures with type constructors.
+The algebraic data structure with a arity one type constructor named \texttt{List} is written as \texttt{type List a = | Nil | Cons a (List a);}.
+When algebraic data structures exist one must also be able to match on the case, which in the instance a sum of \texttt{List} is written \texttt{fun sum l = match l | Nil -> 0; | Cons x xs -> (x + (sum xs));;}.
+Algebraic data structures and type constructors will be introduced and explored more throughly throughout this work.
+Boolean expressions can be introduced through algebraic data structures.
+
+\section{A recipe for correct translation}
 High level languages associated with lambda calculus are often also very close to it.
 The $L$ language is very close to the untyped lambda calculus.
-See two equivalent programs \autoref{lc:add} and \autoref{lst:add} that both add an \texttt{a} and a \texttt{b}.
-\begin{lstlisting}[language=ML,caption={Add function in lambda calculus},label={lc:add},mathescape=true]
-($\lambda$add.E)($\lambda$a.$\lambda$b.a + b)
-\end{lstlisting}
+Unfortunately there are some details in getting behaviour correct in the translation.
+The lambda calculus must have a expressions that follow let bindings, which exist as functions denoted \texttt{fun} in $L$.
+In $L$ the body of the \texttt{main} function is the last expression in a program such that the program in \autoref{lst:add} becomes \autoref{eq:add}.
 \begin{lstlisting}[language=ML,caption={Add function in L},label={lst:add}]
 fun add a b = a + b;
+fun main = (add 2 4);
 \end{lstlisting}
-Notice that in \autoref{lc:add} the term $E$ is left undefined, $E$ is ``the rest of the program in this scope''.
-If the program were to apply $1$ and $2$ to add the resulting program in L would be \autoref{lst:addapp} and in the untyped lambda calculus it would be \autoref{lc:addapp}.
-\begin{lstlisting}[language=ML,caption={Add function in lambda calculus},label={lc:addapp},mathescape=true]
-($\lambda$add.add 1 2)($\lambda$a.$\lambda$b.a + b)
-\end{lstlisting}
-\begin{lstlisting}[language=ML,caption={Add function applied},label={lst:addapp}]
-fun add a b = a + b;
-add 1 2;
-\end{lstlisting}
+\begin{align}
+  \letexp{add}{\lambda a.\lambda b.a + b}{(\textit{add } 2 \,\, 4)}\label{eq:add}
+\end{align}
 
 \subsection{Scoping}\label{scoping}
-Notice that \autoref{lc:add} must bind the function name ``outside the rest of the program'' or more formally in an outer scope.
-In a traditional program such as \autoref{lst:traditional} functions must be explicitly named to translate as in the above example.
-\begin{lstlisting}[language=ML,caption={A traditional program},label={lst:traditional}]
-fun add a b = a + b;
-fun sub a b = a - b;
-sub (add 10 20) 5;
-\end{lstlisting}
+Notice that \autoref{eq:add} must bind the function name \textit{add} ``outside the rest of the program'' or more formally in an outer scope.
+%In a simple program such as \autoref{lst:traditional} functions must be explicitly named to translate as in the above example.
+%\begin{lstlisting}[language=ML,caption={A traditional program},label={lst:traditional}]
+%fun add a b = a + b;
+%fun sub a b = a - b;
+%fun main = sub (add 10 20) 5;
+%\end{lstlisting}
 \begin{lstlisting}[language=ML,caption={An order dependent program},label={lst:orddep}]
 fun sub a b = add a (0 - b);
 fun add a b = a + b;
-sub (add 10 20) 5;
+fun main = sub (add 10 20) 5;
 \end{lstlisting}
-Notice that there are several problems such as the order of which functions are defined may alter whether the program is correct or not.
-For instance the program defined in \autoref{lst:orddep} would not translate into a valid program, it would translate into \autoref{lc:orddep}.
+Notice in \autoref{lst:orddep} that there are several problems, such as the order that functions are defined, may alter whether the program is correct.
+For instance the program defined in \autoref{lst:orddep} would not translate into valid lambda calculus, it would translate into \autoref{eq:brokensub}.
 The definition of \texttt{sub} is missing a reference to the \texttt{add} function.
-\begin{lstlisting}[language=ML,caption={Add function in lambda calculus},label={lc:orddep},mathescape=true]
-($\lambda$sub.$\lambda$add. sub (add 10 20) 5) 
-    ($\lambda$a.$\lambda$b.a + b) 
-    ($\lambda$a.$\lambda$b.add a (0 - b))
-\end{lstlisting}
+\begin{align}
+  &\letexp{sub}{\lambda a.\lambda b.\textit{add } a \,\,(0 - b)}{\label{eq:brokensub}\\&\letexp{add}{\lambda a.\lambda b.a+b}{\tag*{}\\&\textit{sub } (\textit{add } 10 \,\, 20) \,\, 5}}\tag*{}
+\end{align}
+%\begin{lstlisting}[language=ML,caption={Add function in lambda calculus},label={lc:orddep},mathescape=true]
+%($\lambda$sub.$\lambda$add. sub (add 10 20) 5) 
+    %($\lambda$a.$\lambda$b.a + b) 
+    %($\lambda$a.$\lambda$b.add a (0 - b))
+%\end{lstlisting}
 
 \textit{lambda lifting} is a technique where free variables (\autoref{sec:lc}) are explicitly parameterized~\cite{johnsson1985lambda}.
 %A free variable, is a variable in respect to some function $f$ that is referenced from within $f$, but defined outside. 
-This is exactly the problem in \autoref{lc:orddep} which has the lambda lifted solution \autoref{lc:ordfix}.
-\begin{lstlisting}[language=ML,caption={Order dependent},label={lc:ordfix},mathescape=true]
-($\lambda$sub.$\lambda$add. sub  add (add 10 20) 5) 
-    ($\lambda$a.$\lambda$b.a + b) 
-    ($\lambda$add.$\lambda$a.$\lambda$b.add a (0 - b))
-\end{lstlisting}
+This is exactly the problem in \autoref{eq:brokensub} which has the lambda lifted solution seen in \autoref{eq:fixedsub}.
+\begin{align}
+  &\letexp{sub}{\lambda add.\lambda a.\lambda b.\textit{add } a \,\,(0 - b)}{\label{eq:fixedsub}\\&\letexp{add}{\lambda a.\lambda b.a+b}{\tag*{}\\&\textit{sub } \textit{add } (\textit{add } 10 \,\, 20) \,\, 5}}\tag*{}
+\end{align}
+%\begin{lstlisting}[language=ML,caption={Order dependent},label={lc:ordfix},mathescape=true]
+%($\lambda$sub.$\lambda$add. sub  add (add 10 20) 5) 
+    %($\lambda$a.$\lambda$b.a + b) 
+    %($\lambda$add.$\lambda$a.$\lambda$b.add a (0 - b))
+%\end{lstlisting}
 As it will turn out this will also enables complicated behaviour such as \textit{mutual recursion}.
 
-Moreover lambda lifting also conforms to ``traditional'' scoping rules.
-\textit{Variable shadowing} occurs when there exists $1 < $ reachable variables of the same name but the ``nearest'' in regard to scope distance is chosen.
+Moreover lambda lifting must also conform to ``traditional'' scoping rules.
+\textit{Variable shadowing} occurs when there exists $1 < $ reachable variables of the same name.
+In the lambda calculus, the ``nearest'' in regard to scope distance is chosen, which is the desired semantics.
 Effectively other variables than the one chosen are \textit{shadowed}.
-Variable shadowing is an implied side-effect of using using lambda calculus.
-The function \texttt{f} in \autoref{lst:scoping} yields \texttt{12}.
+%Variable shadowing is an implied side-effect of using using lambda calculus.
+For instance, the function \texttt{f} in \autoref{lst:scoping} yields \texttt{12}.
 \begin{lstlisting}[language=ML,caption={Scoping rules in programming languages},label={lst:scoping}]
 let x = 22;
 let a = 10;
@@ -126,7 +149,7 @@ fun f =
 \label{sec:lamrec}
 %Complexity - ``The state or quality of being intricate or complicated''
 %\\\\
-\noindent Reductions in mathematics and computer science are one of the principal methods used for developing beautiful equations and algorithms.
+\noindent Reductions in mathematics and computer science are one of the principal methods for development of solutions.
 \begin{lstlisting}[language=ML,caption={Infinite program},label={lst:infprog}]
 fun f n = 
   if (n == 0) n
@@ -194,5 +217,3 @@ For instance OCaml has the \texttt{let rec} binding to introduce recursive defin
 The \texttt{rec} keyword indicates to the compiler that the binding should be able to ``see itself'' (\autoref{typing}).
 
 
-
-\end{document}
