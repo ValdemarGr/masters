@@ -1,5 +1,5 @@
 \clearpage
-\section{Untyped lambda calculus}\label{sec:lc}
+\section{The untyped lambda calculus}\label{sec:lc}
 The \textit{untyped lambda calculus} is a model of computation developed by Alanzo Church\cite{church1936unsolvable}.
 The untyped lambda calculus is a simple tangible language of just three terms.
 \begin{align}
@@ -11,6 +11,8 @@ The untyped lambda calculus is a simple tangible language of just three terms.
   \label{lc:lang:app}
 \end{align}
 \autoref{lc:lang:abs} displays a lambda \textit{abstraction} which essentially is a function that states ``given some $x$ compute $E$'' where $E$ is another one of the three terms in which $x$ may occur.
+The term $E$ in the lambda abstraction will be called the \textit{body}.
+The abstraction will also be called a \textit{function} is some contexts, since it essentially is a function.
 The \textit{variable} (\autoref{lc:lang:var}) is a reference to some value introduced by an abstraction.
 A variable is a reference to another lambda abstraction.
 In the untyped lambda calculus there is also the notion of \textit{context} which simply means where in a lambda expression something is computed.
@@ -77,9 +79,11 @@ Furthermore, the language $L$ allows algebraic data structures with type constru
 The algebraic data structure with a arity one type constructor named \texttt{List} is written as \texttt{type List a = | Nil | Cons a (List a);}.
 When algebraic data structures exist one must also be able to match on the case, which in the instance a sum of \texttt{List} is written \texttt{fun sum l = match l | Nil -> 0; | Cons x xs -> (x + (sum xs));;}.
 Algebraic data structures and type constructors will be introduced and explored more throughly throughout this work.
-Boolean expressions can be introduced through algebraic data structures.
 
-\section{A recipe for correct translation}
+Boolean expressions can be introduced through algebraic data structures, but will exist as natural constructs of the language, such as \texttt{$x == y$}, since binary comparison operators and conditionals are more ergonomic.
+Naturally, a conditional function \texttt{if else} which takes the form of a condition, a case for the instance of truth and a case for the instance of false, written \texttt{if $(Y)$ $E$; else $T$;}
+
+\section{A recipe for correct transpilation}
 High level languages associated with lambda calculus are often also very close to it.
 The $L$ language is very close to the untyped lambda calculus.
 Unfortunately there are some details in getting behaviour correct in the translation.
@@ -150,70 +154,123 @@ fun f =
 %Complexity - ``The state or quality of being intricate or complicated''
 %\\\\
 \noindent Reductions in mathematics and computer science are one of the principal methods for development of solutions.
+Let us begin with 
+\begin{figure}
 \begin{lstlisting}[language=ML,caption={Infinite program},label={lst:infprog}]
 fun f n = 
-  if (n == 0) n
-  else if (n == 1) n + (n - 1)
-  else if (n == 2) n + ((n - 1) + (n - 2))
-  ...
+  if (n == 0) n;
+  else 
+    if (n == 1) n + (n - 1);
+    else 
+      if (n == 2) n + ((n - 1) + (n - 2));
+      ...
 \end{lstlisting}
+\end{figure}
 \autoref{lst:infprog} defines a function \texttt{f} that in fact is infinite.
 In the untyped lambda calculus there are not any of the three term types that define infinite functions or abstractions, at first glance.
 Instead of writing an infinite function the question is rather how can a reduction be performed on this function such that it can evaluate \textit{any} case of \texttt{n}?
+\begin{figure}
 \begin{lstlisting}[language=ML,caption={Recursive program},label={lst:recprog}]
 fun f n = 
-  if (n == 0) n
-  else n + (f (n - 1))
+  if (n == 0) n;
+  else n + (f (n - 1));;
 \end{lstlisting}
+\end{figure}
 \autoref{lst:recprog} defines a recursive variant of \texttt{f} it is a product of the reduction in \autoref{eq:fred}.
 \begin{align}
     n + (n - 1) \dots + 0 = \sum_{k = 0}^n k
     \label{eq:fred}
 \end{align}
 Since the untyped lambda calculus is turing complete or rather if one were to show it were it must also realize algorithms that are recursive or include loops (the two of which are equivalent in expressiveness).
-\begin{lstlisting}[language=ML,caption={Recursive function},label={eq:naiverec},mathescape=true]
-($\lambda$f.E) ($\lambda$n.if (n == 0) (n) (n + (f (n - 1))))
-\end{lstlisting}
-The naive implementation of a recursive variant will yield an unsolvable problem which in fact is an infinite problem.
-In \autoref{eq:naiverec} when \texttt{f} is applied recursively it must be referenced while it is ``being constructed''.
-Substituting $f$ with its implementation in \autoref{eq:naiverecdepth} will yield the same problem again but at one level deeper.
-The \texttt{if} function takes a condition, the body in case of the condition being true and the body in case of the condition being false.
-\begin{lstlisting}[language=ML,caption={Recursive function f substituted},label={eq:naiverecdepth},mathescape=true]
-($\lambda$f.E) 
-($\lambda$n.if (n == 0) (n) (n + (
-    ($\lambda$n.if (n == 0) (n) (n + (f (n - 1))))
-    (n - 1)
-)))
-\end{lstlisting}
+
+Now that the case of recursive functions have been introduced, we will entertain ourselves with simple, albeit rather unresourceful, recursive lambda calculus programs, such as \autoref{eq:rec:useless}.
+\begin{align}
+  \letexp{f}{\lambda x. f x}{E}\label{eq:rec:useless}
+\end{align}
+For \autoref{eq:rec:useless} to be in a valid lambda calculus form, $f$ must be reachable in $\lambda x.fx$.
+A naive attempt of solving this could involve substituting $f$ by it's implementation (\autoref{eq:rec:useless2}), which yields another issue.
+\begin{align}
+  \letexp{f}{\lambda x. (\lambda x. fx) x}{E}\label{eq:rec:useless2}
+\end{align}
+The program in \autoref{eq:rec:useless2} still suffers from the problem in \autoref{eq:rec:useless}, now at one level deeper.
+
+%\begin{lstlisting}[language=ML,caption={Recursive function},label={eq:naiverec},mathescape=true]
+%($\lambda$f.E) ($\lambda$n.if (n == 0) (n) (n + (f (n - 1))))
+%\end{lstlisting}
+%The naive implementation of a recursive variant will yield an unsolvable problem which in fact is an infinite problem.
+%In \autoref{eq:naiverec} when \texttt{f} is applied recursively it must be referenced while it is ``being constructed''.
+%Substituting $f$ with its implementation in \autoref{eq:naiverecdepth} will yield the same problem again but at one level deeper.
+%%The \texttt{if} function takes a condition, the body in case of the condition being true and the body in case of the condition being false.
+%\begin{lstlisting}[language=ML,caption={Recursive function f substituted},label={eq:naiverecdepth},mathescape=true]
+%($\lambda$f.E) 
+%($\lambda$n.if (n == 0) (n) (n + (
+    %($\lambda$n.if (n == 0) (n) (n + (f (n - 1))))
+    %(n - 1)
+%)))
+%\end{lstlisting}
 One could say that the problem is now recursive.
 Recall that lambda lifting (\autoref{scoping}) is the technique of explicitly parameterizing outside references.
-Convince yourself that \texttt{f} lives in the scope above its own body such that when referencing \texttt{f} from within \texttt{f}, \texttt{f} should be parameterized as in \autoref{lst:erec} such that it translates to \autoref{eq:erec}.
-\begin{lstlisting}[language=ML,caption={Explicitly passing recursive function},label={lst:erec}]
-fun f f n = 
-  if (n == 0) n
-  else n + (f f (n - 1))
-\end{lstlisting}
-\begin{lstlisting}[language=ML,caption={Explicitly passing recursive function in the lambda calculus},label={eq:erec},mathescape=true]
-($\lambda$f.E)($\lambda$f.$\lambda$n. if (n == 0) (n) (n + (f f (n - 1))))
-\end{lstlisting}
-The initial invocation of \texttt{f} must involve \texttt{f} such that it becomes \texttt{f f n}.
-The \textit{Y-combinator} an implementation of a fixed-point combinator in \autoref{eq:ycomb} is the key to realize that the untyped lambda calculus can implement recursion.
+Assuming that $f$ lives in the scope above it's body lets us to lambda lift $f$ into it's own body by explicitly parameterizing $f$, such that the program in \autoref{eq:rec:useless} is reshaped to the program in \autoref{eq:rec:fixed}.
+\begin{align}
+  \letexp{f}{\lambda f.\lambda x. f f x}{E}\label{eq:rec:fixed}
+\end{align}
+%Convince yourself that \texttt{f} lives in the scope above its own body such that when referencing \texttt{f} from within \texttt{f}, \texttt{f} should be parameterized as in \autoref{lst:erec} such that it translates to \autoref{eq:erec}.
+%\begin{lstlisting}[language=ML,caption={Explicitly passing recursive function},label={lst:erec}]
+%fun f f n = 
+  %if (n == 0) n
+  %else n + (f f (n - 1))
+%\end{lstlisting}
+%\begin{lstlisting}[language=ML,caption={Explicitly passing recursive function in the lambda calculus},label={eq:erec},mathescape=true]
+%($\lambda$f.E)($\lambda$f.$\lambda$n. if (n == 0) (n) (n + (f f (n - 1))))
+%\end{lstlisting}
+The invocation of $f$ must involve $f$ such that it becomes $f f n$.
+The \textit{Y-combinator}; an implementation of a fixed-point combinator, displayed in \autoref{eq:ycomb}, is the key to realize that the lambda calculus generally can implement recursion.
 Languages with functions and support binding functions to parameters can implement recursion with the Y-combinator.
 \begin{align}
     \lambda f . (\lambda x . f (x x)) (\lambda x . f (x x))
     \label{eq:ycomb}
 \end{align}
 
-Implementing mutual recursion is an interesting case of lambda lifting and recursion in untyped lambda calculus.
-\begin{lstlisting}[language=ML,caption={Mutual recursion},label={lst:mutrec}]
-fun g x = f x;
-fun f x = g x;
-\end{lstlisting}
-Notice in \autoref{lst:mutrec} that \texttt{g} requires \texttt{f} to be lifted and \texttt{f} requires \texttt{g} to be lifted.
-If a translation ``pessimistically'' lifts all definitions from the above scope then all required references exist in lexical scope.
+Implementing mutual recursion is an interesting case of lambda lifting and recursion in the lambda calculus.
+\begin{align}
+  &\letexp{g}{\lambda x.f x}{}\label{eq:mutrec}\\
+  &\letexp{f}{\lambda x.g x}{\dots} \tag*{}
+\end{align}
+%\begin{lstlisting}[language=ML,caption={Mutual recursion},label={lst:mutrec}]
+%fun g x = f x;
+%fun f x = g x;
+%\end{lstlisting}
+Notice that in \autoref{eq:mutrec} that $g$ requires $f$ to be lifted and $f$ requires $g$ to be lifted.
+\begin{align}
+  &\letexp{g}{\lambda f. \lambda g.(\lambda x.f f g x)}{}\label{eq:mutrec:fixed}\\
+  &\letexp{f}{\lambda f. \lambda g.(\lambda x.g f g x)}{\dots} \tag*{}
+\end{align}
+If a transpilation algorithm ``pessimistically'' lambda lifts all definitions from the above scope, then all required references are bound thus the program becomes valid.
+
+Notice that in \autoref{eq:rec:fixed} and \autoref{eq:mutrec:fixed} the recursive abstractions require the lifted form an all invocations, not just the definition.
+Figuring out what lifted parameters an abstraction requires arbitrarily requires much program analysis.
+A method which can be used to hide lambda lifted parameters of abstractions, called \textit{partial application}, is very useful.
+A partial application is a term that encapsulates only delivering a subset of all the required parameters to an abstraction, such as all the lambda lifted parameters.
+\begin{align}
+  &\letexp{g'}{\lambda f. \lambda g.(\lambda x.f f g x)}{}\label{eq:mutrec:fixed2}\\
+  &\letexp{f'}{\lambda f. \lambda g.(\lambda x.g f g x)}{} \tag*{}\\
+  &\letexp{g}{g' f' g'}{} \tag*{}\\
+  &\letexp{f}{f' f' g'}{\dots} \tag*{}
+\end{align}
+\autoref{eq:mutrec:fixed2} solves the problem of referring to $f$ and $g$ outside of their definitions.
+Unfortunately \autoref{eq:mutrec:fixed2} still requires analysis of $f$ and $g$ inside the bodies of $g'$ and $f'$, such that the references are replaced.
+Fortunately the lifted functions $g$ and $f$  can be bound to their partially applied variants, inside of their bodies, such as in \autoref{eq:mutrec:fixed3}.
+\begin{align}
+  &\letexp{g'}{\lambda f''. \lambda g''.(\letexp{f}{f'' f'' g''}{\lambda x.f x})}{}\label{eq:mutrec:fixed3}\\
+  &\letexp{f'}{\lambda f''. \lambda g''.(\letexp{g}{g'' f'' g''}{\lambda x.g x})}{} \tag*{}\\
+  &\letexp{g}{g' f' g'}{} \tag*{}\\
+  &\letexp{f}{f' f' g'}{\dots} \tag*{}
+\end{align}
+
+Now we have developed a technique which implements (mutual) recursion, and requires no rewriting other than binding names and lifting parameters.
 \\\\
 Languages have different methods of introducing recursion some of which have very different implications especially when considering types.
 For instance OCaml has the \texttt{let rec} binding to introduce recursive definitions.
-The \texttt{rec} keyword indicates to the compiler that the binding should be able to ``see itself'' (\autoref{typing}).
+The \texttt{rec} keyword indicates to the compiler that the binding should be able to ``see itself''.
 
 
