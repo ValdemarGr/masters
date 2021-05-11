@@ -156,7 +156,7 @@ The application term of the monotype is dependent on the primitive types of the 
 The types $\tau_1 \dots \tau_n$ are monotype parameters required to construct some type $C$.
 In $L$ the set of type constructors are $\{ \texttt{Int}, \texttt{Bool} \} \cup \texttt{ADT}$.
 \texttt{Int} and \texttt{Bool} are type constructors of arity 0 thus only have one instantiation and are atomic.
-The set of constructors \texttt{ADT} encapsulates the set of program defined algebraic data structures (\autoref{adts}).
+The set of constructors \texttt{ADT} encapsulates the set of program defined algebraic data structures.
 \begin{exmp}
     Let $\texttt{ADT} = \{ \texttt{List} \}$ where \texttt{List} is defined as in \autoref{lst:listadt}.
     The \textit{type constructor} (not to be confused for constructors like \texttt{Cons} or \texttt{Nil}) for \texttt{List} has the signature $\texttt{a} \rightarrow \texttt{List a}$ stating that if supplied with some type \texttt{a} it constructs a type of \texttt{List a} (effectively containing the provided type).
@@ -175,7 +175,7 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 	\label{eq:poly}
 \end{align}
 Polymorphic types either take the shape of a type variable or universally quantify some type, naming the quantifier $a$.
-This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only type variables that are not free.
+This does not necessarily include \textit{all} types since the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only type variables that are not free in $\Gamma$.
 The notion of free type variables and polymorphism will be explored further once the definition of free has been introduced.
 %Many types may adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
 
@@ -215,17 +215,17 @@ The type hierarchy of the Hindley-Milner type-system is shown in \autoref{fig:po
 \end{figure}
 Notice the lack of $\sigma$ in \autoref{fig:polytree} since $\sigma$ is but a mechanism to prove type systems.
 %$\sigma$ is but a mechanism to prove type systems, $\sigma$ is never a specific type.
-\begin{remark}
-    \label{remark:polyimpl}
-An important implementation detail which should be noted is that of the polymorphic type.
-Polymorphic types can be regarded as being a pair of bound types and monotype.
-Instead of keeping track of what types cannot occur, which will grow as the typing algorithm continues, keeping track of the ones that do occur in the monotype simplifies the implementation.
-This representation is convenient for the \textbf{Gen} rule.
-\end{remark}
+%\begin{remark}
+    %\label{remark:polyimpl}
+%An important implementation detail which should be noted is that of the polymorphic type.
+%Polymorphic types can be regarded as being a pair of bound types and monotype.
+%%Instead of keeping track of what types cannot occur, which will grow as the typing algorithm continues, keeping track of the ones that do occur in the monotype simplifies the implementation.
+%This representation is convenient for the \textbf{Gen} rule.
+%\end{remark}
 
 A principal component of typing in Hindley-Milner is the \textit{environment}, the environment is nothing more than a more context aware name for the hypotheses.
 The environment $\Gamma$ is now a set of pairs of program variable and polytype (\autoref{eq:env}), in contrast to a set of pairs of program variables and monotypes (\autoref{fig:exmp:simpletyped}).
-Now $\Gamma \vdash x: \sigma$ signifies a \textit{typing judgment}, meaning that given $\Gamma$, the variable $x$ can take the \textbf{poly}type $\sigma$.
+Now $\vdash$ is enhanced such that it can also judge polymorphic types; $\Gamma \vdash x: \sigma$ signifies a \textit{typing judgment}, meaning that under the assumption of $\Gamma$, the variable $x$ can take the \textbf{poly}type $\sigma$.
 \begin{remark}
     \label{remark:judgpoly}
     Notice that judging a type now, does not necessarily mean that the judged type is the only type that $x$ may take, it states that it is one \textit{possible} type that $x$ may take.
@@ -249,7 +249,7 @@ Type variables occur free when they are not introduced by a quantification and t
    & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     \tag*{}\\
    & \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma) \label{eq:diffeq}
 \end{align}
-The last rule of when type variables are free can be a bit tricky to grasp without understanding how monotypes occur in $\Gamma$.
+The last rule (\autoref{eq:diffeq}) of when type variables are free can be a bit tricky to grasp without understanding how monotypes occur in $\Gamma$.
 Monotypes are just polytypes without any quantifier, such that they always occur free in $\Gamma$.
 \autoref{eq:diffeq} defines the free variables for some $\sigma$ under the assumption of some $\Gamma$ such that the definition states ``all free type variables in $\sigma$, that are not monotypes in $\Gamma$''.
 This rule is important, since the system may not arbitrarily generalize over monotypes.
@@ -834,19 +834,19 @@ The \textit{inst} function does not specify types anymore but simply makes unifi
 %fun doubleid x = id (id (x + 1));
 %\end{lstlisting}
     %\end{minipage}
-    After inferring \texttt{id} and \texttt{ap} the environment will contain id $\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta)\}$.
-    Typing the function \texttt{doubleid} without the use of \textit{inst}; begin by looking at the introduced parameter \texttt{x} and then the innermost expression \texttt{id (x + 1)}. 
+    After inferring \textit{id} and \textit{ap} the environment will contain id $\Gamma = \{ (\textit{id}, \forall a . a \rightarrow a), (\textit{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta)\}$.
+    Typing the function \textit{doubleid} without the use of \textit{inst}; begin by looking at the introduced parameter \textit{x} and then the innermost expression \textit{id $(x + 1)$}. 
 \begin{align}
     &\textit{bound}(\tau) = \textit{free}(\tau) - \textit{free}(\Gamma) = \{ \tau \} \tag{\textbf{Abs} intro \texttt{x} : $\tau$ }\\
-    &\Gamma = \{ (\texttt{id}, \forall a . a \rightarrow a), (\texttt{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta), (\texttt{x}, \forall \tau . \tau) \}\\
+    &\Gamma = \{ (\textit{id}, \forall a . a \rightarrow a), (\textit{ap}, \forall \gamma,\beta . \gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta), (\texttt{x}, \forall \tau . \tau) \}\\
     &\textit{unify}(\tau, \texttt{Int}) = \{ \tau \mapsto \texttt{Int} \}\\
     &\textit{unify}(a \rightarrow a, \texttt{Int} \rightarrow \mu) = \textit{unify}(\{ a \mapsto \texttt{Int} \}a, \{ a \mapsto \texttt{Int} \}\mu) \cdot \{ a \mapsto \texttt{Int} \}\\
     &= \{ \mu \mapsto \texttt{Int} \} \cdot \{ a \mapsto \texttt{Int} \} \tag*{}\\
     &= \{ \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}
     \label{eq:unifyres}
 \end{align}
-    This example might not look compromising but a minor change such that the body of \texttt{doubleid} becomes \texttt{id (ap (id (x + 1)))} yields an interesting problem.
-    In the case of introducing \texttt{ap} the two type instances for \texttt{id} must be different (\texttt{id} must be introduced with different type variables) to retain it's polymorphic properties.
+    This example might not look compromising but a minor change such that the body of \textit{doubleid} becomes \textit{id (ap (id $(x + 1)$))} yields an interesting problem.
+    In the case of introducing \textit{ap} the two type instances for \textit{id} must be different (\textit{id} must be introduced with different type variables) to retain it's polymorphic properties.
     The following steps are performed when inferring this new body.
 \begin{align}
     &\textit{unify}(\gamma \rightarrow (\gamma \rightarrow \beta) \rightarrow \beta, \texttt{Int} \rightarrow \delta) \tag{\texttt{ap (id (x + 1))} }\\
@@ -864,7 +864,7 @@ The \textit{inst} function does not specify types anymore but simply makes unifi
     &\{ \gamma \mapsto \texttt{Int}, \delta \mapsto (\texttt{Int} \rightarrow \beta) \rightarrow \beta, \mu \mapsto \texttt{Int}, a \mapsto \texttt{Int} \} \tag*{}
 \end{align}
     Clearly $a$ cannot map to two types which cannot be unified which is a violation of the type system.
-    The apparent problem is that \texttt{id} is specialized within the whole of \texttt{doubleid}.
+    The apparent problem is that \textit{id} is specialized within the whole of \textit{doubleid}.
     By instantiating quantified types when they are needed cases such as this can be avoided.
     \begin{align}
         &\textit{unify}(\textit{inst}(\forall a . a \rightarrow a), \textit{inst}(\forall \tau . \tau \rightarrow \mu))\\
