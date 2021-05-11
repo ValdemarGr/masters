@@ -7,9 +7,9 @@ The spell checking equivalent for computer programs could be type checking; a su
 Types can take properties that make them very powerful since types are, in their essence, a set of logical formulas in which we can use natural deduction to prove their validity~\cite{howard1980formulae}.
 
 A type system and algorithm which shortly will become the main interest is the Hindley-Milner type system and the Damas-Milner Algorithm W.
-The Hindley-Milner type system are the natural semantics which the Damas-Milner Algoritm W (or any other inference algorithm) must adhere to.
+The Hindley-Milner type system are the natural semantics which the Damas-Milner Algoritm W (or any other inference algorithm that infers types that the Hindley-Milner type system accepts) must adhere to.
 The Damas-Milner Algorithm W is a child of an observation, that one can traverse the typing rules of Hindley-Milner backwards.
-The Damas-Milner Algorithm W reconstructs types by first introducing types as unknowns, and then constraining these unknown types as more information is gathered by unifying.
+The Damas-Milner Algorithm W reconstructs types by first introducing types as unknowns, and then constraining these unknown types as more information is gathered by an operation named \textit{unification}.
 \subsection{Notation}
 In the world of type theory we use natural deduction to prove type validity.
 Natural deduction is expressed by \textit{inference rules}, which consist of one or more premises and a conclusion.
