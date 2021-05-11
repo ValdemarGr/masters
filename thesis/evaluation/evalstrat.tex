@@ -5,9 +5,10 @@ The choice of evaluation strategy has a large impact on aspects such as complexi
 Such strategies are \textit{call by value}, \textit{call by name} and \textit{call by need}.
 Call by value is most often the simplest and most natural way of assuming program execution.
 \begin{lstlisting}[language=ML,caption={Program that doubles values},label={lst:callbyvalue},mathescape=true]
-fun double x = x + x;
-let a = double 10;
-double 10;
+fun main =
+  fun double x = x + x;
+  let a = double 10;
+  double 10;
 \end{lstlisting}
 By the call by value semantics, \autoref{lst:callbyvalue} eagerly evaluates every expression.
 Clearly the variable \texttt{a} is never used but under the call by value semantics everything is eagerly evaluated.
@@ -15,15 +16,16 @@ Every expression is evaluated in logical order in the call by value evaluation s
 \newline
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=ML,caption={Implementation of call by name},label={lst:callbyname},mathescape=true]
-fun suspend x unit = x;
-fun force x = x 0;
-let value = suspend 10;
-fun double x = 
-    fun susExpensiveOp unit = 
-        (force x) + (force x);
-    susExpensiveOp;
-let a = double value;
-force (double value);
+fun main = 
+  fun suspend x unit = x;
+  fun force x = x 0;
+  let value = suspend 10;
+  fun double x = 
+      fun susExpensiveOp unit = 
+          (force x) + (force x);
+      susExpensiveOp;
+  let a = double value;
+  force (double value);
 \end{lstlisting}
 \end{minipage}
 The call by name semantics however does only evaluate expressions once they are needed.

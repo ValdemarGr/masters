@@ -10,7 +10,7 @@ The Damas-Milner Algorithm W reconstructs types by first introducing types as un
 \subsection{Notation}
 In the world of type theory we use natural deduction to prove type validity.
 Natural deduction is expressed by \textit{inference rules}, which consist of one or more premises and a conclusion.
-For instance the modus ponens rule which states that if ``if \texttt{a} implies \texttt{b} and \texttt{a}, then \texttt{b}'', can easily be written in inference rules, where \texttt{a $\rightarrow$ b} and \texttt{a} are the permises and \texttt{b} is the conclusion (\autoref{fig:not:inf}).
+For instance the modus ponens rule which states that if ``if \texttt{a} implies \texttt{b} and \texttt{a}, then \texttt{b}'', can easily be written in inference rules, where \texttt{a $\rightarrow$ b} and \texttt{a} are the premises and \texttt{b} is the conclusion (\autoref{fig:not:inf}).
 \begin{figure}
   \begin{mdframed}
   \begin{prooftree}
@@ -246,16 +246,17 @@ Type variables occur free when they are not introduced by a quantification and t
 	 & \textit{free}(C \tau_1 \dots \tau_n ) = \bigcup_{i = 1}^n \textit{free}(\tau_i)           \tag*{}\\
      & \textit{free}(\tau_1 \rightarrow \tau_2) = \textit{free}(\tau_1) \cup \textit{free}(\tau_2)  \tag*{}        \\
 	 & \textit{free}(\Gamma) = \bigcup_{x:\sigma \in \Gamma} \textit{free}(\sigma)             \tag*{}\\
-   & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) - \{ a \}                     \tag*{}\\
-   & \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma) \label{eq:diffeq}
+   & \textit{free}(\forall a . \sigma) = \textit{free}(\sigma) \backslash \{ a \}                     \tag*{}
+   %& \textit{free}(\Gamma \vdash x : \sigma) = \textit{free}(\sigma) - \textit{free}(\Gamma) \label{eq:diffeq}
 \end{align}
-The last rule (\autoref{eq:diffeq}) of when type variables are free can be a bit tricky to grasp without understanding how monotypes occur in $\Gamma$.
+%The last rule (\autoref{eq:diffeq}) of when type variables are free can be a bit tricky to grasp without understanding how monotypes occur in $\Gamma$.
+
+Understanding how monotypes occur in the environment is of importance when generalizing types in practice.
 Monotypes are just polytypes without any quantifier, such that they always occur free in $\Gamma$.
-\autoref{eq:diffeq} defines the free variables for some $\sigma$ under the assumption of some $\Gamma$ such that the definition states ``all free type variables in $\sigma$, that are not monotypes in $\Gamma$''.
-This rule is important, since the system may not arbitrarily generalize over monotypes.
-\begin{remark}
-  When implementing type inference, generalization builds upon the idea of avoiding generalization of monotypes.
-\end{remark}
+ %defines the free variables for some $\sigma$ under the assumption of some $\Gamma$ such that the definition states ``all free type variables in $\sigma$, that are not monotypes in $\Gamma$''.
+Generalization of a monotype into a polytype should quantify variables that \textbf{only} occur free in that monotype, eg they must not occur free in any type in $\Gamma$, such that the generalisable variables of a monotype are $\textit{free}(\tau) \backslash \textit{free}(\Gamma)$.
+If when generalizing monotypes, one quantifies all variables $\textit{free}(\tau)$ arbitrary monotypes that occur various places in a program may occur both polymorphic and monomorphic.
+%This rule is important, since the system may not arbitrarily generalize over monotypes.
 %\begin{exmp}
 %Consider the type for the function \texttt{fst} in \autoref{lst:fstimpl}.
 %\begin{lstlisting}[language=ML,caption={First function},label={lst:fstimplbad},mathescape=true]

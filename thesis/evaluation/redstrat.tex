@@ -5,6 +5,9 @@ Throughout this section we will explore what difficulties lie within proving and
 The first section will interest itself with the semantics of proving the untyped lambda calculus, whilst the second will implement a machine capable of evaluating a result.
 
 \subsection{Symbols and notation}
+In this section, expressions will be written in a different typesetting since some expressions and symbols mean something different than in other sections.
+For instance \texttt{x $\rightarrow$ y} means the evaluation of \texttt{x} results in \texttt{y}, while $x \rightarrow y$ means the type of a function that takes a value of type $x$ and returns a value of type $y$.
+
 The following sections will have many variables with different meaning, therefore symbols are constrained to certain types of values as described in \autoref{eq:redstrat:sym}.
 \begin{align}
   \texttt{x, y, z, f, v, $\gamma$ }&\texttt{:= Var}\label{eq:redstrat:sym}\\
@@ -417,7 +420,7 @@ An algorithm for binding anonymous expressions can be found in~\cite{launchbury1
 
 \subsubsection{Dealing with ambiguity}
 The rules so far have avoided dealing with variable ambiguity.
-Notice that ambiguity can only arise in the Let rule, since the Let rule is the only rule of which can introduce new bindings to the heap.
+Notice that variable capture can only occur in the Let rule, since the Let rule is the only rule of which can introduce name bindings.
 Dealing with ambiguity is a matter of ensuring that variables are distinct.
 Applying the technique from \autoref{sec:alpha} properly lets us evaluate programs without ambiguity.
 
@@ -426,7 +429,7 @@ Consider a previous case of variable capture \autoref{eq:ambg:cap}.
   \texttt{\{x $\mapsto$ z, y $\mapsto$ x, $\dots$\}($\lambda$x.y) g}\label{eq:ambg:cap}
 \end{align}
 None of the changes so far have any impact on the falsity of the expression.
-Consider that \texttt{x} and \texttt{y} must have entered the heap through a Let expression.
+Consider that \texttt{x} and \texttt{y} must have been bound through a Let expression.
 Consider also that some variable \texttt{k} cannot be subject to variable capture if \texttt{k $\notin$ Bound($\lambda$x.e)}.
 Naturally if \texttt{k} is unique, that is, it is introduced through the \texttt{fresh} function from \autoref{sec:alpha} then \texttt{k} can never occur bound.
 The obvious rule from these considerations must be new Let rule defined in \autoref{fig:eval:letrename}.
@@ -1307,7 +1310,7 @@ Introducing a garbage collection rule which can be placed at any one step of the
 Foremost, introspection of expressions becomes necessary since the rule must determine what gets to stay in the heap.
 Furthermore, rules which branch such as the App rule and Bin op rule requires the tracing of expressions which are pending.
 More precisely, when evaluating \texttt{l} in the App rule in \autoref{fig:rules:env:app}, the expression \texttt{p} should not be released since it must be present for the right branch (\texttt{\{x $\mapsto$ p\}e}).
-All branching rules must record expressions which are needed for further branches, this is done by introducing a set of expressions \texttt{N}, such that all evaluations are written $\rightarrow_{\texttt{N}}$ (\autoref{fig:branchrules}).
+All branching rules must record expressions which are needed for further branches, this is accomplished by introducing a set of expressions \texttt{N}, such that all evaluations are written $\rightarrow_{\texttt{N}}$ (\autoref{fig:branchrules}).
 \begin{figure}[ht]
   \begin{mdframed}[style=style1]
     \begin{subfigure}[b]{1\textwidth}
@@ -1350,8 +1353,8 @@ One could also define the garbage collection rule more compactly if the granular
 \begin{figure}[ht]
   \begin{mdframed}
     \begin{prooftree}
-            \AxiomC{\texttt{$\Gamma$, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
-            \AxiomC{\texttt{$\Sigma$ = Prune($\Gamma$, N)}}
+            \AxiomC{\texttt{$\Sigma$, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
+            \AxiomC{\texttt{$\Sigma$ = Prune($\Gamma$, \{e\} $\cup$ N)}}
               \RightLabel{GC}
               \BinaryInfC{\texttt{$\Gamma$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
     \end{prooftree}   
@@ -1519,7 +1522,7 @@ The \textit{app1} and \textit{app2} rules from the stack machine, displayed in \
 The basis for performing stack testing is the missing information regarding what rule an expression originated from.
 To eliminate stack testing in the stack machine we can translate the stack machine into a \textit{continuation-passing style} machine, CPS machine for short.
 A stack will be used for the CPS machine, but the stack will have different role.
-In the CPS machine the stack holds continuations of the type $cont: \Gamma \times S \times \lambda \rightarrow \lambda$, that is, there is no returning.
+In the CPS machine the stack holds continuations of the type $\texttt{cont}: \Gamma \times S \times \lambda \rightarrow \lambda$, that is, there is no returning.
 There must be catalogue of appropriate continuations for each rule that either branches or requires state and a terminal function \texttt{continue} which either continues by popping a continuation from the stack or returns the expression if the stack is empty \autoref{fig:eval:cps}.
 \begin{figure}
 \begin{mdframed}[style=style1]
