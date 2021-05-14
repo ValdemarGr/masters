@@ -1560,6 +1560,51 @@ There must be catalogue of appropriate continuations for each rule that either b
 In it's essence, the algorithm in \autoref{fig:eval:cps} evaluates terms in normal order, recording sharing (Var) and branching (App, Bin op), until it reaches a terminal expression.
 When \autoref{fig:eval:cps} reaches a terminal expression, the most recently pushed continuation must naturally be the expression which is the most recent expression that is subject to the rules Var, App or Bin op.
 
+Since this CPS variant of a lazy evaluation machine is not equivalent to the stack machine, a proof of equivalence in respect to the natural semantics is required. 
+A simple method of proving such a machine could involve showing that the CPS machine can be translated to the stack machine.
+Unfortunately, once continuations are pushed to the stack, the closured values are lost thus a complete translation becomes more difficult. 
+Instead we opt to prove the model is equivalent to the natural semantics by proving that any derivable state in the natural semantics can be evaluated by the CPS machine, and any state which can be evaluated by the CPS machine, can be derived in the natural semantics.
+\begin{lemma}
+  Any evaluation in the CPS machine that continues must be axiomatic in the natural semantics.
+\end{lemma}
+\begin{proof}
+  Observe that any expression which has reached an axiomatic rule either continues onto the next continuation or ends the evaluation.
+  More formally, observe that for any \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, p}
+  \begin{pcases}
+    \pcase{The Abs rule, which states that \texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)}, is axiomatic thus returns it's value down through the tree thus for any $\Gamma$, \texttt{S} and \texttt{$\lambda$x.e}, either:
+    \begin{itemize}
+      \item \texttt{S $\equiv$ []} thus the machine ends with \texttt{$\lambda$x.e} as the result of the program.
+      \item \texttt{S $\equiv$ cont :S'} which implies that \texttt{cont} is the next rule to be supplied with \texttt{$\lambda$x.e}.
+        By the induction hypothesis, \texttt{cont} must be a continuation which expects exactly $\Gamma$, \texttt{S'} and \texttt{$\lambda$x.e}.
+    \end{itemize}
+    }
+    \pcase{
+      The App rule assumes that \texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o}.
+      If we can inductively show that \texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)} through some series of machine operations \texttt{eval($\Gamma$, S, l) $\Rightarrow$ eval()}\\
+      \hspace*{-2cm}
+      \begin{minipage}[t]{1\textwidth}
+      \begin{align}
+        &\texttt{ eval($\Gamma$, S, l p)} &\text{by conclusion}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Gamma$, cont :S, l)}&\text{by match for \textt{l p}}\tag*{}\\
+        \Rightarrow^* &\texttt{ eval($\Theta$, cont :S, $\lambda$x.e)}&\text{by left premise of App and ind. hyp.}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm}& \texttt{ continue($\Theta$, cont: S, )}&\text{by cont definition of match \texttt{l p}}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Theta$, S, subst(x, p, e) $\equiv$ \{x $\mapsto$ p\}e)}&\text{by cont definition of match \texttt{l p}}\tag*{}\\
+        \Rightarrow^* &\texttt{ continue($\Sigma$, S, o)}&\text{by right premise of App and ind. hyp.}\tag*{}
+      \end{align}
+      \end{minipage}
+    }
+  \end{pcases}
+\end{proof}
+\begin{lemma}
+  
+\end{lemma}
+\begin{proof}
+  \begin{pcases}
+    \pcase{Lam 
+    }
+  \end{pcases}
+\end{proof}
+
 In the true spirit of suspended computations, a suspended computation should have no impact on the performance characteristics, if not evaluated.
 The \texttt{subst} function in \autoref{fig:eval:laznaive} is defined to be eager, which naturally does not follow the philosophy of lazy computation. 
 
