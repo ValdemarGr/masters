@@ -486,10 +486,10 @@ Clearly this rule is not encoded into the aforementioned rules, but can be model
         \begin{subfigure}[b]{1\textwidth}
         \vspace*{0.49cm}
           \begin{prooftree}
-              \AxiomC{\texttt{$\Theta$, x $\rightarrow$ $\Sigma$, n}}
-              \AxiomC{\texttt{$\Sigma$, y $\rightarrow$ S, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\}$}}
+              \AxiomC{\texttt{$\Gamma$, x $\rightarrow$ $\Theta$, n}}
+              \AxiomC{\texttt{$\Theta$, y $\rightarrow$ $\Sigma$, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\}$}}
                 \RightLabel{Bin op}
-                \BinaryInfC{\texttt{$\Theta$, x $\oplus$ y $\rightarrow$ S, (n $\oplus$ t)}}
+                \BinaryInfC{\texttt{$\Gamma$, x $\oplus$ y $\rightarrow$ $\Sigma$, (n $\oplus$ t)}}
           \end{prooftree}   
         \end{subfigure}
         \begin{subfigure}[b]{1\textwidth}
@@ -497,7 +497,7 @@ Clearly this rule is not encoded into the aforementioned rules, but can be model
             \begin{prooftree}
                 \AxiomC{\texttt{n $\in \mathbb{Z^+}$}}
                 \RightLabel{Num}
-                \UnaryInfC{\texttt{S, n $\rightarrow$ S, n}}
+                \UnaryInfC{\texttt{$\Gamma$, n $\rightarrow$ $\Gamma$, n}}
             \end{prooftree}   
         \end{subfigure}
   \end{mdframed}
@@ -1325,10 +1325,10 @@ All branching rules must record expressions which are needed for further branche
     \begin{subfigure}[b]{1\textwidth}
     \vspace*{0.49cm}
       \begin{prooftree}
-          \AxiomC{\texttt{$\Theta$, x $\rightarrow_{\texttt{(N $\cup$ \{y\})}}$ $\Sigma$, n}}
-          \AxiomC{\texttt{$\Sigma$, y $\rightarrow_{\texttt{N}}$ S, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\}$}}
+          \AxiomC{\texttt{$\Gamma$, x $\rightarrow_{\texttt{(N $\cup$ \{y\})}}$ $\Theta$, n}}
+          \AxiomC{\texttt{$\Theta$, y $\rightarrow_{\texttt{N}}$ $\Sigma$, t} $\,\,\,\,\,$ \texttt{$\oplus \in \{+,-,*,\backslash, =\}$}}
             \RightLabel{Bin op}
-            \BinaryInfC{\texttt{$\Theta$, x $\oplus$ y $\rightarrow_{\texttt{N}}$ S, (n $\oplus$ t)}}
+            \BinaryInfC{\texttt{$\Gamma$, x $\oplus$ y $\rightarrow_{\texttt{N}}$ $\Sigma$, (n $\oplus$ t)}}
       \end{prooftree}   
     \end{subfigure}
   \end{mdframed}
@@ -1458,10 +1458,9 @@ One could also define the garbage collection rule more compactly if the granular
 
 \subsection{Interpreting programs}
 Now that the semantics for evaluation of the lambda calculus have been presented, a machine naturally follows.
-The machine which is presented is originally derived in~\cite{sestoft1997deriving}.
-One can implement a machine which functions very closely to what the semantics describe.
-An algorithm which is very alike the natural semantics is presented in \autoref{fig:eval:laznaive} where the \texttt{subst} function is defined as in \autoref{fig:eval:subst}.
-\begin{figure}
+%The machine which is presented is originally derived in~\cite{sestoft1997deriving}.
+A machine which is very alike the natural semantics is presented in \autoref{fig:eval:laznaive} where the \texttt{subst} function is defined as in \autoref{fig:eval:subst}.
+\begin{figure}[p]
 \begin{mdframed}
 \begin{align}
   \texttt{subst(f, t, $\lambda$x.e) }&\texttt{= } 
@@ -1481,20 +1480,20 @@ An algorithm which is very alike the natural semantics is presented in \autoref{
   \caption{A function \texttt{subst} which states ``substitute \texttt{f} in with \texttt{t} in some expression''}
   \label{fig:eval:subst}
 \end{figure}
-\begin{figure}
+\begin{figure}[p]
 \begin{mdframed}[style=style1]
 \begin{align}
   \texttt{eval($\Gamma$, $\lambda$x.e) }&\texttt{= ($\Gamma$, $\lambda$x.e)}\tag*{}\\\tag*{}\\
-  \texttt{eval($\Gamma$, f z) }&\texttt{= eval($\Theta$, subst(x, z, e))}\tag*{}\\
-  \wherecase{($\Theta$, $\lambda$x.e) = eval($\Gamma$, f)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, l p) }&\texttt{= eval($\Theta$, subst(x, p, e))}\tag*{}\\
+  \wherecase{($\Theta$, $\lambda$x.e) = eval($\Gamma$, l)}\tag*{}\\\tag*{}\\
   \texttt{eval($\Gamma$ $\cup$ \{x $\mapsto$ e\}, x)}&\texttt{= ($\Theta$ $\cup$ \{x $\mapsto$ y\}, y)}\tag*{}\\
   \wherecase{($\Theta$, y) = eval($\Gamma$, e)}\tag*{}\\\tag*{}\\
   \texttt{eval($\Gamma$, let x = e in p) }&\texttt{= eval($\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, l)}\tag*{}\\
   \wherecase{$\gamma$ = fresh,}\tag*{}\\
   \extracase{l = subst(x, $\gamma$, p)}\tag*{}\\\tag*{}\\
-  \texttt{eval($\Gamma$, x $\oplus$ y) }&\texttt{= (S, n $\oplus$ t)}\tag*{}\\
-  \wherecase{($\Sigma$, n) = eval($\Gamma$, x),}\tag*{}\\
-  \extracase{(S, t) = eval($\Sigma$, y)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, x $\oplus$ y) }&\texttt{= ($\Sigma$, n $\oplus$ t)}\tag*{}\\
+  \wherecase{($\Theta$, n) = eval($\Gamma$, x),}\tag*{}\\
+  \extracase{($\Sigma$, t) = eval($\Theta$, y)}\tag*{}\\\tag*{}\\
   \texttt{eval($\Gamma$, n $\in$ $\mathbb{Z^+}$) }&\texttt{= ($\Gamma$, n)}\tag*{}
 \end{align}
 \end{mdframed}
@@ -1502,13 +1501,83 @@ An algorithm which is very alike the natural semantics is presented in \autoref{
   \label{fig:eval:laznaive}
 \end{figure}
 %The algorithm in \autoref{fig:eval:laznaive} is correct (which will not be proven since it will have a successor shortly) and minimal but suffers from some practical issues.
-The algorithm in \autoref{fig:eval:laznaive} is minimal but suffers from some practical issues.
+An evaluation is written as an evaluation \texttt{eval($\Gamma$, e)}, a transition $\Rightarrow$ and a ending state \texttt{($\Theta$, y)}.
+Furthermore, a transition written \texttt{eval($\Gamma$, e) $\Rightarrow^*$ ($\Theta$, y)} depicts that through some sequence of transitions, the evaluation \texttt{eval($\Gamma$, e)} reaches the state \texttt{($\Theta$, y)}.
+\begin{theorem}
+  \label{theorem:conclusion}
+  If \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, y} is provable in the natural semantics by repeated derivations, the machine in \autoref{fig:eval:laznaive} arrives at the same conclusion.
+\end{theorem}
+\begin{proof}
+All non-terminal cases will be proved by induction.
+Since only one machine case is applicable for every shape that a term can take, it suffices to prove that for any one shape, the respective machine case will behave like the natural semantics, if all other cases also behave like the natural semantics.
+  \begin{pcases}
+    \pcase{
+      Abs which states that \texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)} is trivially true, since \texttt{eval($\Gamma$, $\lambda$x.e) $\Rightarrow$ ($\Gamma$, $\lambda$x.e)}.
+    }
+    \pcase{
+      Num is trivially true, by the same reasoning as Abs.
+    }
+    \pcase{
+      App states that for \texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o} to hold, then \texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)} and \texttt{$\Theta$, \{x $\mapsto$ p\}e $\rightarrow$ $\Sigma$, o} must both hold.
+      If the first proof holds then \autoref{eq:proof:naive:app1}.
+      \begin{align}
+        &\texttt{ eval($\Gamma$, l p)} &\text{by conclusion}\label{eq:proof:naive:app1}\\
+        \Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Gamma$, l)}&\text{machine instruction for left premise}\tag*{}\\
+        \Rightarrow^* &\texttt{ ($\Theta$, $\lambda$x.e)}&\text{ind. hyp.}\tag*{}
+      \end{align}
+      Furthermore, if the second proof holds then \autoref{eq:proof:naive:app2}.
+      \begin{align}
+        &\texttt{ eval($\Theta$, subst(x, p, e))} &\text{machine instruction for right premise}\label{eq:proof:naive:app2}\\
+        \Rightarrow^* &\texttt{ ($\Theta$, o)}&\text{ind. hyp.}\tag*{}
+      \end{align}
+    }
+    \pcase{
+      Var states that for \texttt{$\Gamma$ $\cup$ \{x $\mapsto$ e\}, x $\rightarrow$ $\Theta$ $\cup$ \{x $\mapsto$ y\}, y} to hold then \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, y} must hold.
+      If \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, y} holds, then \autoref{eq:proof:naive:var}.
+      \begin{align}
+        &\texttt{ eval($\Gamma$ $\cup$ \{x $\mapsto$ e\}, x)} &\text{conclusion}\label{eq:proof:naive:var}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ eval($\Gamma$, e)}&\text{machine instruction for premise}\tag*{}\\
+        \Rightarrow^* &\texttt{ ($\Theta$, y)}&\text{ind. hyp.}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ ($\Theta$ $\cup$ \{x $\mapsto$ y\}, y)}&\text{conclusion}\tag*{}
+      \end{align}
+    }
+    \pcase{
+      Let must prove that \texttt{$\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, \{x $\mapsto$ $\gamma$\}p $\rightarrow$ $\Theta$, l} for some $\gamma$ that does not occur in \texttt{e} or \texttt{p}, if \texttt{let x = e in p $\rightarrow$ $\Theta$, l} should hold.
+      The primary concern is that the freshness of \texttt{fresh} must hold, which is a constraint easily realized in the machine.
+      If the derivation holds, then \autoref{eq:proof:naive:let}.
+      \begin{align}
+        &\texttt{ eval($\Gamma$, let x = e in p)} &\text{conclusion}\label{eq:proof:naive:let}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ eval($\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, subst(x, $\gamma$, p))}&\text{machine instruction for premise}\tag*{}\\
+        \Rightarrow^* &\texttt{ ($\Theta$, l)}&\text{ind. hyp.}\tag*{}
+      \end{align}
+    }
+    \pcase{
+      Bin op must show that \texttt{$\Gamma$, x $\rightarrow$ $\Theta$, n} and \texttt{$\Theta$, y $\rightarrow$ $\Sigma$, t} for \texttt{$\Gamma$, x $\oplus$ y $\rightarrow$ $\Sigma$ n $\oplus$ t} to hold.
+      If \texttt{$\Gamma$, x $\rightarrow$ $\Theta$, n} holds then \autoref{eq:proof:naive:bin1}.
+      \begin{align}
+        &\texttt{ eval($\Gamma$, x $\oplus$ y)} &\text{conclusion}\label{eq:proof:naive:bin1}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ eval($\Gamma$, x)}&\text{machine instruction for left premise}\tag*{}\\
+        \Rightarrow^* &\texttt{ ($\Theta$, n)}&\text{ind. hyp.}\tag*{}
+      \end{align}
+      Moreover, if \texttt{$\Theta$, y $\rightarrow$ $\Sigma$, t} holds then \autoref{eq:proof:naive:bin2}.
+      \begin{align}
+        &\texttt{ eval($\Theta$, y)} &\text{machine instruction for right premise}\label{eq:proof:naive:bin2}\\
+        \Rightarrow^* &\texttt{ ($\Sigma$, t)}&\text{ind. hyp.}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ ($\Sigma$, n $\oplus$ t)}&\text{conclusion}\tag*{}
+      \end{align}
+    }
+  \end{pcases}
+\end{proof}
+The inverse case; showing that any program that the machine evaluates, is provable in the natural semantics, is also theoretically interesting, but does yield much practical value.
+In fact, the algorithm \autoref{fig:eval:laznaive} will shortly be superseded, but will acts as a steppingstone.
+
 \subsubsection{A CPS machine}
-The algorithm in \autoref{fig:eval:laznaive} cannot evaluate infinite programs, since it's recursive invocations is not in tail call position.
+The algorithm in \autoref{fig:eval:laznaive} is minimal but suffers from some practical issues.
+Primarily, \autoref{fig:eval:laznaive} cannot evaluate infinite programs in finite space, since it's recursive invocations is not in tail call position.
 In the machine introduced in~\cite{sestoft1997deriving} (which will be named the \textit{stack machine}), the algorithm is implemented via a stack which is used to record state in recursive invocations that either branch or require sharing.
 \cite{sestoft1997deriving} argues that stack testing in the stack machine; testing the top element of the stack to determine the next computation, is a property best eliminated.
 The \textit{app1} and \textit{app2} rules from the stack machine, displayed in \autoref{fig:stackmachine:a1a2} respectively, give insight into some properties that we can use to eliminate stack testing.
-\begin{figure}
+\begin{figure}[p]
 \begin{mdframed}
 \begin{align}
   \texttt{eval($\Gamma$, S, l p) }&\texttt{= eval($\Gamma$, p :S, l)}\tag*{}\\\tag*{}\\
@@ -1519,8 +1588,9 @@ The \textit{app1} and \textit{app2} rules from the stack machine, displayed in \
   \texttt{p :S} means that \texttt{p} is pushed to the stack \texttt{S}, if on the right hand side of \texttt{=}, and popped from \texttt{S}, if on the left hand side of \texttt{=}.}
   \label{fig:stackmachine:a1a2}
 \end{figure}
+
 The basis for performing stack testing is the missing information regarding what rule an expression originated from.
-To eliminate stack testing in the stack machine we can translate the stack machine into a \textit{continuation-passing style} machine, CPS machine for short.
+To eliminate stack testing in the stack machine we can translate the machine from \autoref{fig:eval:laznaive} into a \textit{continuation-passing style} machine, CPS machine for short.
 A stack will be used for the CPS machine, but the stack will have different role.
 In the CPS machine the stack holds continuations of the type $\texttt{cont}: \Gamma \times S \times \lambda \rightarrow \lambda$, that is, there is no returning.
 There must be catalogue of appropriate continuations for each rule that either branches or requires state and a terminal function \texttt{continue} which either continues by popping a continuation from the stack or returns the expression if the stack is empty \autoref{fig:eval:cps}.
@@ -1546,10 +1616,10 @@ There must be catalogue of appropriate continuations for each rule that either b
   \extracase{l = subst(x, $\gamma$, p)}\tag*{}\\
   \spacecase
   \texttt{eval($\Gamma$, S, x $\oplus$ y) }&\texttt{= eval($\Gamma$, cont :S, x)}\tag*{}\\
-  \wherecase{cont($\Sigma$, S', n) = }\tag*{}\\
-  \extracase{ eval($\Sigma$, cont' :S', y)}\tag*{}\\
-  \extracase{ \hspace*{-0.8cm}where cont'($\Theta$, S'', t) = }\tag*{}\\
-  \extracase{\hspace*{0.65cm} continue($\Theta$, S'', n + t)}\tag*{}\\
+  \wherecase{cont($\Theta$, S', n) = }\tag*{}\\
+  \extracase{ eval($\Theta$, cont' :S', y)}\tag*{}\\
+  \extracase{ \hspace*{-0.8cm}where cont'($\Sigma$, S'', t) = }\tag*{}\\
+  \extracase{\hspace*{0.65cm} continue($\Sigma$, S'', n + t)}\tag*{}\\
   \spacecase
   \texttt{eval($\Gamma$, S, n $\in$ $\mathbb{Z^+}$) }&\texttt{= continue($\Gamma$, S, n)}\tag*{}
 \end{align}
@@ -1560,51 +1630,54 @@ There must be catalogue of appropriate continuations for each rule that either b
 In it's essence, the algorithm in \autoref{fig:eval:cps} evaluates terms in normal order, recording sharing (Var) and branching (App, Bin op), until it reaches a terminal expression.
 When \autoref{fig:eval:cps} reaches a terminal expression, the most recently pushed continuation must naturally be the expression which is the most recent expression that is subject to the rules Var, App or Bin op.
 
-Since this CPS variant of a lazy evaluation machine is not equivalent to the stack machine, a proof of equivalence in respect to the natural semantics is required. 
-A simple method of proving such a machine could involve showing that the CPS machine can be translated to the stack machine.
-Unfortunately, once continuations are pushed to the stack, the closured values are lost thus a complete translation becomes more difficult. 
-Instead we opt to prove the model is equivalent to the natural semantics by proving that any derivable state in the natural semantics can be evaluated by the CPS machine, and any state which can be evaluated by the CPS machine, can be derived in the natural semantics.
-\begin{lemma}
-  Any evaluation in the CPS machine that continues must be axiomatic in the natural semantics.
-\end{lemma}
-\begin{proof}
-  Observe that any expression which has reached an axiomatic rule either continues onto the next continuation or ends the evaluation.
-  More formally, observe that for any \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, p}
-  \begin{pcases}
-    \pcase{The Abs rule, which states that \texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)}, is axiomatic thus returns it's value down through the tree thus for any $\Gamma$, \texttt{S} and \texttt{$\lambda$x.e}, either:
-    \begin{itemize}
-      \item \texttt{S $\equiv$ []} thus the machine ends with \texttt{$\lambda$x.e} as the result of the program.
-      \item \texttt{S $\equiv$ cont :S'} which implies that \texttt{cont} is the next rule to be supplied with \texttt{$\lambda$x.e}.
-        By the induction hypothesis, \texttt{cont} must be a continuation which expects exactly $\Gamma$, \texttt{S'} and \texttt{$\lambda$x.e}.
-    \end{itemize}
-    }
-    \pcase{
-      The App rule assumes that \texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o}.
-      If we can inductively show that \texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)} through some series of machine operations \texttt{eval($\Gamma$, S, l) $\Rightarrow$ eval()}\\
-      \hspace*{-2cm}
-      \begin{minipage}[t]{1\textwidth}
-      \begin{align}
-        &\texttt{ eval($\Gamma$, S, l p)} &\text{by conclusion}\tag*{}\\
-        \Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Gamma$, cont :S, l)}&\text{by match for \textt{l p}}\tag*{}\\
-        \Rightarrow^* &\texttt{ eval($\Theta$, cont :S, $\lambda$x.e)}&\text{by left premise of App and ind. hyp.}\tag*{}\\
-        \Rightarrow\hspace*{0.18cm}& \texttt{ continue($\Theta$, cont: S, )}&\text{by cont definition of match \texttt{l p}}\tag*{}\\
-        \Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Theta$, S, subst(x, p, e) $\equiv$ \{x $\mapsto$ p\}e)}&\text{by cont definition of match \texttt{l p}}\tag*{}\\
-        \Rightarrow^* &\texttt{ continue($\Sigma$, S, o)}&\text{by right premise of App and ind. hyp.}\tag*{}
-      \end{align}
-      \end{minipage}
-    }
-  \end{pcases}
-\end{proof}
-\begin{lemma}
-  
-\end{lemma}
-\begin{proof}
-  \begin{pcases}
-    \pcase{Lam 
-    }
-  \end{pcases}
-\end{proof}
+Since this CPS variant of a lazy evaluation machine is not equivalent to the stack machine, a proof of the machine's expressiveness in respect to the natural semantics is required. 
+Fortunately, the CPS machine is a direct conversion from the machine in \autoref{fig:eval:laznaive}, thus \autoref{theorem:conclusion} holds for the CPS machine also.
 
+%A simple method of proving such a machine could involve showing that the CPS machine can be translated to the stack machine.
+%Unfortunately, once continuations are pushed to the stack, the closured values are lost thus a complete translation becomes more difficult. 
+%Instead we opt to prove the model is equivalent to the natural semantics by proving that any derivable state in the natural semantics can be evaluated by the CPS machine, and any state which can be evaluated by the CPS machine, can be derived in the natural semantics.
+%\begin{lemma}
+  %Any evaluation in the CPS machine that continues must be axiomatic in the natural semantics.
+%\end{lemma}
+%\begin{proof}
+  %Observe that any expression which has reached an axiomatic rule either continues onto the next continuation or ends the evaluation.
+  %More formally, observe that for any \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, p}
+  %\begin{pcases}
+    %\pcase{The Abs rule, which states that \texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)}, is axiomatic thus returns it's value down through the tree thus for any $\Gamma$, \texttt{S} and \texttt{$\lambda$x.e}, either:
+    %\begin{itemize}
+      %\item \texttt{S $\equiv$ []} thus the machine ends with \texttt{$\lambda$x.e} as the result of the program.
+      %\item \texttt{S $\equiv$ cont :S'} which implies that \texttt{cont} is the next rule to be supplied with \texttt{$\lambda$x.e}.
+        %By the induction hypothesis, \texttt{cont} must be a continuation which expects exactly $\Gamma$, \texttt{S'} and \texttt{$\lambda$x.e}.
+    %\end{itemize}
+    %}
+    %\pcase{
+      %The App rule assumes that \texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o}.
+      %If we can inductively show that \texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)} through some series of machine operations \texttt{eval($\Gamma$, S, l) $\Rightarrow$ eval()}\\
+      %\hspace*{-2cm}
+      %\begin{minipage}[t]{1\textwidth}
+      %\begin{align}
+        %&\texttt{ eval($\Gamma$, S, l p)} &\text{by conclusion}\tag*{}\\
+        %\Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Gamma$, cont :S, l)}&\text{by match for \textt{l p}}\tag*{}\\
+        %\Rightarrow^* &\texttt{ eval($\Theta$, cont :S, $\lambda$x.e)}&\text{by left premise of App and ind. hyp.}\tag*{}\\
+        %\Rightarrow\hspace*{0.18cm}& \texttt{ continue($\Theta$, cont: S, )}&\text{by cont definition of match \texttt{l p}}\tag*{}\\
+        %\Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Theta$, S, subst(x, p, e) $\equiv$ \{x $\mapsto$ p\}e)}&\text{by cont definition of match \texttt{l p}}\tag*{}\\
+        %\Rightarrow^* &\texttt{ continue($\Sigma$, S, o)}&\text{by right premise of App and ind. hyp.}\tag*{}
+      %\end{align}
+      %\end{minipage}
+    %}
+  %\end{pcases}
+%\end{proof}
+%\begin{lemma}
+  
+%\end{lemma}
+%\begin{proof}
+  %\begin{pcases}
+    %\pcase{Lam 
+    %}
+  %\end{pcases}
+%\end{proof}
+
+\subsubsection{Lazy renaming}
 In the true spirit of suspended computations, a suspended computation should have no impact on the performance characteristics, if not evaluated.
 The \texttt{subst} function in \autoref{fig:eval:laznaive} is defined to be eager, which naturally does not follow the philosophy of lazy computation. 
 
