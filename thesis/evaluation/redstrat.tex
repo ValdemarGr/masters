@@ -18,7 +18,7 @@ The following sections will have many variables with different meaning, therefor
 \texttt{Exp} is any expression, expressible in both untyped lambda calculus and future extensions.
 
 
-\subsection{The abstract evaluation model}
+\subsection{The abstract evaluation model}\label{sec:abstractmachine}
 The environment is a set of substitutions, that is, a set of variable names to their value denoted \texttt{\{x $\mapsto$ $\lambda$y.y\}} meaning ``the value of variable \texttt{x} is \texttt{$\lambda$y.y}''.
 \begin{remark}
   In the section regarding the semantics of reduction strategies, environments will exist as singleton sets, named \textit{substitutions}.
@@ -1573,8 +1573,8 @@ In fact, the algorithm \autoref{fig:eval:laznaive} will shortly be superseded, b
 
 \subsubsection{A CPS machine}
 The algorithm in \autoref{fig:eval:laznaive} is minimal but suffers from some practical issues.
-Primarily, \autoref{fig:eval:laznaive} cannot evaluate infinite programs in finite space, since it's recursive invocations is not in tail call position.
-In the machine introduced in~\cite{sestoft1997deriving} (which will be named the \textit{stack machine}), the algorithm is implemented via a stack which is used to record state in recursive invocations that either branch or require sharing.
+Primarily, \autoref{fig:eval:laznaive} cannot evaluate infinite programs in finite space, since it's recursive invocations are not in tail call position.
+In the machine introduced in~\cite{sestoft1997deriving} (which will be named the \textit{stack machine}), the primary component is a stack which is used to record state in recursive invocations that either branch or require sharing.
 \cite{sestoft1997deriving} argues that stack testing in the stack machine; testing the top element of the stack to determine the next computation, is a property best eliminated.
 The \textit{app1} and \textit{app2} rules from the stack machine, displayed in \autoref{fig:stackmachine:a1a2} respectively, give insight into some properties that we can use to eliminate stack testing.
 \begin{figure}[p]
@@ -1681,6 +1681,50 @@ Fortunately, the CPS machine is a direct conversion from the machine in \autoref
 In the true spirit of suspended computations, a suspended computation should have no impact on the performance characteristics, if not evaluated.
 The \texttt{subst} function in \autoref{fig:eval:laznaive} is defined to be eager, which naturally does not follow the philosophy of lazy computation. 
 
+Lazy renaming can be regarded as allocating closures, that is, pairing expressions with metadata that allows sound evaluation.
+The previous introduction of environments in \autoref{sec:abstractmachine}, in a from which allows them to exist as not only singletons, is part of the recipe for lazy renaming.
+The other component of lazy renaming is modifying the representation of values stored in the heap, such that the heap now contains mappings from variables to tuples of expressions and environments (\autoref{eq:envintro}).
+\begin{align}
+  \texttt{$\Gamma$ = \{x$_1$ $\mapsto$ (e$_1$, E$_1$), x$_2$ $\mapsto$ (e$_2$, E$_2$) $\dots$ x$_n$ $\mapsto$ (e$_n$, E$_n$)\}}\label{eq:envintro}
+\end{align}
+
+To implement this into the CPS machine, notice once again that the only case which introduces new bindings is the let expressions.
+The machine must bring an environment along when evaluating such that the ``current'' environment can be bound with let introduced heap bindings.
+Furthermore, renaming is resolved when a variable is referenced.
+
+Before considering a machine with lazy renaming, consider a practical implication of an environment that maps \textit{all} variable names to fresh ones.
+If an environment contains mappings that exceed the domain of free variables for a paired expression, one can impose \textit{space leaks}.
+Generally, space leaks have unfortunate consequences, such as not letting a garbage collector free variables.
+More precisely, for some expression \texttt{e} and environment \texttt{E}, the superfluous variables that survive garbage collection are at least \texttt{E} $\backslash$ \textit{free}\texttt{(e)}.
+The superfluous variables that survive can indeed point to other variables in the heap, which also contain superfluous variables, thus space leaks can become quite apparent on pathological inputs.
+In practice, recursively introduced superfluous variables and environments can compromise programs that otherwise run in constant space.
+
+\subsubsection{Efficient representations of environments and heaps}
+An interesting problem which we have not explored yet, is the representation of heaps.
+Intuitively, heaps take the appearance of a data structure that resembles \textit{hash tables} very much.
+Hash tables have good asymptotic guarantees, such as probabilistic worst-case constant time insertions and deletions~\cite{cormen2009introduction}, but we can do better.
+Notice that in traditional data structures, one cannot ask ``the rest of the world'' to treat a name or key as a different one.
+Fortunately, in the case of picking fresh variables, we can exploit the property of determining names.
+
+Let the heap be represented by an array $A$, where each cell in the array contains a tuple of an expression and it's paired environment.
+When the machine begins, an array $A$ of size $n$ and a stack $S_A$ which contains the numbers $0,1 \dots n$, are initialized.
+When a let expression introduces a new name \texttt{x} with the expression \texttt{e} under the environment \texttt{E} to the heap, a fresh number $k$ is popped from $S_A$ such that $A_k = \texttt{(e, E)}$ and \texttt{E' = E $\cup$ \{x $\mapsto$ $k$\}}.
+Now garbage collection becomes a matter of simply refilling $S_A$ with unreachable indices of $A$.
+
+~\cite{sestoft1997deriving} introduces \textit{environment trimming} to solve space leaks.
+Environment trimming is the technique of maintaining the invariant that all mappings that are not free in a paired expression should be ``trimmed away''.
+The simplest implementation of environment trimming is a trimmer that eagerly trims the environment such that when an environment \texttt{E'} is bound to an expression \texttt{e} under some current environment \texttt{E}, then \autoref{eq:envtrim} must hold.
+\begin{align}
+  \texttt{E' = \{x $\mapsto$ y | (x $\mapsto$ y) $\in$ E $\land$ x $\in$ }\textit{free}\texttt{(e)\}}\label{eq:envtrim}
+\end{align}
+\autoref{eq:envtrim} requires runtime introspection of the expression \texttt{e}, thus still breaks suspension.
+Fortunately, computing the free variables of an expression which has not been renamed can be performed during compilation.
+% and \textit{De Bruijn indices} to solve space leaks and efficient implementations of environments.
+%De Bruijn indices is an encoding of the lambda calculus that encodes variables as distances instead of names.
+%In De Bruijn form, the abstraction now takes the form $\lambda.E$ where $E$ is an arbitrary De Brujin form lambda calculus term.
+%In De Brujin form, the variable should now be the distance to the abstraction that introduced it plus one, such that the lambda calculus program \texttt{$\lambda$x.x} becomes \texttt{$\lambda$.1} in De Brujin form.
+%Furthermore, the let expression introduces variables similar to the abstraction such that \texttt{let x = ($\lambda$x.x) in x} becomes \texttt{let ($\lambda$.1) in 1} in De Brujin form.
+%Application is written in the usual way in De Brujin form such that \texttt{($\lambda$x.x x)} becomes \texttt{($\lambda$.1 1)}.
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
