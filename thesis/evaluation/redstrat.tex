@@ -1356,7 +1356,7 @@ One could also define the garbage collection rule more compactly if the granular
             \AxiomC{\texttt{$\Sigma$, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
             \AxiomC{\texttt{$\Sigma$ = Prune($\Gamma$, \{e\} $\cup$ N)}}
               \RightLabel{GC}
-              \BinaryInfC{\texttt{$\Gamma$ $\cup$ \{x $\mapsto$ z\}, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
+              \BinaryInfC{\texttt{$\Gamma$, e $\rightarrow_{\texttt{N}}$ $\Theta$, y}}
     \end{prooftree}   
   \end{mdframed}
   \caption{A rule which prunes unused values}
@@ -1365,8 +1365,10 @@ One could also define the garbage collection rule more compactly if the granular
 \autoref{fig:gcmacro} defines a garbage collection algorithm which prunes all unreachable values, where \texttt{Prune} is the minimal set of required values to continue program evaluation.
 \texttt{Prune} can be defined as in \autoref{eq:prune}
 \begin{align}
-  &\texttt{Prune($\Gamma$, \{\}) = \{\}} \label{eq:prune}\\
-  &\texttt{Prune($\Gamma$, \{e\} $\cup$ N) = \{x $\mapsto$ y | x $\in$ free(e), x $\mapsto$ y $\in$ $\Gamma$\} $\cup$ Prune($\Gamma$, N)} \tag*{}
+  \texttt{Prune($\Gamma$, \{\}) }&\texttt{= \{\}} \label{eq:prune}\\
+  \texttt{Prune($\Gamma$, \{e\} $\cup$ N) }&\texttt{=  P $\cup$ Prune($\Gamma$ $\backslash$ P, R $\cup$ N)} \tag*{}\\
+  \wherecase{P = \{x $\mapsto$ y | x $\in$ free(e) $\land$ x $\mapsto$ y $\in$ $\Gamma$\}} \tag*{}\\
+  \extracase{R = \{y | x $\mapsto$ y $\in$ P\}} \tag*{}\\
 \end{align}
 
 %Garbage collection (as in any method which frees memory that is no longer in use), in purely functional languages is different from imperative languages like C, since manual memory management is often abstracted away. 
@@ -1699,17 +1701,17 @@ More precisely, for some expression \texttt{e} and environment \texttt{E}, the s
 The superfluous variables that survive can indeed point to other variables in the heap, which also contain superfluous variables, thus space leaks can become quite apparent on pathological inputs.
 In practice, recursively introduced superfluous variables and environments can compromise programs that otherwise run in constant space.
 
-\subsubsection{Efficient representations of environments and heaps}
+\subsubsection{Environments and heaps}
 An interesting problem which we have not explored yet, is the representation of heaps.
 Intuitively, heaps take the appearance of a data structure that resembles \textit{hash tables} very much.
-Hash tables have good asymptotic guarantees, such as probabilistic worst-case constant time insertions and deletions~\cite{cormen2009introduction}, but we can do better.
-Notice that in traditional data structures, one cannot ask ``the rest of the world'' to treat a name or key as a different one.
-Fortunately, in the case of picking fresh variables, we can exploit the property of determining names.
 
-Let the heap be represented by an array $A$, where each cell in the array contains a tuple of an expression and it's paired environment.
-When the machine begins, an array $A$ of size $n$ and a stack $S_A$ which contains the numbers $0,1 \dots n$, are initialized.
-When a let expression introduces a new name \texttt{x} with the expression \texttt{e} under the environment \texttt{E} to the heap, a fresh number $k$ is popped from $S_A$ such that $A_k = \texttt{(e, E)}$ and \texttt{E' = E $\cup$ \{x $\mapsto$ $k$\}}.
-Now garbage collection becomes a matter of simply refilling $S_A$ with unreachable indices of $A$.
+%Hash tables have good asymptotic guarantees, such as probabilistic worst-case constant time insertions and deletions~\cite{cormen2009introduction}, but we can do better.
+%Notice that in traditional data structures, one cannot ask ``the rest of the world'' to treat a name or key as a different one.
+%Fortunately, in the case of picking fresh variables, we can exploit the property of determining names.
+%Let the heap be represented by an array $A$, where each cell in the array contains a tuple of an expression and it's paired environment.
+%When the machine begins, an array $A$ of size $n$ and a stack $S_A$ which contains the numbers $0,1 \dots n$, are initialized.
+%When a let expression introduces a new name \texttt{x} with the expression \texttt{e} under the environment \texttt{E} to the heap, a fresh number $k$ is popped from $S_A$ such that $A_k = \texttt{(e, E)}$ and \texttt{E' = E $\cup$ \{x $\mapsto$ $k$\}}.
+%Now garbage collection becomes a matter of simply refilling $S_A$ with unreachable indices of $A$.
 
 ~\cite{sestoft1997deriving} introduces \textit{environment trimming} to solve space leaks.
 Environment trimming is the technique of maintaining the invariant that all mappings that are not free in a paired expression should be ``trimmed away''.
@@ -1725,6 +1727,81 @@ Fortunately, computing the free variables of an expression which has not been re
 %In De Brujin form, the variable should now be the distance to the abstraction that introduced it plus one, such that the lambda calculus program \texttt{$\lambda$x.x} becomes \texttt{$\lambda$.1} in De Brujin form.
 %Furthermore, the let expression introduces variables similar to the abstraction such that \texttt{let x = ($\lambda$x.x) in x} becomes \texttt{let ($\lambda$.1) in 1} in De Brujin form.
 %Application is written in the usual way in De Brujin form such that \texttt{($\lambda$x.x x)} becomes \texttt{($\lambda$.1 1)}.
+
+\subsubsection{A parallel garbage collector}
+In~\cite{launchbury1993natural} it is mentioned that a garbage collection strategy that implements parallelism is possible.
+In immutable environments, parallelism becomes trivial since concurrent writing cannot occur.
+Naturally, if we keep the heaps and various environments immutable, parallel garbage collection becomes feasible.
+
+The CPS machine must be augmented with the stack \texttt{N}, that contains expressions that mustn't be garbage collected (\autoref{fig:branchrules}).
+The stack \texttt{N} will later be introduced into the system explicitly, but for now, it remains implicit.
+\begin{remark}
+  The stack \texttt{N} is exactly $\textit{ap}(S)$ in the stack machine.
+\end{remark}
+
+A sequence of CPS machine instructions are enhanced with the label \texttt{CPS} such that \texttt{eval($\Gamma$, e) $\Rightarrow^*_{\texttt{CPS}}$ ($\Theta$, y)}.
+The sequence of instructions necessary for garbage collection is written \texttt{gc($\Gamma$, N) $\Rightarrow^*_{\texttt{GC}}$ $\Sigma$}, which states that through a series of steps, the garbage collector emits the collected heap $\Sigma$.
+The heap $\Gamma$ will now be split into two heaps, such that $\Gamma$ becomes a tuple of a live heap $\Gamma_L$ and an idle heap $\Gamma_I$, $\Gamma = (\Gamma_L, \Gamma_I)$.
+The live heap $\Gamma_L$, is the only heap that any case of let or var may update. 
+The idle heap $\Gamma_I$ will act as the heap that the garbage collector may work on, but may still be searched in.
+
+When garbage collection begins, the heaps are swapped, such that $\Gamma = (\Gamma_I, \Gamma_L)$, which is denoted \texttt{swap($\Gamma$)}, e.g. \texttt{swap} can occur between any two instructions.
+Variables can occur in both $\Gamma_L$ and $\Gamma_I$, which can be shown by the sequence of instructions in \autoref{eq:varoccur}.
+\begin{align}
+  &\texttt{ eval(($\Gamma_L$, $\Gamma_I$), S, let x = e in p)} \label{eq:varoccur}\\
+  \Rightarrow_{\texttt{CPS}}\hspace*{0.18cm} &\texttt{ eval(($\Gamma_L$ $\cup$ \{$\gamma$ $\mapsto$ e\}, $\Gamma_I$), S, subst(x, $\gamma$, p))}\tag*{}\\
+  \Rightarrow^*_{\texttt{CPS}} &\texttt{ eval(swap($\Gamma$) $\subseteq$ ($\Theta_L$ , $\Theta_I$ $\cup$ \{$\gamma$ $\mapsto$ e\}), S', $\gamma$)}\tag*{}\\
+  \Rightarrow_{\texttt{CPS}}\hspace*{0.18cm} &\texttt{ eval(($\Theta_L$, $\Theta_I$), cont :S', e)}\tag*{}\\
+  \Rightarrow^*_{\texttt{CPS}} &\texttt{ continue(($\Sigma_L$, $\Sigma_I$), cont :S'', l)}\tag*{}\\
+  \Rightarrow_{\texttt{CPS}}\hspace*{0.18cm} &\texttt{ continue(($\Sigma_L$ $\cup$ \{$\gamma$ $\mapsto$ l\}, $\Sigma_I$ \{$\gamma$ $\mapsto$ e\}), S'', l)}\tag*{}
+\end{align}
+Note that the environments have been omitted for readability, they should exist, but are not interesting in this segment.
+In the evaluation in \autoref{eq:varoccur} a case of ambiguity occurs; is \texttt{\{$\gamma$ $\mapsto$ e\}} or \texttt{\{$\gamma$ $\mapsto$ l\}} the newest mapping?
+The solution is not simply a case of consulting the live heap, since another instance of swap can induce that the idle heap now contains the ``newest'' mapping.
+To track the newest variable, we employ the works of~\cite{lamport}.
+The implementation is simple, we extend the tuple of the heap with increasing lamport timestamps $T_k$ such that a heap becomes a mapping from variables to triplets as depicted in \autoref{eq:envintrolam}.
+\begin{align}
+  \texttt{$\Gamma$ = \{x$_1$ $\mapsto$ (e$_1$, E$_1$, T$_1$), x$_2$ $\mapsto$ (e$_2$, E$_2$, T$_2$) $\dots$ x$_n$ $\mapsto$ (e$_n$, E$_n$, T$_n$)\}}\label{eq:envintrolam}
+\end{align}
+When a case of let or var occurs, the expression is also paired with a timestamp.
+Now the newest entry of \texttt{\{$\gamma$ $\mapsto$ (e, E, T)\}} and \texttt{\{$\gamma$ $\mapsto$ (l, E', T')\}} must be the one that contains the newest timestamp such that either \texttt{T $>$ T'} or \texttt{T' $>$ T}.
+
+With the introduction of two heaps, environments and trimmers, the algorithm presented in \autoref{eq:prune} is no longer adequate.
+Fortunately, trimmers are very helpful in simplifying the garbage collection algorithm.
+The garbage collection algorithm in \autoref{eq:gcalgo} makes use of the trimmers in the environments.
+\begin{figure}
+  \begin{mdframed}[style=bigbox]
+\begin{align}
+  \texttt{trim(E, t) }&\texttt{= \{$\gamma$ | x $\in$ t $\land$ (x $\mapsto$ $\gamma$) $\in$ E\}} \tag*{}
+\end{align}
+\begin{align}
+  \texttt{new($\Gamma$, \{\}) }&\texttt{= \{\} }\tag*{}\\
+  \texttt{new($\Gamma$, \{x $\mapsto$ (e, E, T)\} $\cup$ $\Theta$) }&\texttt{= N $\cup$ }
+\begin{cases}
+  \texttt{\{\} }& \texttt{if (x $\mapsto$ (e', E', T')) $\in$ $\Gamma$ $\land$ T' > T}\\
+  \texttt{F }&
+\end{cases}
+\tag*{}\\
+  \wherecase{N = new($\Gamma$, $\Theta$),}\tag*{}\\
+  \extracase{F = \{x $\mapsto$ (e, E, T)\}}\tag*{}
+\end{align}
+\begin{align}
+  \texttt{Prune($\Gamma$, \{\}) }&\texttt{= \{\}} \tag*{}\\
+  \texttt{Prune(($\Gamma_L$, $\Gamma_I$), \{((e, t), E, T)\} $\cup$ N) }&\texttt{=  I$_n$ $\cup$ Prune(($\Gamma_L$ $\backslash$ N, $\Gamma_I$ $\backslash$ N), R $\cup$ N)} \tag*{}\\
+  \wherecase{A = trim(E, t),} \tag*{}\\
+  \extracase{L = \{x $\mapsto$ y | x $\in$ A $\land$ (x $\mapsto$ y) $\in$ $\Gamma_L$\},} \tag*{}\\
+  \extracase{I = \{x $\mapsto$ y | x $\in$ A $\land$ (x $\mapsto$ y) $\in$ $\Gamma_I$\},} \tag*{}\\
+  \extracase{L$_n$ = new(I, L),}\tag*{}\\
+  \extracase{I$_n$ = new(L, I),}\tag*{}\\
+  \extracase{N = L$_n$ $\cup$ I$_n$,}\tag*{}\\
+  \extracase{R = \{y | x $\mapsto$ y $\in$ N\}} \tag*{}
+\end{align}
+  \end{mdframed}
+  \caption{Garbage collection algorithm, note that all pointed to values in any $\Gamma$ are in the from \texttt{\{((e, t), E, T)\}}}
+  \label{eq:gcalgo}
+\end{figure}
+Then the garbage collector is invoked with $\Gamma$ and \texttt{N} in parallel.
+The garbage collector then generates a new 
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
