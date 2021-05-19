@@ -35,75 +35,56 @@ object Main extends IOApp {
     }
 
     val output = succ.map { decls =>
-      inferProgram(decls)
+      //inferProgram(decls)
       val transformed = LCTransform.entrypoint(decls)
       if (asScheme) 
         s"(define main ${emitter.LCEmitter.emitScheme(transformed)})\n(display main)" 
-      else 
-        emitter.LCEmitter.emitGraphMachine(transformed)
+      else {
+        //emitter.LCEmitter.emitGraphMachine(transformed)
+        //println(s"running $transformed")
+def time[R](block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block    // call-by-name
+    val t1 = System.nanoTime()
+    println("Elapsed time: " + ((t1 - t0)/1000000) + "ms")
+    result
+}
+        time(runtime.ReductionMachine.run(transformed).toString)
+      }   
     }
 
     output
   }
 
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { b =>
-    val parsed = Haskelly.parse("""
-      type List a = 
-        | Cons a (List a)
-        | Nil
-      ;
+    val files = args.filter(x => x != asScheme)
+    //val stdinstream = stdinUtf8[IO](1024, b)
+    val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
+    val instream = fs2.Stream(streams: _*)
+      .lift[IO]
+      .flatten
+      .through(fs2.text.utf8Decode)
 
-      map :: ((a -> b) -> (List a) -> (List b));
-      f Nil = Nil;
-      f (Cons x xs) = (Cons (f x) (fold f xs));
-      ;
+    val folded = instream
+      .compile
+      .fold(""){ case (accum, next) => accum + next }
 
-      hey;
-      x = x;
-      ;
-      """)
-    parsed.foreach(println)
-    parsed match {
-      case x :: Nil =>
-        x match {
-          case f: Failure =>
-            throw new Exception(s"failed parsing with $f")
-          case Success(xs, _) =>
-            tt.CheckerV2.check(xs)
-        }
-      case xs => 
-        throw new Exception(s"did not find exactly 1 parsed program $xs")
+    val sch = args.find(_ == asScheme).isDefined
+
+    val compiledCode = folded.flatMap{ code =>
+      compile(code, sch)
     }
-    IO(ExitCode.Success)
 
-    //val files = args.filter(x => x != asScheme)
-    ////val stdinstream = stdinUtf8[IO](1024, b)
-    //val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
-    //val instream = fs2.Stream(streams: _*)
-      //.lift[IO]
-      //.flatten
-      //.through(fs2.text.utf8Decode)
+    val outPipe = stdout[IO](b)
 
-    //val folded = instream
-      //.compile
-      //.fold(""){ case (accum, next) => accum + next }
+    val written = fs2.Stream.eval(compiledCode)
+      .flatMap(x => fs2.Stream(x.getBytes: _*))
+      .through(outPipe)
 
-    //val sch = args.find(_ == asScheme).isDefined
-
-    //val compiledCode = folded.flatMap{ code =>
-      //compile(code, sch)
-    //}
-
-    //val outPipe = stdout[IO](b)
-
-    //val written = fs2.Stream.eval(compiledCode)
-      //.flatMap(x => fs2.Stream(x.getBytes: _*))
-      //.through(outPipe)
-
-    //written
-      //.compile
-      //.drain
-      //.as(ExitCode.Success)
+    written
+      .compile
+      .drain
+      .as(ExitCode.Success)
   }
 /*
     val p2 = """

@@ -5,6 +5,7 @@ import par.TokenTypes._
 object LCLanguage {
   trait LCExp {
     def stringify(implicit indentation: Indentation): String
+    override def toString = stringify(Indentation(0))
   }
 
   case class Indentation(n: Int) {
@@ -15,9 +16,12 @@ object LCLanguage {
   case class LCName(name: String) extends LCExp {
     def stringify(implicit indentation: Indentation) = indentation.indent + name
   }
+  case class LCLet(name: String, exp: LCExp, in: LCExp) extends LCExp {
+    def stringify(implicit indentation: Indentation) = indentation.indent + s"let $name = $exp in $in"
+  }
   case class LCFunction(metaName: String, name: LCName, exp: LCExp) extends LCExp {
     def stringify(implicit indentation: Indentation) = {
-      val fname = indentation.indent + s"(λ ${name.name}."
+      val fname = indentation.indent + s"(λ${name.name}."
       val body = "\n" + s"${exp.stringify(indentation.inc)}" + "\n" + indentation.indent + s") // ${name.name} end"
       fname + body
     }

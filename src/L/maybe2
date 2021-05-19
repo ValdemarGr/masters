@@ -10,7 +10,28 @@ fun sum l =
     | Nil -> 0;
   ;
 
+fun range n s =
+  if (n == s) 
+    Nil;
+  else
+    (Cons s (range n (s + 1)));
+  ;
+
+fun inf from =
+  Cons from (inf (from + 1));
+
+fun take l n =
+  if (n == 0) 
+    Nil;
+  else
+    match l
+      | Nil -> Nil;
+      | Cons x xs -> Cons x (take xs (n - 1));
+    ;
+  ;
+
 fun main =
-  let l = Cons 1 (Cons 2 Nil);
-  sum l;
+  let garbage = range 100 0;
+  let longboi = inf 1;
+  sum (take longboi 10000);
 

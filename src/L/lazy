@@ -1,0 +1,4 @@
+fun main =
+  let a = 22;
+  let b = a + a;
+  b + b;
