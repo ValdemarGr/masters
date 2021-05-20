@@ -12,6 +12,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 
 object ReductionMachine {
+  object LCWithTrimmers {
+
+  }
+
   type Variable = String
   type Heap = Map[Variable, LCExp]
   type Timestamp = Int
@@ -85,7 +89,14 @@ object ReductionMachine {
     val ctx = Context(1, 1)
     val (heapout, out, _, _, gc) = eval(gamma, program, Nil, ctx, None).value
     println(s"final heap was size ${heapout.size}")
-        //import scala.concurrent.duration._
+    import scala.concurrent.duration._
+    println("beginning final gc")
+    val swapped1 = heapout.swap
+    val gc1r = parallelGarbageCollect(swapped1, Nil, Map.empty)
+    val swapped2 = new DualHeap(gc1r, swapped1.idle)
+    val gc2r = parallelGarbageCollect(swapped2, Nil, Map.empty)
+    val outH = new DualHeap(gc2r, gc1r)
+    println(s"s2 had ${swapped2.size}, outH had ${outH.size}")
     //val futcomp = Await.result(gc.get, 10.second)
     //println(s"future completed with $futcomp")
     out
@@ -115,8 +126,10 @@ object ReductionMachine {
   }
 
   def parallelGarbageCollect(dh: DualHeap, n: N, accum: Map[Variable, (LCExp, Timestamp)]): Map[Variable, (LCExp, Timestamp)] = n match {
-    case Nil => accum
+    case Nil => 
+      accum
     case x :: xs =>
+      //println(s"got ns ${n.size}")
       val frees  = freeVars(x)
       val toKeepIdle = dh.idle.filter{ case (k, _) => frees.contains(k) }
       val toKeepLive = dh.live.filter{ case (k, _) => frees.contains(k) }
@@ -157,7 +170,7 @@ object ReductionMachine {
   val gcStrategy = par
   def eval(he: DualHeap, exp: LCExp, ns: N, ctx: Context, gf: GCFuture): Eval[(DualHeap, LCExp, N, Context, GCFuture)] = {
     //println(s"runnig with $gamma $stack $exp $ctx")
-    val (gamma, gcFuture) = if (math.random() < 0.1) {
+    val (gamma, gcFuture) = if (math.random() < 1) {
       if (gcStrategy == sync) {
         val newHeap = syncGarbageCollect(he.live.mapValues(_._1), exp :: ns, Map.empty)
         (new DualHeap(newHeap.mapValues(e => (e, 0)), Map.empty), None)
@@ -166,6 +179,7 @@ object ReductionMachine {
       } else {
         val (newHe, futGc) = gf match {
           case None => 
+            println(s"beginning gc at ${he.size}")
             val swapped = he.swap
             (swapped, Future(parallelGarbageCollect(swapped, exp :: ns, Map.empty)))
           case Some(value) => 
@@ -176,12 +190,16 @@ object ReductionMachine {
           val newIdle = Await.result(futGc, 1.second)
           println(s"gc generated ${newIdle.size}, current has ${newHe.idle.size}")
           val dhprime = new DualHeap(newHe.live, newIdle)
+          println(s"total size is ${dhprime.size}, previous was ${he.size}")
           (dhprime, None)
         } else {
           (newHe, Some(futGc))
         }
       }
-    } else (he, gf)
+    } else {
+      //println(s"didin't gc, size is ${he.size}")
+      (he, gf)
+    }
     exp match {
       case LCIf(e, fst, snd) =>
         Eval.defer(eval(gamma, e, fst :: (snd :: ns), ctx, gcFuture)).flatMap {

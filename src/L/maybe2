@@ -32,6 +32,6 @@ fun take l n =
 
 fun main =
   let garbage = range 100 0;
-  let longboi = inf 1;
-  sum (take longboi 10000);
+  let longlist = inf 1;
+  sum (take longlist 10000);
 
