@@ -1909,7 +1909,85 @@ Trimmers have been omitted for readability in the enhanced CPS machine in \autor
 The machine in \autoref{fig:eval:cpsfinal} is daunting, but is only a product of the application of the aforementioned enhancements onto the previously explored CPS machine (\autoref{fig:eval:cps}).
 
 Naturally, now that the machine has reached fruition, a test of practicality finds it's way into this work.
-Two programs have been implemented to test the machine with various garbage collection strategies and the effect of trimmers and environments.
+Two programs have been implemented to test the CPS machine with various garbage collection strategies and the effect of trimmers and environments.
+\begin{figure}[ht]
+    \centering
+\begin{tikzpicture}
+    \begin{axis}[
+        legend pos= north west,
+        xlabel={n},
+        ylabel={Seconds}
+        ]
+        \addplot[
+            color=blue,
+            mark=square
+        ]
+        coordinates {
+(10,19)  (20,190)  (25,991) (30,9512)
+        };
+        \addlegendentry{no gc}
+
+        \addplot[
+            color=green,
+            mark=triangle
+        ]
+        coordinates {
+(10,47)  (20,1232)  (25,15084)
+        };
+        \addlegendentry{synchronous}
+
+        \addplot[
+            color=red,
+            mark=halfcircle*
+        ]
+        coordinates {
+(10,31)  (20,230)  (25,1005) (30,9755)
+        };
+        \addlegendentry{parallel}
+   \end{axis} 
+\end{tikzpicture}
+    \caption{Fibonacci function time without trimming}
+    \label{fig:cps:benchmark1}
+\end{figure}
+\begin{figure}[ht]
+    \centering
+\begin{tikzpicture}
+    \begin{axis}[
+        legend pos= north west,
+        xlabel={n},
+        ylabel={Heap size}
+        ]
+        \addplot[
+            color=blue,
+            mark=square
+        ]
+        coordinates {
+(10,179)  (20,21893)  (25,242787) (30,2692539)
+        };
+        \addlegendentry{no gc}
+
+        \addplot[
+            color=green,
+            mark=triangle
+        ]
+        coordinates {
+(10,5)  (20,4)  (25,0) 
+        };
+        \addlegendentry{synchronous}
+
+        \addplot[
+            color=red,
+            mark=halfcircle*
+        ]
+        coordinates {
+(10,39)  (20,130)  (25,11010) (30,770124)
+        };
+        \addlegendentry{parallel}
+   \end{axis} 
+\end{tikzpicture}
+    \caption{CPS machine performing under different strategies.}
+    \label{fig:cps:benchmark2}
+\end{figure}
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
