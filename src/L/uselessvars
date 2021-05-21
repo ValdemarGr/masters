@@ -1,0 +1,31 @@
+type List a = 
+  | Nil
+  | Cons a (List a)
+;
+
+fun inf from =
+  Cons from (inf (from + 1));
+
+fun take l n =
+  if (n == 0) 
+    Nil;
+  else
+    let useless = (n + (n + (n + (n + (n + (n + (n + (n + (n + (n + n))))))))));
+    match l
+      | Nil -> Nil;
+      | Cons x xs -> Cons x (take xs (n - 1));
+    ;
+  ;
+
+fun sum l =
+  match l
+    | Cons x xs ->
+      x + (sum xs);
+    | Nil -> 0;
+  ;
+
+fun main =
+  let longlist = inf 1;
+  sum (take longlist 1000);
+
+

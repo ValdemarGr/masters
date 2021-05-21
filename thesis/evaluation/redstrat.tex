@@ -1465,37 +1465,53 @@ A machine which is very alike the natural semantics is presented in \autoref{fig
 \begin{figure}[p]
 \begin{mdframed}
 \begin{align}
-  \texttt{subst(f, t, $\lambda$x.e) }&\texttt{= } 
-  \begin{cases}
-    \texttt{$\lambda$x.e }& \texttt{if x $\equiv$ f}\\
-    \texttt{$\lambda$x.subst(f, t, e) }&
-  \end{cases}\tag*{}\\
-  \texttt{subst(f, t, x) }&\texttt{= }
-  \begin{cases}
-    \texttt{t }& \texttt{if x $\equiv$ f}\\
-    \texttt{x }&
-  \end{cases}\tag*{}\\
-  \texttt{subst(f, t, x e) }&\texttt{= subst(f, t, x) subst(f, t, e)}\tag*{}\\
-  \texttt{subst(f, t, x $\oplus$ e) }&\texttt{= subst(f, t, x) $\oplus$ subst(f, t, e)}\tag*{}
+  \texttt{subst(f $\equiv$ x, t, $\lambda$x.e) }&\texttt{= $\lambda$x.e} \tag*{}\\
+  \texttt{subst(f $\not\equiv$ x, t, $\lambda$x.e) }&\texttt{= $\lambda$x.subst(f, t, e)} \tag*{}\\
+  %\begin{cases}
+    %\texttt{$\lambda$x.e }& \texttt{if x $\equiv$ f}\\
+    %\texttt{$\lambda$x.subst(f, t, e) }&
+  %\end{cases}\tag*{}\\
+  \texttt{subst(f $\equiv$ x, t, x) }&\texttt{= t} \tag*{}\\
+  \texttt{subst(f $\not\equiv$ x, t, x) }&\texttt{= x} \tag*{}\\
+  %\texttt{subst(f, t, x) }&\texttt{= }
+  %\begin{cases}
+    %\texttt{t }& \texttt{if x $\equiv$ f}\\
+    %\texttt{x }&
+  %\end{cases}\tag*{}\\
+  \texttt{subst(f $\equiv$ x, t, let x = e in p) }&\texttt{= let x = e in p} \tag*{}\\
+  \texttt{subst(f $\not\equiv$ x, t, let x = e in p) }&\texttt{= let x = e' in p'} \tag*{}\\
+  \wherecase{e' = subst(f, t, e),}\tag*{}\\
+  \extracase{p' = subst(f, t, p)}\tag*{}\\
+  %\begin{cases}
+    %\texttt{let x = e in p }& \texttt{if x $\equiv$ f}\\
+    %\texttt{let x = subst(f, t, e) in subst(f, t, p) }&
+  %\end{cases}\tag*{}\\
+  \texttt{subst(f, t, l p) }&\texttt{= l' p'}\tag*{}\\
+  \wherecase{l' = subst(f, t, l),}\tag*{}\\
+  \extracase{p' = subst(f, t, p)}\tag*{}\\
+  \texttt{subst(f, t, x $\oplus$ y) }&\texttt{= x' $\oplus$ y'}\tag*{}\\
+  \wherecase{x' = subst(f, t, x),}\tag*{}\\
+  \extracase{y' = subst(f, t, y)}\tag*{}\\
+  \texttt{subst(f, t, n $\in$ $\mathbb{Z}^+$) }&\texttt{= n}\tag*{}
 \end{align}
 \end{mdframed}
-  \caption{A function \texttt{subst} which states ``substitute \texttt{f} in with \texttt{t} in some expression''}
+  \caption{A function \texttt{subst} which states ``substitute \texttt{f} in with \texttt{t} in some expression''.}
   \label{fig:eval:subst}
 \end{figure}
 \begin{figure}[p]
 \begin{mdframed}[style=style1]
 \begin{align}
-  \texttt{eval($\Gamma$, $\lambda$x.e) }&\texttt{= ($\Gamma$, $\lambda$x.e)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, $\lambda$x.e) }&\texttt{= ($\Gamma$, $\lambda$x.e)}\tag*{}\\
   \texttt{eval($\Gamma$, l p) }&\texttt{= eval($\Theta$, subst(x, p, e))}\tag*{}\\
-  \wherecase{($\Theta$, $\lambda$x.e) = eval($\Gamma$, l)}\tag*{}\\\tag*{}\\
+  \wherecase{($\Theta$, $\lambda$x.e) = eval($\Gamma$, l)}\tag*{}\\
   \texttt{eval($\Gamma$ $\cup$ \{x $\mapsto$ e\}, x)}&\texttt{= ($\Theta$ $\cup$ \{x $\mapsto$ y\}, y)}\tag*{}\\
-  \wherecase{($\Theta$, y) = eval($\Gamma$, e)}\tag*{}\\\tag*{}\\
+  \wherecase{($\Theta$, y) = eval($\Gamma$, e)}\tag*{}\\
   \texttt{eval($\Gamma$, let x = e in p) }&\texttt{= eval($\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, l)}\tag*{}\\
   \wherecase{$\gamma$ = fresh,}\tag*{}\\
-  \extracase{l = subst(x, $\gamma$, p)}\tag*{}\\\tag*{}\\
+  \extracase{l = subst(x, $\gamma$, p)}\tag*{}\\
   \texttt{eval($\Gamma$, x $\oplus$ y) }&\texttt{= ($\Sigma$, n $\oplus$ t)}\tag*{}\\
   \wherecase{($\Theta$, n) = eval($\Gamma$, x),}\tag*{}\\
-  \extracase{($\Sigma$, t) = eval($\Theta$, y)}\tag*{}\\\tag*{}\\
+  \extracase{($\Sigma$, t) = eval($\Theta$, y)}\tag*{}\\
   \texttt{eval($\Gamma$, n $\in$ $\mathbb{Z^+}$) }&\texttt{= ($\Gamma$, n)}\tag*{}
 \end{align}
 \end{mdframed}
@@ -1514,28 +1530,37 @@ All non-terminal cases will be proved by induction.
 Since only one machine case is applicable for every shape that a term can take, it suffices to prove that for any one shape, the respective machine case will behave like the natural semantics, if all other cases also behave like the natural semantics.
   \begin{pcases}
     \pcase{
-      Abs which states that \texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)} is trivially true, since \texttt{eval($\Gamma$, $\lambda$x.e) $\Rightarrow$ ($\Gamma$, $\lambda$x.e)}.
+      %Abs which states that \texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)} is trivially true, since \texttt{eval($\Gamma$, $\lambda$x.e) $\Rightarrow$ ($\Gamma$, $\lambda$x.e)}.
+      Abs states that \texttt{$\Gamma$, ($\lambda$x.e) $\rightarrow$ $\Gamma$, ($\lambda$x.e)}, such that it must trivially be true that \texttt{eval($\Gamma$, $\lambda$x.e) $\Rightarrow$ ($\Gamma$, $\lambda$x.e)}.
     }
     \pcase{
       Num is trivially true, by the same reasoning as Abs.
     }
     \pcase{
-      App states that for \texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o} to hold, then \texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)} and \texttt{$\Theta$, \{x $\mapsto$ p\}e $\rightarrow$ $\Sigma$, o} must both hold.
-      If the first proof holds then \autoref{eq:proof:naive:app1}.
+      App states that for \texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o} to be derivable, then \texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)} and \texttt{$\Theta$, \{x $\mapsto$ p\}e $\rightarrow$ $\Sigma$, o} must both be derivable.
+      If the premises are derivable, then the conclusion is derivable.%then there must be a sequence of instructions such that \texttt{eval($\Gamma$, l p) $\Rightarrow^*$ ($\Sigma$, o)}.
+      If the left premise is derivable then \autoref{eq:proof:naive:app1} holds.
       \begin{align}
-        &\texttt{ eval($\Gamma$, l p)} &\text{by conclusion}\label{eq:proof:naive:app1}\\
-        \Rightarrow\hspace*{0.18cm}& \texttt{ eval($\Gamma$, l)}&\text{machine instruction for left premise}\tag*{}\\
+        %&\texttt{ eval($\Gamma$, l p)} &\text{by conclusion}\label{eq:proof:naive:app1}\\
+        & \texttt{ eval($\Gamma$, l)}&\text{machine instruction for left premise}\label{eq:proof:naive:app1}\\
         \Rightarrow^* &\texttt{ ($\Theta$, $\lambda$x.e)}&\text{ind. hyp.}\tag*{}
       \end{align}
-      Furthermore, if the second proof holds then \autoref{eq:proof:naive:app2}.
+      Furthermore, if the second premise is derivable then \autoref{eq:proof:naive:app2}.
       \begin{align}
         &\texttt{ eval($\Theta$, subst(x, p, e))} &\text{machine instruction for right premise}\label{eq:proof:naive:app2}\\
-        \Rightarrow^* &\texttt{ ($\Theta$, o)}&\text{ind. hyp.}\tag*{}
+        \Rightarrow^* &\texttt{ ($\Sigma$, o)}&\text{ind. hyp.}\tag*{}
+      \end{align}
+      Thus the conclusion is derivable by \autoref{eq:proof:naive:app2}.
+      \begin{align}
+        &\texttt{ eval($\Gamma$, l p)} &\text{conclusion}\label{eq:proof:naive:app3}\\
+        \Rightarrow^* &\texttt{ ($\Theta$, $\lambda$x.e)}&\text{\autoref{eq:proof:naive:app1}}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ eval($\Theta$, subst(x, p, e))}&\text{machine instruction}\tag*{}\\
+        \Rightarrow^* &\texttt{ ($\Sigma$, o)}&\text{\autoref{eq:proof:naive:app2}}\tag*{}\\
       \end{align}
     }
     \pcase{
-      Var states that for \texttt{$\Gamma$ $\cup$ \{x $\mapsto$ e\}, x $\rightarrow$ $\Theta$ $\cup$ \{x $\mapsto$ y\}, y} to hold then \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, y} must hold.
-      If \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, y} holds, then \autoref{eq:proof:naive:var}.
+      Var states that for \texttt{$\Gamma$ $\cup$ \{x $\mapsto$ e\}, x $\rightarrow$ $\Theta$ $\cup$ \{x $\mapsto$ y\}, y} to be derivable then \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, y} must be derivable.
+      If \texttt{$\Gamma$, e $\rightarrow$ $\Theta$, y} is derivable, then \autoref{eq:proof:naive:var}.
       \begin{align}
         &\texttt{ eval($\Gamma$ $\cup$ \{x $\mapsto$ e\}, x)} &\text{conclusion}\label{eq:proof:naive:var}\\
         \Rightarrow\hspace*{0.18cm} &\texttt{ eval($\Gamma$, e)}&\text{machine instruction for premise}\tag*{}\\
@@ -1544,7 +1569,7 @@ Since only one machine case is applicable for every shape that a term can take, 
       \end{align}
     }
     \pcase{
-      Let must prove that \texttt{$\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, \{x $\mapsto$ $\gamma$\}p $\rightarrow$ $\Theta$, l} for some $\gamma$ that does not occur in \texttt{e} or \texttt{p}, if \texttt{let x = e in p $\rightarrow$ $\Theta$, l} should hold.
+      For Let to be derivable then \texttt{$\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ e\}, \{x $\mapsto$ $\gamma$\}p $\rightarrow$ $\Theta$, l} for some $\gamma$ that does not occur in \texttt{e} or \texttt{p}, must be derivable.
       The primary concern is that the freshness of \texttt{fresh} must hold, which is a constraint easily realized in the machine.
       If the derivation holds, then \autoref{eq:proof:naive:let}.
       \begin{align}
@@ -1554,11 +1579,11 @@ Since only one machine case is applicable for every shape that a term can take, 
       \end{align}
     }
     \pcase{
-      Bin op must show that \texttt{$\Gamma$, x $\rightarrow$ $\Theta$, n} and \texttt{$\Theta$, y $\rightarrow$ $\Sigma$, t} for \texttt{$\Gamma$, x $\oplus$ y $\rightarrow$ $\Sigma$ n $\oplus$ t} to hold.
-      If \texttt{$\Gamma$, x $\rightarrow$ $\Theta$, n} holds then \autoref{eq:proof:naive:bin1}.
+      Bin op must show that \texttt{$\Gamma$, x $\rightarrow$ $\Theta$, n} and \texttt{$\Theta$, y $\rightarrow$ $\Sigma$, t} are derivable for \texttt{$\Gamma$, x $\oplus$ y $\rightarrow$ $\Sigma$ n $\oplus$ t} to be derivable.
+      If \texttt{$\Gamma$, x $\rightarrow$ $\Theta$, n} is derivable then \autoref{eq:proof:naive:bin1}.
       \begin{align}
-        &\texttt{ eval($\Gamma$, x $\oplus$ y)} &\text{conclusion}\label{eq:proof:naive:bin1}\\
-        \Rightarrow\hspace*{0.18cm} &\texttt{ eval($\Gamma$, x)}&\text{machine instruction for left premise}\tag*{}\\
+        %&\texttt{ eval($\Gamma$, x $\oplus$ y)} &\text{conclusion}\label{eq:proof:naive:bin1}\\
+         &\texttt{ eval($\Gamma$, x)}&\text{machine instruction for left premise}\label{eq:proof:naive:bin1}\\
         \Rightarrow^* &\texttt{ ($\Theta$, n)}&\text{ind. hyp.}\tag*{}
       \end{align}
       Moreover, if \texttt{$\Theta$, y $\rightarrow$ $\Sigma$, t} holds then \autoref{eq:proof:naive:bin2}.
@@ -1567,11 +1592,19 @@ Since only one machine case is applicable for every shape that a term can take, 
         \Rightarrow^* &\texttt{ ($\Sigma$, t)}&\text{ind. hyp.}\tag*{}\\
         \Rightarrow\hspace*{0.18cm} &\texttt{ ($\Sigma$, n $\oplus$ t)}&\text{conclusion}\tag*{}
       \end{align}
+      Finally, if \autoref{eq:proof:naive:bin1} and \autoref{eq:proof:naive:bin2} both hold then
+      \begin{align}
+        &\texttt{ eval($\Gamma$, x $\oplus$ y)} &\text{conclusion}\label{eq:proof:naive:bin3}\\
+        \Rightarrow^* &\texttt{ ($\Theta$, n)}&\text{\autoref{eq:proof:naive:bin1}}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ eval($\Theta$, y)}&\text{machine instruction}\tag*{}\\
+        \Rightarrow^* &\texttt{ ($\Sigma$, t)}&\text{\autoref{eq:proof:naive:bin2}}\tag*{}\\
+        \Rightarrow\hspace*{0.18cm} &\texttt{ ($\Theta$, n $\oplus$ t)}&\text{machine instruction}\tag*{}
+      \end{align}
     }
   \end{pcases}
 \end{proof}
 The inverse case; showing that any program that the machine evaluates, is provable in the natural semantics, is also theoretically interesting, but does yield much practical value.
-In fact, the algorithm \autoref{fig:eval:laznaive} will shortly be superseded, but will acts as a steppingstone.
+The algorithm \autoref{fig:eval:laznaive} will shortly be superseded, but will acts as a steppingstone.
 
 \subsubsection{A CPS machine}
 The algorithm in \autoref{fig:eval:laznaive} is minimal but suffers from some practical issues.
@@ -1582,7 +1615,7 @@ The \textit{app1} and \textit{app2} rules from the stack machine, displayed in \
 \begin{figure}[p]
 \begin{mdframed}
 \begin{align}
-  \texttt{eval($\Gamma$, S, l p) }&\texttt{= eval($\Gamma$, p :S, l)}\tag*{}\\\tag*{}\\
+  \texttt{eval($\Gamma$, S, l p) }&\texttt{= eval($\Gamma$, p :S, l)}\tag*{}\\
   \texttt{eval($\Gamma$, p :S, $\lambda$x.e) }&\texttt{= eval($\Gamma$, S, subst(x, p, e))}\tag*{}
 \end{align}
 \end{mdframed}
@@ -1600,7 +1633,7 @@ There must be catalogue of appropriate continuations for each rule that either b
 \begin{mdframed}[style=style1]
 \begin{align}
   \texttt{continue($\Gamma$, [], e) }&\texttt{= e}\tag*{}\\
-  \spacecase
+  %\spacecase
   \texttt{continue($\Gamma$, cont :S, e) }&\texttt{= cont($\Gamma$, S, e)}\tag*{}\\
   \spacecase
   \texttt{eval($\Gamma$, S, $\lambda$x.e) }&\texttt{= continue($\Gamma$, S, $\lambda$x.e)}\tag*{}\\
@@ -1705,6 +1738,17 @@ In practice, recursively introduced superfluous variables and environments can c
 An interesting problem which we have not explored yet, is the representation of heaps.
 Intuitively, heaps take the appearance of a data structure that resembles \textit{hash tables} very much.
 
+If one does not care much for space usage and immutability, arrays can be used for heap representations to provide constant time access and updates.
+Notice that in traditional data structures, one cannot ask ``the rest of the world'' to treat a name or key as a different one.
+Fortunately, in the case of picking fresh variables, we can exploit the property of determining names.
+Let the heap be represented by an array $A$, where each cell in the array contains a tuple of an expression and it's paired environment.
+When the machine begins, an array $A$ of size $n$ and a stack $S_A$ which contains the numbers $0,1 \dots n$, are initialized.
+When a let expression introduces a new name \texttt{x} with the expression \texttt{e} under the environment \texttt{E} to the heap, a fresh number $k$ is popped from $S_A$ such that $A_k = \texttt{(e, E)}$ and \texttt{E' = E $\cup$ \{x $\mapsto$ $k$\}}.
+Now garbage collection becomes a matter of simply refilling $S_A$ with unreachable indices of $A$.
+
+Unfortunately, an immutable heap can become of importance once more exotic features are considered, such as \autoref{sec:pargc}.
+Fortunately, very efficient persistent hash map implementations exist~\cite{bagwell2001ideal}.
+
 %Hash tables have good asymptotic guarantees, such as probabilistic worst-case constant time insertions and deletions~\cite{cormen2009introduction}, but we can do better.
 %Notice that in traditional data structures, one cannot ask ``the rest of the world'' to treat a name or key as a different one.
 %Fortunately, in the case of picking fresh variables, we can exploit the property of determining names.
@@ -1720,7 +1764,11 @@ The simplest implementation of environment trimming is a trimmer that eagerly tr
   \texttt{E' = \{x $\mapsto$ y | (x $\mapsto$ y) $\in$ E $\land$ x $\in$ }\textit{free}\texttt{(e)\}}\label{eq:envtrim}
 \end{align}
 \autoref{eq:envtrim} requires runtime introspection of the expression \texttt{e}, thus still breaks suspension.
-Fortunately, computing the free variables of an expression which has not been renamed can be performed during compilation.
+Fortunately, computing the free variables of an expression which has not been renamed can be performed during compilation, thus the trimmer should now be assumed to co-exist with every expression.
+\begin{remark}
+  When trimmers occur with expressions they are written as a tuple \texttt{(e, t)} where \texttt{e} is the expression and \texttt{t} is the trimmer.
+  In certain circumstances, the tuple may be written as a single variable such as \texttt{y}, such that \texttt{y $\equiv$ (e, t)}, which will ease readability in some cases.
+\end{remark}
 % and \textit{De Bruijn indices} to solve space leaks and efficient implementations of environments.
 %De Bruijn indices is an encoding of the lambda calculus that encodes variables as distances instead of names.
 %In De Bruijn form, the abstraction now takes the form $\lambda.E$ where $E$ is an arbitrary De Brujin form lambda calculus term.
@@ -1728,7 +1776,7 @@ Fortunately, computing the free variables of an expression which has not been re
 %Furthermore, the let expression introduces variables similar to the abstraction such that \texttt{let x = ($\lambda$x.x) in x} becomes \texttt{let ($\lambda$.1) in 1} in De Brujin form.
 %Application is written in the usual way in De Brujin form such that \texttt{($\lambda$x.x x)} becomes \texttt{($\lambda$.1 1)}.
 
-\subsubsection{A parallel garbage collector}
+\subsubsection{A parallel garbage collector}\label{sec:pargc}
 In~\cite{launchbury1993natural} it is mentioned that a garbage collection strategy that implements parallelism is possible.
 In immutable environments, parallelism becomes trivial since concurrent writing cannot occur.
 Naturally, if we keep the heaps and various environments immutable, parallel garbage collection becomes feasible.
@@ -1739,32 +1787,36 @@ The stack \texttt{N} will later be introduced into the system explicitly, but fo
   The stack \texttt{N} is exactly $\textit{ap}(S)$ in the stack machine.
 \end{remark}
 
-A sequence of CPS machine instructions are enhanced with the label \texttt{CPS} such that \texttt{eval($\Gamma$, e) $\Rightarrow^*_{\texttt{CPS}}$ ($\Theta$, y)}.
-The sequence of instructions necessary for garbage collection is written \texttt{gc($\Gamma$, N) $\Rightarrow^*_{\texttt{GC}}$ $\Sigma$}, which states that through a series of steps, the garbage collector emits the collected heap $\Sigma$.
+%A sequence of CPS machine instructions are enhanced with the label \texttt{CPS} such that \texttt{eval($\Gamma$, e) $\Rightarrow^*_{\texttt{CPS}}$ ($\Theta$, y)}.
+%The sequence of instructions necessary for garbage collection is written \texttt{gc($\Gamma$, N) $\Rightarrow^*_{\texttt{GC}}$ $\Sigma$}, which states that through a series of steps, the garbage collector emits the collected heap $\Sigma$.
 The heap $\Gamma$ will now be split into two heaps, such that $\Gamma$ becomes a tuple of a live heap $\Gamma_L$ and an idle heap $\Gamma_I$, $\Gamma = (\Gamma_L, \Gamma_I)$.
 The live heap $\Gamma_L$, is the only heap that any case of let or var may update. 
 The idle heap $\Gamma_I$ will act as the heap that the garbage collector may work on, but may still be searched in.
 
 When garbage collection begins, the heaps are swapped, such that $\Gamma = (\Gamma_I, \Gamma_L)$, which is denoted \texttt{swap($\Gamma$)}, e.g. \texttt{swap} can occur between any two instructions.
-Variables can occur in both $\Gamma_L$ and $\Gamma_I$, which can be shown by the sequence of instructions in \autoref{eq:varoccur}.
+Variables can occur in both $\Gamma_L$ and $\Gamma_I$, which can simply be proven by the sequence of instructions in \autoref{eq:varoccur}.
 \begin{align}
   &\texttt{ eval(($\Gamma_L$, $\Gamma_I$), S, let x = e in p)} \label{eq:varoccur}\\
-  \Rightarrow_{\texttt{CPS}}\hspace*{0.18cm} &\texttt{ eval(($\Gamma_L$ $\cup$ \{$\gamma$ $\mapsto$ e\}, $\Gamma_I$), S, subst(x, $\gamma$, p))}\tag*{}\\
-  \Rightarrow^*_{\texttt{CPS}} &\texttt{ eval(swap($\Gamma$) $\subseteq$ ($\Theta_L$ , $\Theta_I$ $\cup$ \{$\gamma$ $\mapsto$ e\}), S', $\gamma$)}\tag*{}\\
-  \Rightarrow_{\texttt{CPS}}\hspace*{0.18cm} &\texttt{ eval(($\Theta_L$, $\Theta_I$), cont :S', e)}\tag*{}\\
-  \Rightarrow^*_{\texttt{CPS}} &\texttt{ continue(($\Sigma_L$, $\Sigma_I$), cont :S'', l)}\tag*{}\\
-  \Rightarrow_{\texttt{CPS}}\hspace*{0.18cm} &\texttt{ continue(($\Sigma_L$ $\cup$ \{$\gamma$ $\mapsto$ l\}, $\Sigma_I$ \{$\gamma$ $\mapsto$ e\}), S'', l)}\tag*{}
+  \Rightarrow\hspace*{0.18cm} &\texttt{ eval(($\Gamma_L$ $\cup$ \{$\gamma$ $\mapsto$ e\}, $\Gamma_I$), S, subst(x, $\gamma$, p))}\tag*{}\\
+  \Rightarrow^* &\texttt{ eval(swap($\Gamma$) $\subseteq$ ($\Theta_L$ , $\Theta_I$ $\cup$ \{$\gamma$ $\mapsto$ e\}), S', $\gamma$)}\tag*{}\\
+  \Rightarrow\hspace*{0.18cm} &\texttt{ eval(($\Theta_L$, $\Theta_I$), cont :S', e)}\tag*{}\\
+  \Rightarrow^* &\texttt{ continue(($\Sigma_L$, $\Sigma_I$), cont :S'', l)}\tag*{}\\
+  \Rightarrow\hspace*{0.18cm} &\texttt{ continue(($\Sigma_L$ $\cup$ \{$\gamma$ $\mapsto$ l\}, $\Sigma_I$ \{$\gamma$ $\mapsto$ e\}), S'', l)}\tag*{}
 \end{align}
 Note that the environments have been omitted for readability, they should exist, but are not interesting in this segment.
 In the evaluation in \autoref{eq:varoccur} a case of ambiguity occurs; is \texttt{\{$\gamma$ $\mapsto$ e\}} or \texttt{\{$\gamma$ $\mapsto$ l\}} the newest mapping?
 The solution is not simply a case of consulting the live heap, since another instance of swap can induce that the idle heap now contains the ``newest'' mapping.
 To track the newest variable, we employ the works of~\cite{lamport}.
-The implementation is simple, we extend the tuple of the heap with increasing lamport timestamps $T_k$ such that a heap becomes a mapping from variables to triplets as depicted in \autoref{eq:envintrolam}.
+Timestamps are logical numbers assigned to events, such that we can impose an ordering on when events occur.
+In more contextual terms, we assign a unique timestamp to every expression.
+If an expression \texttt{e}$_1$ with timestamp \texttt{T}$_1$ is created before an event \texttt{e}$_2$ with timestamp \texttt{T}$_2$, then \texttt{T}$_1$ $<$ \texttt{T}$_2$. 
+The implementation is simple, we extend the tuple of the heap with increasing lamport timestamps $T_k$ such that a heap becomes a mapping from variables to triples as depicted in \autoref{eq:envintrolam}.
 \begin{align}
   \texttt{$\Gamma$ = \{x$_1$ $\mapsto$ (e$_1$, E$_1$, T$_1$), x$_2$ $\mapsto$ (e$_2$, E$_2$, T$_2$) $\dots$ x$_n$ $\mapsto$ (e$_n$, E$_n$, T$_n$)\}}\label{eq:envintrolam}
 \end{align}
 When a case of let or var occurs, the expression is also paired with a timestamp.
 Now the newest entry of \texttt{\{$\gamma$ $\mapsto$ (e, E, T)\}} and \texttt{\{$\gamma$ $\mapsto$ (l, E', T')\}} must be the one that contains the newest timestamp such that either \texttt{T $>$ T'} or \texttt{T' $>$ T}.
+The function \texttt{timestamp} generates a new timestamp that is greater than all previous timestamps.
 
 With the introduction of two heaps, environments and trimmers, the algorithm presented in \autoref{eq:prune} is no longer adequate.
 Fortunately, trimmers are very helpful in simplifying the garbage collection algorithm.
@@ -1776,32 +1828,88 @@ The garbage collection algorithm in \autoref{eq:gcalgo} makes use of the trimmer
 \end{align}
 \begin{align}
   \texttt{new($\Gamma$, \{\}) }&\texttt{= \{\} }\tag*{}\\
-  \texttt{new($\Gamma$, \{x $\mapsto$ (e, E, T)\} $\cup$ $\Theta$) }&\texttt{= N $\cup$ }
-\begin{cases}
-  \texttt{\{\} }& \texttt{if (x $\mapsto$ (e', E', T')) $\in$ $\Gamma$ $\land$ T' > T}\\
-  \texttt{F }&
-\end{cases}
-\tag*{}\\
-  \wherecase{N = new($\Gamma$, $\Theta$),}\tag*{}\\
-  \extracase{F = \{x $\mapsto$ (e, E, T)\}}\tag*{}
+  \texttt{new(\{x $\mapsto$ (e', E', T')\} $\cup$ $\Gamma$,}\tag*{}\\
+  \texttt{\{x $\mapsto$ (e, E, T)\} $\cup$ $\Theta$) }&\texttt{= new($\Gamma$, $\Theta$) $\cup$}
+  \begin{cases}
+    \texttt{\{\}} & \texttt{if T' $>$ T,}\\
+    \texttt{\{x $\mapsto$ (e, E, T)\}} & 
+  \end{cases}
+  \tag*{}\\
+  \texttt{new($\Gamma$, \{x $\mapsto$ (e, E, T)\} $\cup$ $\Theta$) }&\texttt{=}\tag*{}\\
+  \texttt{\{x $\mapsto$ (e, E, T)\} }&\texttt{$\cup$ new($\Gamma$, $\Theta$)}\tag*{}
+%\begin{cases}
+  %\texttt{\{\} }& \texttt{if (x $\mapsto$ (e', E', T')) $\in$ $\Gamma$ $\land$ T' > T}\\
+  %\texttt{F }&
+%\end{cases}
+  %\wherecase{N = new($\Gamma$, $\Theta$),}\tag*{}\\
+  %\extracase{F = \{x $\mapsto$ (e, E, T)\}}\tag*{}
 \end{align}
 \begin{align}
   \texttt{Prune($\Gamma$, \{\}) }&\texttt{= \{\}} \tag*{}\\
-  \texttt{Prune(($\Gamma_L$, $\Gamma_I$), \{((e, t), E, T)\} $\cup$ N) }&\texttt{=  I$_n$ $\cup$ Prune(($\Gamma_L$ $\backslash$ N, $\Gamma_I$ $\backslash$ N), R $\cup$ N)} \tag*{}\\
+  \texttt{Prune(($\Gamma_L$, $\Gamma_I$), \{((e, t), E)\}$\cup$N) }&\texttt{=  I$_n$ $\cup$ Prune(($\Gamma_L$ $\backslash$ K, $\Gamma_I$ $\backslash$ K), R $\cup$ N)} \tag*{}\\
   \wherecase{A = trim(E, t),} \tag*{}\\
   \extracase{L = \{x $\mapsto$ y | x $\in$ A $\land$ (x $\mapsto$ y) $\in$ $\Gamma_L$\},} \tag*{}\\
   \extracase{I = \{x $\mapsto$ y | x $\in$ A $\land$ (x $\mapsto$ y) $\in$ $\Gamma_I$\},} \tag*{}\\
   \extracase{L$_n$ = new(I, L),}\tag*{}\\
   \extracase{I$_n$ = new(L, I),}\tag*{}\\
-  \extracase{N = L$_n$ $\cup$ I$_n$,}\tag*{}\\
-  \extracase{R = \{y | x $\mapsto$ y $\in$ N\}} \tag*{}
+  \extracase{K = L$_n$ $\cup$ I$_n$,}\tag*{}\\
+  \extracase{R = \{((e, t), E) | x $\mapsto$ ((e, t), E, T) $\in$ K\}} \tag*{}
 \end{align}
   \end{mdframed}
-  \caption{Garbage collection algorithm, note that all pointed to values in any $\Gamma$ are in the from \texttt{\{((e, t), E, T)\}}}
+  \caption{Garbage collection algorithm, note that all pointed to values in any $\Gamma$ are in the from \texttt{\{((e, t), E, T)\}}. Unpacking a triple \texttt{((e, t), E, T)} can be omitted by naming the triple \texttt{y}.}
   \label{eq:gcalgo}
 \end{figure}
-Then the garbage collector is invoked with $\Gamma$ and \texttt{N} in parallel.
-The garbage collector then generates a new 
+The garbage collection in \autoref{eq:gcalgo} prunes all values in $\Gamma_I$ that either occur in $\Gamma_L$ with a newer timestamp, or do not occur free in \texttt{N}.
+Once the garbage collection algorithm in \autoref{eq:gcalgo} has completed in parallel, the resulting heap $\Theta$ where $\Theta \subseteq \Gamma_I$, becomes the new idle heap.
+\begin{remark}
+  The parallel garbage collection algorithm in \autoref{eq:gcalgo} introduces complicated behaviour to maintain immutability in the runtime environment.
+  If one relaxes the constraint of immutability, the horizon widens;
+  A derivative of the persistent hash map data structure~\cite{bagwell2001ideal}, ensures efficient and concurrent operations~\cite{prokopec2012concurrent}, if one wishes to simplify garbage collection, whilst maintaining the potential of parallelism.
+\end{remark}
+%The garbage collector is invoked with $\Gamma$ and \texttt{N} in parallel.
+%The garbage collector then generates a new 
+
+\subsection{The enhanced CPS machine}
+Now every ingredient has been prepared for the practical CPS machine to take shape.
+The type of continuations is lifted such that timestamps, environments, and pending expressions are introduced \texttt{cont:$\Gamma \times S \times E \times N \times \lambda \rightarrow \lambda$}.
+Trimmers have been omitted for readability in the enhanced CPS machine in \autoref{fig:eval:cpsfinal}.
+\begin{figure}
+\begin{mdframed}[style=bigbigbox]
+\begin{align}
+  \texttt{eval($\Gamma$, S, E, N, $\lambda$x.e) }&\texttt{= continue($\Gamma$, S, E, N, $\lambda$x.e)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, \{p $\mapsto$ z\} $\cup$ E, N, l p) }&\texttt{= eval($\Gamma$, cont :S, E, (p, E) :N, l)}\tag*{}\\
+  \wherecase{cont($\Sigma$, S', E', \_ :N', $\lambda$x.e) = }\tag*{}\\
+  \extracase{ eval($\Sigma$, S', E' $\cup$ \{x $\mapsto$ z\}, N', e)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ (y, E', T)\}, S, \{x $\mapsto$ $\gamma$\} $\cup$ E, N, x) }&\texttt{= eval($\Gamma$, cont :S, E', N, e)}\tag*{}\\
+  \wherecase{cont($\Sigma$, S', E'', N', p) = }\tag*{}\\
+  \extracase{ T = timestamp,}\tag*{}\\
+  \extracase{ $\Theta$ =  $\Sigma$ $\cup$ \{x $\mapsto$ (p, E'', T)\},}\tag*{}\\
+  \extracase{ continue($\Theta$, S', E'', N', p)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, E, N, let x = e in p) }&\texttt{= eval($\Theta$, S, E', N, p)}\tag*{}\\
+  \wherecase{$\gamma$ = fresh,}\tag*{}\\
+  \extracase{E' = E $\cup$ \{x $\mapsto$ $\gamma$\},}\tag*{}\\
+  \extracase{T = timestamp,}\tag*{}\\
+  \extracase{$\Theta$ = $\Gamma$ $\cup$ \{$\gamma$ $\mapsto$ (e, E', T)\}}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, E, N, x $\oplus$ y) }&\texttt{= eval($\Gamma$, cont :S, E, (y, E) :N, x)}\tag*{}\\
+  \wherecase{cont($\Theta$, S', E', \_ :N, n) = }\tag*{}\\
+  \extracase{ eval($\Theta$, cont' :S', E', N', y)}\tag*{}\\
+  \extracase{ \hspace*{-0.8cm}where cont'($\Sigma$, S'', E'', N'', t) = }\tag*{}\\
+  \extracase{\hspace*{0.65cm} continue($\Sigma$, S'', E'', N'', n + t)}\tag*{}\\
+  \spacecase
+  \texttt{eval($\Gamma$, S, E, N, n $\in$ $\mathbb{Z^+}$) }&\texttt{= continue($\Gamma$, S, E, N, n)}\tag*{}
+\end{align}
+\end{mdframed}
+  \caption{The CPS machine with environments, timestamps and pending expressions.}
+  \label{fig:eval:cpsfinal}
+\end{figure}
+The machine in \autoref{fig:eval:cpsfinal} is daunting, but is only a product of the application of the aforementioned enhancements onto the previously explored CPS machine (\autoref{fig:eval:cps}).
+
+Naturally, now that the machine has reached fruition, a test of practicality finds it's way into this work.
+Two programs have been implemented to test the machine with various garbage collection strategies and the effect of trimmers and environments.
 
 \subsection{An invariant on infinite programs}\label{subsec:inf}
 An important problem still remains which is that of infinite programs.
