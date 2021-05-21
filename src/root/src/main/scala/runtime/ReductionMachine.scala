@@ -127,6 +127,7 @@ object ReductionMachine {
     val gamma: DualHeap = new DualHeap(Map.empty, Map.empty)
     val stack: ContStack = List.empty
     val ctx = Context(1, 1)
+    timeAtStart = System.currentTimeMillis
     val (heapout, out, _, _, _, gc) = eval(gamma, program, Nil, Map.empty, ctx, None).value
     println(s"final heap was size ${heapout.size}")
     //import scala.concurrent.duration._
@@ -207,13 +208,24 @@ object ReductionMachine {
   val sync = "sync"
   val par = "parallel"
   val none = "none"
-  val gcStrategy = par
+  val gcStrategy = sync
+  var memUsage = false
+  //var timeAtLast: Long = 0
+  var timeAtStart: Long = 0
   def eval(he: DualHeap, exp: LCTExp, ns: N, env: Environment, ctx: Context, gf: GCFuture): Eval[(DualHeap, LCTExp, N, Environment, Context, GCFuture)] = {
+    //val currentTime = System.currentTimeMillis()
+    //val deltams = 100 
+    //if (currentTime - deltams > timeAtLast) {
+      //println(s"current heap size is ${he.size}")
+      //timeAtLast = System.currentTimeMillis
+    //}
     //println(s"runnig with $gamma $stack $exp $ctx")
-    val (gamma, gcFuture) = if (math.random() < 0.05) {
+    val (gamma, gcFuture) = if (math.random() < 0.3) {
       if (gcStrategy == sync) {
         //val newHeap = syncGarbageCollect(he.live.mapValues(_._1), exp :: ns, Map.empty)
         val newHeap = parallelGarbageCollect(he.swap, (exp, env) :: ns, Map.empty)
+          val t = System.currentTimeMillis - timeAtStart
+          println(s"(${t}, ${he.size}) (${t + 1}, ${newHeap.size})")
         (new DualHeap(newHeap, Map.empty), None)
         //(new DualHeap(newHeap.mapValues(e => (e, 0)), Map.empty), None)
       } else if (gcStrategy == none) {
@@ -232,7 +244,9 @@ object ReductionMachine {
           val newIdle = Await.result(futGc, 1.second)
           //println(s"gc generated ${newIdle.size}, current has ${newHe.idle.size}")
           val dhprime = new DualHeap(newHe.live, newIdle)
-          //println(s"total size is ${dhprime.size}, previous was ${he.size}")
+          //println(s"total size is ${dhprime.size}, previous was ${he.size} eval time ${System.currentTimeMillis - timeAtStart}")
+          val t = System.currentTimeMillis - timeAtStart
+          println(s"(${t}, ${he.size}) (${t + 1}, ${dhprime.size})")
           (dhprime, None)
         } else {
           (newHe, Some(futGc))
