@@ -33,5 +33,5 @@ fun take l n =
 fun main =
   let garbage = range 100 0;
   let longlist = inf 1;
-  sum (take longlist 10000);
+  sum (take longlist 100000);
 

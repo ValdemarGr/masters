@@ -10,4 +10,4 @@ fun fib n =
     ;
   ;
 
-fun main = (fib 8);
+fun main = (fib 30);

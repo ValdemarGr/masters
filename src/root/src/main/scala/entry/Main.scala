@@ -25,7 +25,9 @@ object Main extends IOApp {
     val checked = parsed match {
       case x :: Nil => IO(x)
       case xs =>
-        IO.raiseError(new Exception(s"failed parsing with ambiguity (multiple options) results \n${xs.mkString("\n\n")}"))
+        IO.raiseError(
+          new Exception(s"failed parsing with ambiguity (multiple options) results \n${xs.mkString("\n\n")}")
+        )
     }
 
     val succ = checked.flatMap {
@@ -37,20 +39,21 @@ object Main extends IOApp {
     val output = succ.map { decls =>
       //inferProgram(decls)
       val transformed = LCTransform.entrypoint(decls)
-      if (asScheme) 
-        s"(define main ${emitter.LCEmitter.emitScheme(transformed)})\n(display main)" 
+      if (asScheme)
+        s"(define main ${emitter.LCEmitter.emitScheme(transformed)})\n(display main)"
       else {
         //emitter.LCEmitter.emitGraphMachine(transformed)
         //println(s"running $transformed")
-def time[R](block: => R): R = {
-    val t0 = System.nanoTime()
-    val result = block    // call-by-name
-    val t1 = System.nanoTime()
-    println("Elapsed time: " + ((t1 - t0)/1000000) + "ms")
-    result
-}
-        time(runtime.ReductionMachine.run(transformed).toString)
-      }   
+        def time[R](block: => R): R = {
+          val t0 = System.nanoTime()
+          val result = block // call-by-name
+          val t1 = System.nanoTime()
+          println("Elapsed time: " + ((t1 - t0) / 1000000) + "ms")
+          result
+        }
+        val withTrimmers = runtime.ReductionMachine.LCWithTrimmers.fromLCTerms(transformed)
+        time(runtime.ReductionMachine.run(withTrimmers).toString)
+      }
     }
 
     output
@@ -60,36 +63,35 @@ def time[R](block: => R): R = {
     val files = args.filter(x => x != asScheme)
     //val stdinstream = stdinUtf8[IO](1024, b)
     val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
-    val instream = fs2.Stream(streams: _*)
+    val instream = fs2
+      .Stream(streams: _*)
       .lift[IO]
       .flatten
       .through(fs2.text.utf8Decode)
 
-    val folded = instream
-      .compile
-      .fold(""){ case (accum, next) => accum + next }
+    val folded = instream.compile
+      .fold("") { case (accum, next) => accum + next }
 
     val sch = args.find(_ == asScheme).isDefined
 
-    val compiledCode = folded.flatMap{ code =>
+    val compiledCode = folded.flatMap { code =>
       compile(code, sch)
     }
 
     val outPipe = stdout[IO](b)
 
-    val written = fs2.Stream.eval(compiledCode)
+    val written = fs2.Stream
+      .eval(compiledCode)
       .flatMap(x => fs2.Stream(x.getBytes: _*))
       .through(outPipe)
 
-    written
-      .compile
-      .drain
+    written.compile.drain
       .as(ExitCode.Success)
   }
-/*
+  /*
     val p2 = """
-               |type List a = 
-               |  | Cons a (List a) 
+               |type List a =
+               |  | Cons a (List a)
                |  | Nil
                |;
                |
@@ -116,14 +118,14 @@ def time[R](block: => R): R = {
                |fun insert t a =
                |  match t
                |    | Tnil -> Node Tnil a Tnil;
-               |    | Node l x r -> 
+               |    | Node l x r ->
                |      if (x > a)
                |        Node (insert l a) x r;
                |      else
                |        Node l x (insert r a);
-               |      ;      
-               |  ;      
-               |      
+               |      ;
+               |  ;
+               |
                |fun treesum t =
                |  match t
                |    | Tnil -> 0;
@@ -141,13 +143,13 @@ def time[R](block: => R): R = {
 
                val simple = """
                |
-               |type Maybe a = 
+               |type Maybe a =
                |  | Nothing
                |  | Just a
                |  | Two a a
                |;
                |
-               |fun main = 
+               |fun main =
                |  let o = Two 2 2;
                |  let h = match o
                |    | Just n -> n;
