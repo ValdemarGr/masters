@@ -220,7 +220,7 @@ To solve ambiguity between variables with the same name, one can perform an \tex
 \subsubsection{$\alpha$-conversions} \label{sec:alpha}
 %An $\alpha$-conversion mapping can occur as the substitution mapping, that is \texttt{\{x $\mapsto$ $\gamma_1$, y $\mapsto$ $\gamma_2$\}}; $\alpha$-conversions are philosophical constructs more than materialized mappings.
 An $\alpha$-conversion is a renaming operation which does not modify the meaning of the expression.
-$\alpha$-conversions can appear similar to substitutions, for instance renaming \texttt{x} to $\gamma$ appears as \texttt{\{x $\mapsto$ $\gamma$\}}.
+$\alpha$-conversions can be written similar to substitutions, for instance renaming \texttt{x} to $\gamma$ appears as \texttt{\{x $\mapsto$ $\gamma$\}}.
 $\alpha$-conversions guarantee what is called \textit{$\alpha$-equivalence} which is the notion of semantic equivalence.
 For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\gamma.\gamma$} since both expressions are semantically equivalent.
 %$\alpha$-conversions solve some critical problems such as closures and recursion when evaluating the lambda calculus.
@@ -234,13 +234,12 @@ For instance \texttt{$\lambda$x.x} is $\alpha$-equivalent with \texttt{$\lambda\
 %A strong guarantee that can be made by tuning the evaluation strategy which is particularly useful for $\alpha$-conversion algorithms is that \textit{any} returned value has had \textit{every} term that it contains visited.
 %An algorithm for performing $\alpha$-conversions can be implemented that picks a new variable name from any infinite domain when an abstraction has had a value applied to it and replaces future encountered variables with the new one, such an algorithm only works if the guarantee of visiting every term is made.
 %The algorithm should also introduce the applied value to the substitution set through the alpha converted name.
-\noindent An $\alpha$-conversion algorithm can be implemented such that when a new variable is introduced through an abstraction, a new name for the variable is given.
-More formally; Let $V_1$ be the domain of variables in the program and $V_2$ be the infinite domain for variable names that satisfies $V_1 \cap V_2 = \emptyset$, such that when a new variable \texttt{x} is discovered, replace it with some $\gamma \in V_2$ and let $V_2 = V_2 \backslash \{\gamma\}$.
-Working with the previous example \texttt{\{y $\mapsto$ x\}($\lambda$x.y) g}
+%\noindent An $\alpha$-conversion algorithm can be implemented such that when a new variable is introduced through an abstraction, a new name for the variable is given.
+Let $V_1$ be the domain of variables in the program and $V_2$ be the infinite domain for variable names that satisfies $V_1 \cap V_2 = \emptyset$, such that when a new variable \texttt{x} is discovered, replace it with some $\gamma \in V_2$ and let $V_2 = V_2 \backslash \{\gamma\}$.
 %For instance, let \texttt{($\lambda\gamma_1$.$\lambda\gamma_2$.if ($\gamma_2$ = 0) $\gamma_2$ else $\gamma_1$ $\gamma_1$ (($\gamma_2$ - 1) + ($\gamma_2$ - 1)))} be the $\alpha$-converted version of \texttt{f} in \autoref{lst:recalpha}.
 The function \texttt{fresh} picks a fresh variable name $\gamma$ from $V_2$ and updates $V_2$ to $V_2 \backslash \{\gamma\}$.
+Letting the previous example \texttt{\{y $\mapsto$ x\}($\lambda$x.y) g}, be subject to $\alpha$-conversion solves the problem of ambiguity (\texttt{\{y $\mapsto$ $\tau$\}($\lambda$x.$\tau$) g}), since \texttt{y} could be renamed to a variable introduced through \texttt{fresh}, thus no ambiguity occurs.
 $\alpha$-conversions will be further explored in future refinements of \autoref{fig:scbn} in the from of renaming through the Let rule.
-\\
 
 %\subsubsection{Eager substitutions}
 %Instead of performing $\alpha$-conversions to ensure variable uniqueness, one can enhance the rules in \autoref{fig:scbn}.%one can leverage the ideas proposed in~\cite{launchbury1993natural} to implement laziness, lazy substitution, solve variable ambiguity and perform efficient garbage collection.
@@ -1628,7 +1627,37 @@ The basis for performing stack testing is the missing information regarding what
 To eliminate stack testing in the stack machine we can translate the machine from \autoref{fig:eval:laznaive} into a \textit{continuation-passing style} machine, CPS machine for short.
 A stack will be used for the CPS machine, but the stack will have different role.
 In the CPS machine the stack holds continuations of the type $\texttt{cont}: \Gamma \times S \times \lambda \rightarrow \lambda$, that is, there is no returning.
-There must be catalogue of appropriate continuations for each rule that either branches or requires state and a terminal function \texttt{continue} which either continues by popping a continuation from the stack or returns the expression if the stack is empty \autoref{fig:eval:cps}.
+The algorithm for the CPS conversion is as follows:
+
+If an instruction induces a recursive invocation, bound to a name \texttt{x}, the instruction should be converted to a continuation \texttt{cont} where the continuation binds the result to \texttt{x}.
+The continuation \texttt{cont}'s body should now be the rest of the instructions that follow the converted recursive invocation.
+The only instruction, other than trivial operations, that the converted functions should perform, is pushing \texttt{cont} to the continuation stack \texttt{S} and then recursively invoke the function for the first continuation.
+The algorithm is recursively invoked on the body of \texttt{cont}, such that other recursive invocations are also converted to continuations.
+
+The textual explanation of the conversion can be difficult to follow, so an example has been prepared in \autoref{cpsexmp}.
+\begin{exmp}
+  \label{cpsexmp}
+  The recursive Fibonacci function in \autoref{eq:notation:fib2} can be converted by converting the \texttt{F}$_{\texttt{n - 1}}$ and \texttt{F}$_{\texttt{n - 2}}$ invocations to continuations as in \autoref{eq:notation:fibcps}.
+  \begin{align}
+    \texttt{fib(0) }&\texttt{= 0} \label{eq:notation:fib2} \\
+    \texttt{fib(1) }&\texttt{= 1} \tag*{} \\
+    \texttt{fib(n) }&\texttt{= F$_\texttt{n-1}$ + F$_\texttt{n-2}$} \tag*{} \\
+    \wherecase{F$_\texttt{n-1}$ = fib(n - 1)},\tag*{}\\
+    \extracase{F$_\texttt{n-2}$ = fib(n - 2)}\tag*{}
+  \end{align}
+  \begin{align}
+    \texttt{continue([], n) }&\texttt{= n} \label{eq:notation:fibcps} \\
+    \texttt{continue(cont :S, n) }&\texttt{= cont(S, n)} \tag*{} \\
+    \texttt{fib(S, 0) }&\texttt{= continue(S, 0)} \tag*{} \\
+    \texttt{fib(S, 1) }&\texttt{= continue(S, 1)} \tag*{} \\
+    \texttt{fib(S, n) }&\texttt{= fib(cont: S, n - 1)} \tag*{} \\
+    \wherecase{cont(S', F$_\texttt{n-1}$) =}\tag*{}\\
+    \extracase{ fib(cont' :S', n - 2)}\tag*{}\\
+    \extracase{ \hspace*{-0.8cm}where cont'(S'', F$_\texttt{n-2}$) = }\tag*{}\\
+    \extracase{\hspace*{0.65cm} continue(S'', F$_\texttt{n-1}$ + F$_\texttt{n-2}$)}\tag*{} 
+  \end{align}
+\end{exmp}
+To prepare the CPS machine, there must be catalogue of appropriate continuations for each rule that either branches or requires state and a terminal function \texttt{continue} which either continues by popping a continuation from the stack or returns the expression if the stack is empty \autoref{fig:eval:cps}.
 \begin{figure}
 	\begin{mdframed}[style=style1]
 		\begin{align}
