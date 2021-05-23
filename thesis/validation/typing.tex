@@ -156,7 +156,7 @@ The application term of the monotype is dependent on the primitive types of the 
 The types $\tau_1 \dots \tau_n$ are monotype parameters required to construct some type $C$.
 In $L$ the set of type constructors are $\{ \texttt{Int}, \texttt{Bool} \} \cup \texttt{ADT}$.
 \texttt{Int} and \texttt{Bool} are type constructors of arity 0 thus only have one instantiation and are atomic.
-The set of constructors \texttt{ADT} encapsulates the set of program defined algebraic data structures.
+The set of constructors \texttt{ADT} encapsulates the set of program defined algebraic data type.
 \begin{exmp}
     Let $\texttt{ADT} = \{ \texttt{List} \}$ where \texttt{List} is defined as in \autoref{lst:listadt}.
     The \textit{type constructor} (not to be confused for constructors like \texttt{Cons} or \texttt{Nil}) for \texttt{List} has the signature $\texttt{a} \rightarrow \texttt{List a}$ stating that if supplied with some type \texttt{a} it constructs a type of \texttt{List a} (effectively containing the provided type).
@@ -897,11 +897,12 @@ type Boolean =
     | BFalse
     | BTrue
 ;
-let b = BFalse;
-fun double x = x + x;
-b (0) (double 10);
+fun main =
+  let b = BFalse;
+  fun double x = x + x;
+  b (0) (double 10);
 \end{lstlisting}
-Decision can be implemented in a variety of ways such as in \autoref{lst:adtdecision} by the use of algebraic data structures aligning very much with Church Booleans~\cite{church1985calculi}.
+Decision can be implemented in a variety of ways such as in \autoref{lst:adtdecision} by the use of algebraic data type aligning very much with Church Booleans~\cite{church1985calculi}.
 \begin{figure}[ht]
 	\begin{mdframed}[style=bigbox]
         \begin{subfigure}[b]{1\textwidth}
@@ -938,16 +939,34 @@ Decision can be implemented in a variety of ways such as in \autoref{lst:adtdeci
 \end{figure}
 Rather decision can be implemented by more conventional methods than combinator logic by introducing more inference rules as in \autoref{fig:decision}.
 Additional language syntax features can in most cases be implemented as decision can.
-\subsection{Algebraic data structures and type constructors}
-To implement rules for algebraic data structures one must first decide on what the type of an algebraic data structure is.
-If algebraic data structures were implemented as in \autoref{sec:adt} the type of an algebraic data structure like Boolean in \autoref{lst:adtdecision} would be \texttt{a -> a -> a} since \texttt{BFalse} and \texttt{BTrue} must have a handler each.
-Implementing algebraic data structures by this method does not introduce anything to the inference algorithm since every algebraic data structure becomes a function.
-It is more common to introduce algebraic data structures as type constructors and sum types, since such an implementation yields descriptive errors in comparison to generated function types.
-Fortunately type constructors are present in Hindley-Milner such that it becomes a matter of implementing sum-types.
+\subsection{Algebraic data types and type constructors}
+To implement rules for algebraic data type one must first decide on what the type of an algebraic data type is.
+If algebraic data types were implemented as in \autoref{sec:adt} the type of an algebraic data type like Boolean in \autoref{lst:adtdecision} would be \texttt{a -> a -> a} since \texttt{BFalse} and \texttt{BTrue} must have a handler each.
+Implementing algebraic data type by this method does not introduce anything to the inference algorithm since every algebraic data type becomes a function.
+It is common to introduce algebraic data type along type constructors, since such an implementation yields descriptive errors in comparison to generated function types.
 
-For instance, the \texttt{List} algebraic data type introduced in \autoref{lst:listadt} has the constructor \texttt{Cons} which requires a value of type \texttt{a} and another \texttt{List}.
+Before delving into what type constructors and algebraic data types are, we must understand what a \textit{sum-type} and a \textit{product-type} is.
+Product-types are in simply terms n-arity tuples expressed by the conjunction operator $\times$ such that a two-arity tuple of type \texttt{Int} becomes \texttt{Int $\times$ Int}.
+Sum-types are in informal terms a unifying umbrella, in which product-types can have a unified name.
+Sum-types lets us reason with product types of different shapes, as if they were the same type.
+A sum-type which we have seen earlier is the \texttt{Boolean} sum-type that can take the value of the product-type \texttt{BFalse} and \texttt{BTrue}.
+The sum-type \texttt{Boolean} combines two nullary (nullary becomes the singleton $1$ in type theory) product-types by the disjunction operator $+$ \texttt{1 + 1}.
+More exotic types, such as \texttt{List}, also requires \textit{type-constructor}s to become generalized.
+A type constructor in type theory is denoted as abstraction in lambda calculus, such that \texttt{List a} becomes $\lambda a$ (note this is not the full type for \texttt{List}, that comes later).
+Recursion in type theory is denoted by the special abstraction operator $\mu$.
+Now we have all ingredient to represent a type such as \texttt{List a}; $\lambda a.\mu \textit{rec}.1 + (a \times \textit{rec})$.
+
+%On the value level of this implementation, sum-types exist only at the level of types.
+
+%Fortunately type constructors are present in Hindley-Milner such that it becomes a matter of implementing \texttt{sum-types}, that is, algebraic data types.
+
+Now it only becomes a matter of introducing sum-types and product-types to the system.
+Sum-types will exist purely on the type level and product-types will exist purely on the value level.
+
+
+The \texttt{List} algebraic data type has the constructor \texttt{Cons} which requires a value of type \texttt{a} and a value of type \texttt{List a}.
 To infer \texttt{Cons}, we must acquire a fresh variable $\gamma$ for each type constructor parameter of \texttt{List}, that is, \texttt{a} such that the type becomes \texttt{List} $\gamma$.
-Now all instances of \texttt{a} in the constructor declaration of \texttt{Cons} must be substituted by $\gamma$, which luckily, is already defined by the rules of substitution, such that \texttt{Cons $\gamma$ (List $\gamma$)}.
+Now all instances of \texttt{a} in the constructor declaration of \texttt{Cons} must be substituted by $\gamma$, such that \texttt{Cons $\gamma$ (List $\gamma$)}.
 
 In the case of construction, the product type \texttt{Cons $\gamma$ (List $\gamma$)} must be unified with the inferred type of the constructor.
 When the subsequent \texttt{List} sum-type appears in the constructor, the appropriate case is handled by substituting the type parameters in the product type declaration like above.
@@ -973,7 +992,7 @@ ML, which implements a Hindley-Milner inference system, was believed to have lin
 As it will turn out, Hindley-Milner also suffers an explosive worst case induced by a pathological input fueled by polymorphism.
 
 \begin{lemma}
-    There exists a family of programs which are typable in Hindley-Milner and produce $\Omega(2^n)$ unique type variables.
+    There exists a family of programs which are typeable in Hindley-Milner and produce $\Omega(2^n)$ unique type variables.
 \end{lemma}
 \begin{proof}
     The basis of the blowup stems from the introduced fresh type variables in the polymorphic \texttt{Let} inference rule.
