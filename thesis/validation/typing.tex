@@ -48,7 +48,7 @@ Furthermore, hypotheses are written $\Gamma \vdash p$ which states that under th
 
 %The type system for the $L$ language will be the Hindley-Milner type system~\cite{hindley1969principal,milner1978theory}.
 
-\subsection{The language of types}
+\subsection{The language of types}\label{sec:simply}
 The untyped lambda calculus is exactly that, untyped.
 For it to become typed, we must introduce how types occur.
 A very simple type system for the how typed lambda calculus can be proved must introduce a rule for each of the lambda calculus term types Var, Let, App and Abs.
@@ -1091,59 +1091,92 @@ fun main = 0;
 \end{figure}
 
 \section{Higher level type systems}
-The Hindley-Milner type system can only express relatively simple programs which robs algorithmic elegance in respect to other type systems.
-One domain of programs that Hindley-Milner cannot express are those that rely on \textit{rank-n types}.
-Rank-n types deals with letting abstractions have polymorphic parameters such that a type can be quantified within another type, having its depth bounded by n (rank-\textbf{n}).
-For instance \autoref{lst:rankn} is not typable in Hindley-Milner since its type is \texttt{$\forall\tau$.($\forall\gamma$.$\gamma \rightarrow$ Int) $\rightarrow \tau \rightarrow$ Int}.
-\begin{lstlisting}[language=ML,caption={Program that requires rank-n types},label={lst:rankn},mathescape=true]
-fun f makeNum a =
-    ((makeNum a) + (makeNum 0)) + (makeNum (0 == 2))
+The Hindley-Milner type system is a constrained variant of more general type systems.
+The typed lambda caculus can come in various forms, the simplest of which is the simply typed lambda calculus (\autoref{fig:simpletyped}).
+Throughout this section we have explored a type system that introduces polymorphism and type constructors.
+
+\subsection{System F}
+System F generalizes the notion of polymorphism by letting terms become polymorphic within other polymorphic types.
+System F allows exotic types such as the signature $\forall a.\forall c.(\forall b.b \rightarrow \texttt{Int}) \rightarrow a \rightarrow c \rightarrow \texttt{Int}$, which could be a function that takes two potentially different typed values $a$ and $c$ and turns them into an integer and adds them (\autoref{lst:rankn}).
+\begin{lstlisting}[language=ML,caption={Rank 2 type in System F},label={lst:rankn},mathescape=true]
+fun f makeNum a c =
+    (makeNum a) + (makeNum c);
 \end{lstlisting}
-More generally, any type which is quantified on the left side of $\rightarrow$ cannot be moved out thus increases the rank.
+We say that a type has a rank when interesting ourselves with nested quantification.
+The type of by the function in \autoref{lst:rankn} requires rank-2 types to be expressible.
+Generally, when quantifiers occur on the left side of $\rightarrow$ they must be locally quantified thus they increase the rank.
+Unfortunately checking System F is undecidable, thus sound inference is not possible~\cite{wells1999typability}.
+%System F is very powerful, since there are no constraints on how types are quantified.
 
-Even languages which are typed and inferred by Hindley-Milner like Ocaml have introduced kinds through modules to allow higher-kinded types.
-Hindley-Milner is in fact a restricted version of another more general type system called \textit{System F} (and System F\underline{$\omega$}).
-The Hindley-Milner type system introduces abstractions as monomorphic types whereas System F allows any type to be polymorphic.
-It turns out that allowing higher rank polymorphism makes type inference (type reconstruction in older literature) \textit{undecidable}~\cite{wells1999typability}.
-\begin{remark}
-    Formal type systems are in their essence deductive systems, which have provable properties such as \textit{decidability}.
-    Decidability in deductive systems is a property which expresses whether a system can be decided by an algorithm (which relates to the encoding of algorithms on theoretic computers).
-    If and only if every valid formula (type) in the deductive system (type system) can have its correctness decided (and reconstructed if necessary) algorithmically.
-\end{remark}
+\subsection{System F\underline{$\omega$}}
+System F\underline{$\omega$} is orthogonal with System F, despite the similar name.
+System F\underline{$\omega$} introduces type constructors, which have already been explored.
+Generally, System F\underline{$\omega$} introduces a rule that allows types to become parameterized, like abstraction in the lambda calculus, such that a type that depends on a parameter $a$ may occur as $\lambda a.\tau$.
+For instance, a generalized tuple may be have the type $\lambda a.\lambda b.a \times b$.
+System F\underline{$\omega$} by itself is not of particular interest, since one cannot introduce generalized types without System F.
 
-Another variant of type system is \textit{System F\underline{$\omega$}}.
-System F\underline{$\omega$} introduces another feature (System F\underline{$\omega$} is different to System F, it is not an extension) called type constructors.
-It is uncommon to use System F\underline{$\omega$} on its own since it only allows type constructors of monomorphic types (System F introduces polymorphism), which does not yield much expressiveness since only specific types such as \texttt{Int $\rightarrow$ List Int} would be expressible.
-Throughout this chapter, type constructors have already been introduced in such a way that they can occur in Hindley-Milner though algebraic data types such as \texttt{$\forall$a.a $\rightarrow$ List a}.
-Very commonly, moderately generalized types need both the higher rank polymorphism implied by System F and the type constructors implied by System F\underline{$\omega$}.
+\subsection{Dependent types}
+System F\underline{$\omega$} and System F are orthogonal, but compliment each other well and can represent types similar to types that can occur in traditional programming languages.
+Dependent types on the other hand, introduce something quite different.
+Dependent types introduce the notion of letting types be a product of an expression.
+Allowing expressions to become a part of the type system, significantly increases the preciseness of types.
+Dependent types are the foundation of many theorem provers, since one can encode various problems into programs.
+For instance, one can precisely define the type for a matrix matrix multiplication.
+Let two matrices $m_1$ with the dimensions $i$ and $j$ encoded into $m_1$'s type, and $m_2$ with the dimensions $j$ and $j$ encoded into $m_2$'s type, be multiplied, then the resulting matrix $m_3$ has the dimensions $i$ and $k$.
 
-Hindley-Milner can only take advantage of System F\underline{$\omega$} for rank 1 types which significantly constrains the generalization level.
-A more expressive version of Hindley-Milner is System F$\omega$ which in fact, is the basis for the type system of Haskell, which is significantly more expressive than Hindley-Milner.
-\begin{remark}
-    Haskell has introduced some additional tweaks to System F$\omega$ to avoid the decidability problem among others.
-\end{remark}
+%The Hindley-Milner type system can only express relatively simple programs which robs algorithmic elegance in respect to other type systems.
+%One domain of programs that Hindley-Milner cannot express are those that rely on \textit{rank-n types}.
+%Rank-n types deals with letting abstractions have polymorphic parameters such that a type can be quantified within another type, having its depth bounded by n (rank-\textbf{n}).
+%For instance \autoref{lst:rankn} is not typable in Hindley-Milner since its type is \texttt{$\forall\tau$.($\forall\gamma$.$\gamma \rightarrow$ Int) $\rightarrow \tau \rightarrow$ Int}.
+%\begin{lstlisting}[language=ML,caption={Program that requires rank-n types},label={lst:rankn},mathescape=true]
+%fun f makeNum a =
+    %((makeNum a) + (makeNum 0)) + (makeNum (0 == 2))
+%\end{lstlisting}
+%More generally, any type which is quantified on the left side of $\rightarrow$ cannot be moved out thus increases the rank.
 
-In more expressive functional programming language type systems it has become increasingly popular abstract over implementations by introducing concepts from \textit{category theory}.
-Naturally many abstractions of category theory require rank-2 polymorphism.
-More generally the larger the level of polymorphism allowed the larger the possible abstraction level becomes.
-For instance a general purpose \textit{functor} is implementable and usable with rank-2 polymorphism while a natural transformation becomes a matter of rank-3 polymorphism.
-\begin{remark}
-    A functor is a mapping that maps from type constructor instance to another, which for instance can be a functor for lists which provides the algebra \texttt{$\forall$a.$\forall$b.List a $\rightarrow$ List b}.
-\end{remark}
-\noindent To generalize functor one must be able to express \textit{kinds} which are the types of type constructors denoted $* \rightarrow *$ for a type constructor that takes some type $*$ and creates some type $*$.
-$* \rightarrow *$ is a unary type constructor whereas $*$ is an atomic type like \texttt{Int} or \texttt{List Int}, since these types are fully applied.
-Kinds allow partial application on type constructors on a general level, since the only specific constraint is the shape and not where variables appear.
-The relaxation of type constructions allow various types to be generalized such as \texttt{a $\rightarrow$ b $\rightarrow$ M a b} which could also have the signature of \texttt{a $\rightarrow$ b $\rightarrow$ M b a} which kinds abstract over generalizing $M$ to $* \rightarrow * \rightarrow *$.
-The kind for \texttt{List} is $* \rightarrow *$ such that for any $\tau$ with kind $* \rightarrow *$ the type for functor map is \texttt{$\forall\tau$.($\forall$a.$\tau$a) $\rightarrow$ ($\forall$b.$\tau$b)}.
-\begin{remark}
-    Kinds are an abstraction which can exist purely theoretical without robbing the type system of expressiveness.
-    Just as some complications in type systems are resolved with weakening the type system or enriching the syntax, kinds can bu abstracted away into types~\cite{weirich2013system}.
-\end{remark}
+%Even languages which are typed and inferred by Hindley-Milner like Ocaml have introduced kinds through modules to allow higher-kinded types.
+%Hindley-Milner is in fact a restricted version of another more general type system called \textit{System F} (and System F\underline{$\omega$}).
+%The Hindley-Milner type system introduces abstractions as monomorphic types whereas System F allows any type to be polymorphic.
+%It turns out that allowing higher rank polymorphism makes type inference (type reconstruction in older literature) \textit{undecidable}~\cite{wells1999typability}.
+%\begin{remark}
+    %Formal type systems are in their essence deductive systems, which have provable properties such as \textit{decidability}.
+    %Decidability in deductive systems is a property which expresses whether a system can be decided by an algorithm (which relates to the encoding of algorithms on theoretic computers).
+    %If and only if every valid formula (type) in the deductive system (type system) can have its correctness decided (and reconstructed if necessary) algorithmically.
+%\end{remark}
 
-$\lambda$P introduces \textit{Dependent types} which lets types depend on terms in the language.
-A common example to show what dependent types can do is that of combining two lists $v_1$ and $v_2$ of size $n_1$ and $n_2$ into a list $v_3$ of size $n_1 + n_2$, where the size can be expressed in the type system.
-The signature for such a function in $L$ could be \texttt{$\forall a.$List $n_1$ a $\rightarrow$ List $n_2$ a $\rightarrow$ List $(n_1 + n_2)$ a}.
-Clearly one would have rules for lists such as a base case for the empty list \texttt{fun empty = Nil} with type \texttt{$\forall a.$List 0 a}, which indicates how the type system is lifted to a logical proofing tool.
+%Another variant of type system is \textit{System F\underline{$\omega$}}.
+%System F\underline{$\omega$} introduces another feature (System F\underline{$\omega$} is different to System F, it is not an extension) called type constructors.
+%It is uncommon to use System F\underline{$\omega$} on its own since it only allows type constructors of monomorphic types (System F introduces polymorphism), which does not yield much expressiveness since only specific types such as \texttt{Int $\rightarrow$ List Int} would be expressible.
+%Throughout this chapter, type constructors have already been introduced in such a way that they can occur in Hindley-Milner though algebraic data types such as \texttt{$\forall$a.a $\rightarrow$ List a}.
+%Very commonly, moderately generalized types need both the higher rank polymorphism implied by System F and the type constructors implied by System F\underline{$\omega$}.
+
+%Hindley-Milner can only take advantage of System F\underline{$\omega$} for rank 1 types which significantly constrains the generalization level.
+%A more expressive version of Hindley-Milner is System F$\omega$ which in fact, is the basis for the type system of Haskell, which is significantly more expressive than Hindley-Milner.
+%\begin{remark}
+    %Haskell has introduced some additional tweaks to System F$\omega$ to avoid the decidability problem among others.
+%\end{remark}
+
+%In more expressive functional programming language type systems it has become increasingly popular abstract over implementations by introducing concepts from \textit{category theory}.
+%Naturally many abstractions of category theory require rank-2 polymorphism.
+%More generally the larger the level of polymorphism allowed the larger the possible abstraction level becomes.
+%For instance a general purpose \textit{functor} is implementable and usable with rank-2 polymorphism while a natural transformation becomes a matter of rank-3 polymorphism.
+%\begin{remark}
+    %A functor is a mapping that maps from type constructor instance to another, which for instance can be a functor for lists which provides the algebra \texttt{$\forall$a.$\forall$b.List a $\rightarrow$ List b}.
+%\end{remark}
+%\noindent To generalize functor one must be able to express \textit{kinds} which are the types of type constructors denoted $* \rightarrow *$ for a type constructor that takes some type $*$ and creates some type $*$.
+%$* \rightarrow *$ is a unary type constructor whereas $*$ is an atomic type like \texttt{Int} or \texttt{List Int}, since these types are fully applied.
+%Kinds allow partial application on type constructors on a general level, since the only specific constraint is the shape and not where variables appear.
+%The relaxation of type constructions allow various types to be generalized such as \texttt{a $\rightarrow$ b $\rightarrow$ M a b} which could also have the signature of \texttt{a $\rightarrow$ b $\rightarrow$ M b a} which kinds abstract over generalizing $M$ to $* \rightarrow * \rightarrow *$.
+%The kind for \texttt{List} is $* \rightarrow *$ such that for any $\tau$ with kind $* \rightarrow *$ the type for functor map is \texttt{$\forall\tau$.($\forall$a.$\tau$a) $\rightarrow$ ($\forall$b.$\tau$b)}.
+%\begin{remark}
+    %Kinds are an abstraction which can exist purely theoretical without robbing the type system of expressiveness.
+    %Just as some complications in type systems are resolved with weakening the type system or enriching the syntax, kinds can bu abstracted away into types~\cite{weirich2013system}.
+%\end{remark}
+
+%$\lambda$P introduces \textit{Dependent types} which lets types depend on terms in the language.
+%A common example to show what dependent types can do is that of combining two lists $v_1$ and $v_2$ of size $n_1$ and $n_2$ into a list $v_3$ of size $n_1 + n_2$, where the size can be expressed in the type system.
+%The signature for such a function in $L$ could be \texttt{$\forall a.$List $n_1$ a $\rightarrow$ List $n_2$ a $\rightarrow$ List $(n_1 + n_2)$ a}.
+%Clearly one would have rules for lists such as a base case for the empty list \texttt{fun empty = Nil} with type \texttt{$\forall a.$List 0 a}, which indicates how the type system is lifted to a logical proofing tool.
 
 \begin{figure}
     \centering
@@ -1177,16 +1210,18 @@ Clearly one would have rules for lists such as a base case for the empty list \t
             \item$\lambda\rightarrow$ is the simply typed lambda calculus without polymorphism.
             \item$\lambda\underline{\omega}$ is System F\underline{$\omega$}.
             \item$\lambda 2$ is System F.
-            \item$\lambda\omega$ is System F$\omega$.
-            \item$\Pi$ introduces \textit{dependent types} which is beyond the scope of this thesis.
+            \item$\Pi$ introduces dependent types.
+            \item Various combinations of the aforementioned type systems can occur as they are combined by the diagram.
+              For instance, $\lambda\omega$ is System F$\omega$, the combination of $\lambda2$ and $\lambda\underline{\omega}$.
         \end{itemize}
     }
     \label{lambdacube}
 \end{figure}
 \autoref{lambdacube} shows the \textit{lambda cube}, introduced in \cite{barendregt1991introduction} which encapsulates the family of formal type systems.
-Complicated type system such as the \textit{calculus of constructions} ($\lambda\Pi\underline{\omega}$) are used in proof assistants since they essentially are deduction systems.
+%Complicated type system such as the \textit{calculus of constructions} ($\lambda\Pi\underline{\omega}$) are used in proof assistants since they essentially are deduction systems.
 \section{Concluding remarks}
 This section should act as an introduction to more general type systems and where Hindley-Milner is placed on the type system map.
+Hindley-Milner by itself, is a retrofitted version of System F.
 Hindley-Milner is a small part of a larger more general system which has significant impact on the extensibility of Hindley-Milner.
 Some very renown functional programming languages began by implementing Hindley-Milner as their type system since it is very fast in practice and relatively simple to implement.
 
