@@ -1,6 +1,3 @@
-\documentclass[11pt,oneside,a4paper]{report}
-
-\begin{document}
 \section{High level abstractions}\label{sec:highlevel}
 The lambda calculus is a powerful language that can express any algorithm.
 Expressiveness does not necessarily imply ergonomics or elegance, in fact encoding moderately complicated algorithms in lambda calculus becomes quite messy.
@@ -101,6 +98,35 @@ fun main =
 \end{lstlisting}
 \end{exmp}
 
+\subsection{Remark on scott encoded algebraic data types}
+Scott encoding provides a method of encoding algebraic data types into the lambda calculus without expanding the language of lambda calculus.
+Scott encoding has a big drawback, once one considers expanding pattern matching.
+Nested pattern matching is a commonly used feature, in intricate algorithms (for instance in~\cite{okasaki1999red}).
+If one was to transform pattern nested pattern matching for \autoref{lst:nestedadt}, one would have to consider the implications.
+\begin{figure}
+\begin{lstlisting}[language=ML,caption={Nested pattern match},label={lst:nestedadt}]
+fun sum2 l =
+  match l
+    | Cons x (Cons y ys) -> x + y;
+    | _ -> 0;
+  ;
+\end{lstlisting}
+\end{figure}
+l requires a handler for \texttt{Cons} and \texttt{Nil}, so what are the correct handlers?
+If one were to write it out in handle form, the program would come out as in \autoref{lst:nestedadtcall}.
+One would have to perform quite a bit of non-trivial introspection to figure out what handler to use.
+\begin{figure}
+\begin{lstlisting}[language=ML,caption={Nested pattern match in handle form},label={lst:nestedadtcall}]
+fun sum2 l =
+  fun onNil = 0;
+  fun onConsfirst x xs = 
+    fun onConssecond y ys =
+      x + y;
+    xs onConssecond onNil;
+  l onConsfirst onNil;
+\end{lstlisting}
+\end{figure}
+
 %Efficiency can be a bit tricky in lambda calculus as it is at the mercy of implementation.
 %A common method of considering efficiency is counting \textit{$\beta$-reduction} since they evaluate to function invocations.
 %The $\beta$-reduction is a substitution which substitutes an application where the left side is an abstraction in witch the bound variable is substituted with the right side term (\autoref{eq:betareduction}). 
@@ -114,4 +140,3 @@ fun main =
 
 
 
-\end{document}

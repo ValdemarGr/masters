@@ -17,30 +17,37 @@ object ReductionMachine {
 
     final case class LCTVar(name: String) extends LCTExp {
       val trimmer = Set(name)
+      override def toString = s"$name"
     }
 
     final case class LCTApplication(l: LCTExp, r: LCTExp) extends LCTExp {
       val trimmer = l.trimmer union r.trimmer
+      override def toString = s"($l $r)"
     }
 
     final case class LCTAbstration(param: String, body: LCTExp) extends LCTExp {
       val trimmer = body.trimmer - param
+      override def toString = s"\\$param.$body"
     }
 
     final case class LCTLet(name: String, body: LCTExp, in: LCTExp) extends LCTExp {
       val trimmer = (body.trimmer union in.trimmer) - name
+      override def toString = s"let $name = ($body) in $in"
     }
 
     final case class LCTIf(exp: LCTExp, truth: LCTExp, falsity: LCTExp) extends LCTExp {
       val trimmer = (exp.trimmer union truth.trimmer union falsity.trimmer)
+      override def toString = s"if ($exp) ($truth) else ($falsity)"
     }
 
     final case class LCTNumber(n: Int) extends LCTExp {
       val trimmer = Set.empty
+      override def toString = s"$n"
     }
 
     final case class LCTBinOp(l: LCTExp, op: BuiltinOperator, r: LCTExp) extends LCTExp {
       val trimmer = l.trimmer union r.trimmer
+      override def toString = s"($l $op $r)"
     }
 
     def fromLCTerms(lc: LCExp): LCTExp = lc match {
@@ -213,6 +220,7 @@ object ReductionMachine {
   //var timeAtLast: Long = 0
   var timeAtStart: Long = 0
   def eval(he: DualHeap, exp: LCTExp, ns: N, env: Environment, ctx: Context, gf: GCFuture): Eval[(DualHeap, LCTExp, N, Environment, Context, GCFuture)] = {
+    //println(s"$exp")
     //val currentTime = System.currentTimeMillis()
     //val deltams = 100 
     //if (currentTime - deltams > timeAtLast) {
@@ -220,12 +228,12 @@ object ReductionMachine {
       //timeAtLast = System.currentTimeMillis
     //}
     //println(s"runnig with $gamma $stack $exp $ctx")
-    val (gamma, gcFuture) = if (math.random() < 0.3) {
+    val (gamma, gcFuture) = if (math.random() < 0.001) {
       if (gcStrategy == sync) {
         //val newHeap = syncGarbageCollect(he.live.mapValues(_._1), exp :: ns, Map.empty)
         val newHeap = parallelGarbageCollect(he.swap, (exp, env) :: ns, Map.empty)
           val t = System.currentTimeMillis - timeAtStart
-          println(s"(${t}, ${he.size}) (${t + 1}, ${newHeap.size})")
+          //println(s"(${t}, ${he.size}) (${t + 1}, ${newHeap.size})")
         (new DualHeap(newHeap, Map.empty), None)
         //(new DualHeap(newHeap.mapValues(e => (e, 0)), Map.empty), None)
       } else if (gcStrategy == none) {
@@ -246,7 +254,7 @@ object ReductionMachine {
           val dhprime = new DualHeap(newHe.live, newIdle)
           //println(s"total size is ${dhprime.size}, previous was ${he.size} eval time ${System.currentTimeMillis - timeAtStart}")
           val t = System.currentTimeMillis - timeAtStart
-          println(s"(${t}, ${he.size}) (${t + 1}, ${dhprime.size})")
+          //println(s"(${t}, ${he.size}) (${t + 1}, ${dhprime.size})")
           (dhprime, None)
         } else {
           (newHe, Some(futGc))

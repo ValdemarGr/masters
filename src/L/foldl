@@ -1,0 +1,38 @@
+type List a = 
+  | Nil
+  | Cons a (List a)
+;
+
+fun add a b = a + b;
+
+fun foldl f z l =
+  match l
+    | Nil -> z;
+    | Cons x xs ->
+      foldl f (f x z) xs;
+  ;
+
+fun range n s =
+  if (n == s) 
+    Nil;
+  else
+    (Cons s (range n (s + 1)));
+  ;
+
+fun inf from =
+  Cons from (inf (from + 1));
+
+fun take l n =
+  if (n == 0) 
+    Nil;
+  else
+    match l
+      | Nil -> Nil;
+      | Cons x xs -> Cons x (take xs (n - 1));
+    ;
+  ;
+
+fun main =
+  let longlist = inf 1;
+  foldl add 0 (take longlist 1000);
+

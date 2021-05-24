@@ -1,5 +1,4 @@
 \section{Notation}
-\subsection{Functions and implementations}
 Some functions are written in pattern matching style.
 Functions which have parameters that can take different values or shapes can implement a case for each value or shape.
 For instance, a function which finds the cardinality of a set can be implemented as in \autoref{eq:notation:card}.
@@ -15,4 +14,19 @@ Subexpressions are denoted with \texttt{where} when some expression is a composi
   \texttt{fib(n) }&\texttt{= F$_\texttt{n-1}$ + F$_\texttt{n-2}$} \tag*{} \\
   \wherecase{F$_\texttt{n-1}$ = fib(n - 1)},\tag*{}\\
   \extracase{F$_\texttt{n-2}$ = fib(n - 2)}\tag*{}
+\end{align}
+Functions can also contain nested functions such as in \autoref{eq:nested}.
+\begin{align}
+  \texttt{double(n) }&\texttt{= k + id(n)} \label{eq:nested} \\
+  \wherecase{id(x) = x,} \tag*{}\\
+  \extracase{k = id(n)} \tag*{}
+\end{align}
+Finally, conditional cases may also occur in functions such that the choice of action is dependent on a predicate.
+The function in \autoref{eq:cases} increments \texttt{n} in the case that it is even, else it returns it.
+\begin{align}
+  \texttt{makeOdd(n) }&\texttt{=} 
+  \begin{cases}
+    \texttt{n + 1} & \texttt{ if n \texttt{mod} 2 = 0 }\\
+    \texttt{n} & 
+  \end{cases}\label{eq:cases} 
 \end{align}
