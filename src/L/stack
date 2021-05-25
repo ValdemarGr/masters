@@ -1,0 +1,38 @@
+type Maybe a =
+  | Nothing
+  | Just a
+;
+type TupleAttr a b = Tuple a b;
+type List a =
+  | Nil
+  | Cons a (List a)
+;
+type StackAttributes a = Stack (Int) (List a);
+
+fun push s x = 
+  match s
+    | Stack n xs -> Stack (n + 1) (Cons x xs);
+  ;
+
+fun pop s =
+  match s
+    | Stack n xs ->
+      match xs
+        | Nil -> Tuple Nothing s;
+        | Cons x rest -> Tuple (Just x) (Stack (n - 1) rest);
+      ;
+  ;
+
+fun main =
+  let emptyStack = Stack 0 Nil;
+  let s = push (push emptyStack 1) 2;
+  match (pop s)
+    | Tuple m rest ->
+      match (pop rest)
+        | Tuple v s -> 
+          match v
+            | Just x -> x;
+            | Nothing -> 0;
+          ;
+      ;
+  ;

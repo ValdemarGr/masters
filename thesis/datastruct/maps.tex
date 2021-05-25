@@ -1,0 +1,273 @@
+\section{Tables, hashes, colors and tries}
+A mapping of variables to some other domain are a very common occurrence throughout the previous sections.
+Hash tables are data structures that provide very good probabilistic bounds for such mappings.
+Unfortunately, hash tables build upon mutability, thus do not provide the property of persistence that we require.
+Fortunately, some data structures are better fitted for persistence than others.
+
+In this section we will explore two types persistent types of associative data structures, the red-black tree and the hash array mapped trie.
+
+\subsection{Red-black trees}
+Trees are very common data-structures because of their inherit guarantees.
+A \textit{nodes} is a containers of some key and value, as depicted in \autoref{fig:anode}.
+The key of a node is it's identity, such that one can query the tree for the associated value.
+Nodes occur in trees such as in \autoref{fig:atree}, where the \textit{root} of the tree is the topmost node (the root of \autoref{fig:atree} is $2$).
+A node can have children, which are the nodes directly below it.
+A node with no children, is called a leaf.
+A sub-tree is the tree that is formed by letting a node that is otherwise a child, be a root.
+A parent of a node $c$ is the node $p$ that has $c$ as a child.
+A grandparent of a node is the node's parent's parent.
+A path $p$ from the root $l$ to $o$ is a sequence of nodes $l \rightarrow \dots \rightarrow o$, such that the length of $p$, denoted $\#p$, is the number of nodes that occur in the path.
+There are various orderings one can impose on a tree, but we will maintain the invariants that all sub-trees left of a node will have keys that are smaller than the key of that node and all sud-trees right of a node will have keys that are larger than the key of that node.
+A balanced tree, is tree of size $n$ where no one node is further than $\ceil{\log_2 n}$ from the root.
+Trees can be a very useful representation of stored data, since finding a value in a balanced tree requires one to visit at most $\ceil{\log_2 n}$ nodes since that is the furthest (the number of nodes between) a node can be from the root.
+Searching for a key $k$ in a tree which maintains the previously established ordering invariant, is a matter of beginning at the root and determining if the root's key $r$ has the same key, if not then the left tree is visited if $r > k$ else the right tree is visited.
+\begin{figure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',level/.style={sibling distance = 5cm/#1,
+      level distance = 1.5cm}] 
+
+      \node [arn_n] {1};
+    \end{tikzpicture}
+    \caption{A node}
+    \label{fig:anode}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',level/.style={sibling distance = 1cm/#1,
+      level distance = 1.5cm}] 
+
+      \node [arn_n] {2}
+        child {
+          node [arn_n] {1}
+        }
+        child {
+          node [arn_n] {3}
+        };
+    \end{tikzpicture}
+    \caption{A tree}
+    \label{fig:atree}
+  \end{subfigure}
+  \caption{}
+  \label{fig:nodeandtree}
+\end{figure}
+
+Trees by themselves are very open for interpretation, since they specify nothing of how keys are inserted and deleted.
+An very popular variant, which we will interest ourselves in is the red-black tree~\cite{bayer1972symmetric}.
+A variant of the red-black tree which we will interest ourselves in is the Okasaki variant~\cite{okasaki1999red}.
+In a red-black tree, every leaf node is a node with no key or value, called an empty node.
+Furthermore, in a red-black tree every node is enhanced with a color, which is either black or red, hence the name.
+A red-black tree has two invariants that must be upheld.
+\begin{itemize}
+  \item No red node has a red parent.
+  \item Every path from the root to an empty node contains the same number of black nodes.
+\end{itemize}
+Maintaining these two invariants, the worst case for searching becomes worse than a balanced tree, but only by a constant factor.
+The shortest possible path from an empty node to a root must be the path that only contains black nodes.
+The longest possible path from an empty node to the root must be the path with nodes alternating between black and red.
+If all other paths than one contain only black nodes $p_1 \equiv p_2 \dots \equiv p_k$ where $p_b = (\#p_1) = (\#p_2) \dots = (\#p_k)$, where the path $p_r$ contains an alternating sequence black and red, then the worst case must be searching for last node of of $p_r$.
+Visiting $p_b$ steps of $p_r$ must take us halfway since $\frac{\#p_r}{2} = p_b$ by invariant two; $\#(\textit{red}_1 \rightarrow \textit{black}_2 \dots \rightarrow \textit{red}_{p_b - 1} \rightarrow \textit{black}_{p_b})$, thus the whole path must be the double of $p_b$, $(\#p_r) = 2p_b$.
+The worst case for $\#p_r$ is $n = k p_b + (\#p_r) = k p_b + 2 p_b$ and $\frac{n}{k p_b} = \#p_r$ and can be found by realizing that $p_b < \log_2 n$ such that $2p_b = (\#p_r) < 2\log_2 n$ which asymptotically becomes $\#p_r < O(2\log_2 n) = O(\log_2 n)$.
+
+\subsubsection{Insertion}
+Insertion is the first practical problem we will tackle in the red-black tree.
+In~\cite{okasaki1999red} presents an elegant algorithm for insertion.
+Observe that by inserting a node naively, one might violate one of the two invariants.
+When we insert a node, we perform an act of \textit{rebalancing}.
+Rebalancing is an action that guarantees that the tree will maintain the two aforementioned invariants after action has occurred on the tree.
+When inserting a node, the node must colored red and always be placed in the bottom of the tree by searching for a position, while maintaining the ordering of the tree.
+When the node has been placed, rebalancing is performed on the way back up such that violations of the two invariants, are floated up throughout the tree until the root is encountered, and then the root is colored black.
+Consider that inserting a node at the leaf, may only cause a violation if the parent node of the one inserted is also red; if the parent node is black, then the invariants hold.
+When considering insertion (and rebalancing), the property that the red-black tree was in a state that upheld the invariants is always maintained.
+There are two types of \textit{rotations} (and two reflections for each rotation) we must perform to balance the tree after a violation.
+Rotations are the act of moving nodes around such that they maintain the invariants.
+Rotations are considered only for nodes that have grandparents (or conversely, nodes that have grandchildren).
+For a node that has grandchildren there are four cases that may violate the invariant (again, two reflections for each rotation), which is depicted in \autoref{fig:rbrot}.
+These rotations satisfy the second invariant, since for all rotations the same number of black nodes are present above \texttt{a, b, c} and \texttt{d}.
+Furthermore, notice that the red node in \autoref{fig:rbrot:end} may have a red parent, this violation is only temporary, since the tree is rebalanced in reverse order of the search path.
+The insertion algorithm can elegantly be encoded into the programming language, given support for nested pattern matching (\autoref{sec:remscott}).
+An implementation (give that the language supports nested pattern matching) has been presented in \autoref{lst:rbimpl}.
+
+The number of nodes to visit when searching for a position to place the new node is at most $O(\log_2 n)$ time.
+The time for one \texttt{balance} is at most $1$ invocation, the \texttt{balance} function is invoked for each travelled node thus it is invoked $O(\log_2 n)$ times, which implies that the combined insertion time is $O(\log_2 n)$.
+
+\subsubsection{Deletion}
+Deletion in red-black trees is a more complicated than insertion.
+Deletion of a black node can imply a much larger range of rotations than insert otherwise would.
+In~\cite{germane2014deletion}, an algorithm for deletion is presented.
+The algorithm, inspired by the Okasaki red-black tree, solves deletion in a similar method as insertion.
+When a deletion deletes a black node, then the tree will no longer satisfy the black node invariant.
+The black node invariant is then restored by introducing a double black node.
+After this double black node has been introduced, a recursive algorithm, similar to the \texttt{balance} algorithm, removes all double black nodes by performing rotations.
+The semantics of the rotations can be further investigated in~\cite{germane2014deletion}.
+
+\begin{figure}[p]
+  \begin{mdframed}
+    \begin{subfigure}[b]{1\textwidth}
+      \centering
+      \begin{tikzpicture}[->,>=stealth',level/.style={sibling distance = 1.6cm/#1,
+        level distance = 1.5cm}] 
+
+        \node [arn_b] {z}
+          child {
+            node [arn_r] {x}
+            child {
+              node [arn_l] {a}
+            }
+            child {
+              node [arn_r] {y}
+              child {
+                node [arn_l] {b}
+              }
+              child {
+                node [arn_l] {c}
+              }
+            }
+          }
+          child {
+            node [arn_l] {d}
+          };
+      \end{tikzpicture}
+      \caption{}
+      \label{fig:rbrot:c1}
+    \end{subfigure}
+    \begin{subfigure}[b]{1\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \draw[implies-,double equal sign distance] (1,1) -- (1,2);
+      \end{tikzpicture}
+    \end{subfigure}
+
+    \begin{subfigure}[b]{0.25\textwidth}
+      \centering
+      \begin{tikzpicture}[->,>=stealth',level/.style={sibling distance = 1.6cm/#1,
+        level distance = 1.5cm}] 
+
+        \node [arn_b] {z}
+          child {
+            node [arn_r] {y}
+            child {
+              node [arn_r] {x}
+              child {
+                node [arn_l] {a}
+              }
+              child {
+                node [arn_l] {b}
+              }
+            }
+            child {
+              node [arn_l] {c}
+            }
+          }
+          child {
+            node [arn_l] {d}
+          };
+      \end{tikzpicture}
+      \caption{}
+      \label{fig:rbrot:c2}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.1\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \draw[-implies,double equal sign distance] (1,1) -- (2,1);
+      \end{tikzpicture}
+      \vspace*{2cm}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.25\textwidth}
+      \centering
+      \begin{tikzpicture}[->,>=stealth',level/.style={sibling distance = 1.6cm/#1,
+        level distance = 1.5cm}] 
+
+        \node [arn_r] {y}
+          child {
+            node [arn_b] {x}
+            child {
+              node [arn_l] {a}
+            }
+            child {
+              node [arn_l] {b}
+            }
+          }
+          child {
+            node [arn_b] {z}
+            child {
+              node [arn_l] {c}
+            }
+            child {
+              node [arn_l] {d}
+            }
+          };
+      \end{tikzpicture}
+      \caption{}
+      \label{fig:rbrot:end}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.1\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \draw[implies-,double equal sign distance] (1,1) -- (2,1);
+      \end{tikzpicture}
+      \vspace*{2cm}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.25\textwidth}
+      \centering
+      \begin{tikzpicture}[->,>=stealth',level/.style={sibling distance = 1.6cm/#1,
+        level distance = 1.5cm}] 
+
+        \node [arn_b] {x}
+          child {
+            node [arn_l] {a}
+          }
+          child {
+            node [arn_r] {y}
+            child {
+              node [arn_l] {b}
+            }
+            child {
+              node [arn_r] {z}
+              child {
+                node [arn_l] {c}
+              }
+              child {
+                node [arn_l] {d}
+              }
+            }
+          };
+      \end{tikzpicture}
+    \end{subfigure}
+
+    \begin{subfigure}[b]{1\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \draw[implies-,double equal sign distance] (1,2) -- (1,1);
+      \end{tikzpicture}
+    \end{subfigure}
+    \begin{subfigure}[b]{1\textwidth}
+      \centering
+      \begin{tikzpicture}[->,>=stealth',level/.style={sibling distance = 1.6cm/#1,
+        level distance = 1.5cm}] 
+
+        \node [arn_b] {x}
+          child {
+            node [arn_l] {a}
+          }
+          child {
+            node [arn_r] {z}
+            child {
+              node [arn_r] {y}
+              child {
+                node [arn_l] {b}
+              }
+              child {
+                node [arn_l] {c}
+              }
+            }
+            child {
+              node [arn_l] {d}
+            }
+          };
+      \end{tikzpicture}
+    \end{subfigure}
+  \end{mdframed}
+  \caption{Red-black tree rotations}
+  \label{fig:rbrot}
+\end{figure}

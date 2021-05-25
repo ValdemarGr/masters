@@ -7,6 +7,7 @@
 \usepackage{bussproofs}
 \usepackage{standalone}
 \usepackage{amsmath}
+\usepackage{mathtools}
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{float}
@@ -29,6 +30,22 @@
 \addbibresource{bib.bib}
 
 \usetikzlibrary{matrix,fit,trees,arrows,arrows.meta,positioning}
+\tikzset{
+  treenode/.style = {align=center, inner sep=0pt, text centered,
+    font=\sffamily},
+  arn_b/.style = {treenode, circle, white, font=\sffamily\bfseries, draw=black,
+    fill=black, text width=1.5em},% arbre rouge noir, noeud noir
+  arn_n/.style = {treenode, circle, black, draw=black,
+    fill=none, text width=1.5em},% arbre rouge noir, noeud noir
+  arn_r/.style = {treenode, circle, red, draw=red, 
+    text width=1.5em, very thick},% arbre rouge noir, noeud rouge
+  arn_l/.style = {treenode, circle, black, draw=none, 
+    fill=none, text width=1.5em},% arbre rouge noir, noeud rouge
+  arn_x/.style = {treenode, rectangle, draw=black,
+    minimum width=0.5em, minimum height=0.5em}% arbre rouge noir, nil
+}
+
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
 
 \theoremstyle{plain}
 \newtheorem{lemma}{Lemma}[section]
@@ -142,7 +159,7 @@
 
 \input{intro/intro}
 
-\part{Compilers and languages}
+%\part{Compilers and languages}
 
 \input{prog/prog}
 
@@ -152,7 +169,7 @@
 
 %\part{Algorithms and Datastructures}
 
-%\input{prerequisites/prerequisites}
+\input{datastruct/datastruct}
 
 %\bibliography{bib.bib}{}
 %\bibliographystyle{plain}

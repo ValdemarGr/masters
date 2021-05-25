@@ -1,8 +1,12 @@
 \chapter{Program evaluation}
-The untyped lambda calculus may provide a simple interface for programming but does not pair very well with the modern computer.
+The untyped lambda calculus may provide a simple interface for programming, but does not pair very well with the modern computer.
 \textit{Interpreting} is a common technique for evaluating the untyped lambda calculus.
-An interpreter is an execution engine usually implemented in a more low-level language.
+An interpreter is an algorithm, usually implemented in a more low-level language, which interprets a program; essentially a program that runs a program.
+
+Throughout this section, we will first consider various evaluation strategies and then consider how one evaluates the lambda calculus.
+%Some machines keeps the lambda calculus typed for tasks such as evaluation
 %Formally an interpreter for the untyped lambda calculus is a confluent catamorphism on a program, which sounds like \textit{abstract nonsense}, so let us delve into the details.
+\clearpage
 
 \input{evaluation/evalstrat}
 

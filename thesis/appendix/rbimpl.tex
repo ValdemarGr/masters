@@ -1,0 +1,62 @@
+
+\begin{lstlisting}[breaklines=true,language=ML,caption={Red-black tree implementation},label={lst:rbimpl},mathescape=true]
+type Color = 
+  | R
+  | B
+;
+type Tree = 
+  | E 
+  | T (Color) (Tree (Int)) (Int) (Tree (Int))
+;
+type Boolean = 
+  | False
+  | True
+;
+fun member x t =
+  match t
+    | E -> False;
+    | T c a y b ->
+      if (x < y)
+        member x a;
+      else
+        if (x == y)
+          True;
+        else
+          member x b;
+        ;
+      ;
+  ;
+fun makeBlack t =
+  match t
+    | T c a y b -> T B a y b;
+  ;
+fun ins x s =
+  match s
+    | E -> T R E x E;
+    | T color a y b -> 
+      if (x < y)
+        balance c (ins a) y b;
+      else
+        if (x == y)
+          T color a y b;
+        else
+          balance color a y (ins b);
+        ;
+      ;
+  ;
+
+fun insert x s = makeBlack (ins x s);
+
+fun balance c a x b =
+  match (T c a x b)
+    | T B (T R (T R a x b) y c) z d -> 
+      T R (T B a x b) y (T B c z d);
+    | T B (T R a x (T R b y c)) z d ->
+      T R (T B a x b) y (T B c z d);
+    | T B a x (T R (T R b y c) z d) ->
+      T R (T B a x b) y (T B c z d);
+    | T B a x (T R b y (T R c z d)) ->
+      T R (T B a x b) y (T B c z d);
+    | T color a x b -> T color a x b;
+  ;
+\end{lstlisting}
