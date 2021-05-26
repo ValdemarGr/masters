@@ -1,0 +1,4 @@
+
+fun add a b = a + b;
+
+fun main = 1;

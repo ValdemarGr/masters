@@ -88,8 +88,12 @@ object Main extends IOApp {
     folded
       .flatMap(parse)
       .map(ir.trans.IntoLC.entrypoint)
+      .flatTap(x => IO(tt.LCTChecker.entrypoint(x)).attempt.flatMap{
+        case Right(t) => IO(println(s"completed with type $t"))
+        case Left(t) => IO(println(s"failed to type with error ${t.getMessage}"))
+      })
       .flatTap(x => IO(println(x)))
-      .map(runtime.ReductionMachine.run)
+      .map(x => runtime.ReductionMachine.run(x))
       .flatTap(x => IO(println(x))).as(ExitCode.Success)
 
     //val files = args.filter(x => x != asScheme)
