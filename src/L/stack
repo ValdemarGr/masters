@@ -26,6 +26,7 @@ fun pop s =
 fun main =
   let emptyStack = Stack 0 Nil;
   let s = push (push emptyStack 1) 2;
+  let i = 22;
   match (pop s)
     | Tuple m rest ->
       match (pop rest)

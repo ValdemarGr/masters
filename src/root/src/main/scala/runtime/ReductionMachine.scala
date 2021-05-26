@@ -21,22 +21,22 @@ object ReductionMachine {
     }
 
     final case class LCTApplication(l: LCTExp, r: LCTExp) extends LCTExp {
-      val trimmer = l.trimmer union r.trimmer
+      val trimmer = l.trimmer.union(r.trimmer)
       override def toString = s"($l $r)"
     }
 
     final case class LCTAbstration(param: String, body: LCTExp) extends LCTExp {
       val trimmer = body.trimmer - param
-      override def toString = s"\\$param.$body"
+      override def toString = s"(\\$param.$body)"
     }
 
     final case class LCTLet(name: String, body: LCTExp, in: LCTExp) extends LCTExp {
-      val trimmer = (body.trimmer union in.trimmer) - name
-      override def toString = s"let $name = ($body) in $in"
+      val trimmer = (body.trimmer.union(in.trimmer)) - name
+      override def toString = s"let $name = ($body) in \n$in"
     }
 
     final case class LCTIf(exp: LCTExp, truth: LCTExp, falsity: LCTExp) extends LCTExp {
-      val trimmer = (exp.trimmer union truth.trimmer union falsity.trimmer)
+      val trimmer = exp.trimmer.union(truth.trimmer).union(falsity.trimmer)
       override def toString = s"if ($exp) ($truth) else ($falsity)"
     }
 
@@ -46,17 +46,17 @@ object ReductionMachine {
     }
 
     final case class LCTBinOp(l: LCTExp, op: BuiltinOperator, r: LCTExp) extends LCTExp {
-      val trimmer = l.trimmer union r.trimmer
+      val trimmer = l.trimmer.union(r.trimmer)
       override def toString = s"($l $op $r)"
     }
 
     def fromLCTerms(lc: LCExp): LCTExp = lc match {
-      case LCName(name) => LCTVar(name)
-      case LCApplication(l, p) => LCTApplication(fromLCTerms(l), fromLCTerms(p))
-      case LCFunction(_, name, body) => LCTAbstration(name.name, fromLCTerms(body))
-      case LCNumber(n) => LCTNumber(n)
-      case LCIf(exp, fst, snd) => LCTIf(fromLCTerms(exp), fromLCTerms(fst), fromLCTerms(snd))
-      case LCLet(name, exp, in) => LCTLet(name, fromLCTerms(exp), fromLCTerms(in))
+      case LCName(name)                  => LCTVar(name)
+      case LCApplication(l, p)           => LCTApplication(fromLCTerms(l), fromLCTerms(p))
+      case LCFunction(_, name, body)     => LCTAbstration(name.name, fromLCTerms(body))
+      case LCNumber(n)                   => LCTNumber(n)
+      case LCIf(exp, fst, snd)           => LCTIf(fromLCTerms(exp), fromLCTerms(fst), fromLCTerms(snd))
+      case LCLet(name, exp, in)          => LCTLet(name, fromLCTerms(exp), fromLCTerms(in))
       case LCTerminalOperation(l, op, r) => LCTBinOp(fromLCTerms(l), op, fromLCTerms(r))
     }
   }
@@ -72,7 +72,7 @@ object ReductionMachine {
     val idle: Map[Variable, (LCTExp, Environment, Timestamp)]
   ) {
     def size = live.size + idle.size
-    def get(name: Variable): (LCTExp, Environment, Timestamp) = 
+    def get(name: Variable): (LCTExp, Environment, Timestamp) =
       (live.get(name), idle.get(name)) match {
         case (Some((e1, env1, t1)), Some((e2, env2, t2))) =>
           if (t1 > t2) (e1, env1, t1)
@@ -107,22 +107,22 @@ object ReductionMachine {
   }
 
   //def subst(f: Variable, t: Variable, exp: LCTExp): LCTExp = exp match {
-    //case LCFunction(m, x, e) =>
-      //if (x.name == f) exp
-      //else LCFunction(m, x, subst(f, t, e))
-    //case LCName(x) =>
-      //if (x == f) LCName(t)
-      //else LCName(x)
-    //case LCApplication(fst, snd) =>
-      //LCApplication(subst(f, t, fst), subst(f, t, snd))
-    //case LCTerminalOperation(lh, op, rh) =>
-      //LCTerminalOperation(subst(f, t, lh), op, subst(f, t, rh))
-    //case LCIf(exp, fst, snd) =>
-      //LCIf(subst(f, t, exp), subst(f, t, fst), subst(f, t, snd))
-    //case LCLet(name, exp, in) =>
-      //if (name == f) LCLet(name, exp, in)
-      //else LCLet(name, subst(f, t, exp), subst(f, t, in))
-    //case x => x
+  //case LCFunction(m, x, e) =>
+  //if (x.name == f) exp
+  //else LCFunction(m, x, subst(f, t, e))
+  //case LCName(x) =>
+  //if (x == f) LCName(t)
+  //else LCName(x)
+  //case LCApplication(fst, snd) =>
+  //LCApplication(subst(f, t, fst), subst(f, t, snd))
+  //case LCTerminalOperation(lh, op, rh) =>
+  //LCTerminalOperation(subst(f, t, lh), op, subst(f, t, rh))
+  //case LCIf(exp, fst, snd) =>
+  //LCIf(subst(f, t, exp), subst(f, t, fst), subst(f, t, snd))
+  //case LCLet(name, exp, in) =>
+  //if (name == f) LCLet(name, exp, in)
+  //else LCLet(name, subst(f, t, exp), subst(f, t, in))
+  //case x => x
   //}
 
   //def continue(gamma: Heap, stack: ContStack, exp: LCTExp, ctx: Context): LCTExp = stack match {
@@ -161,34 +161,39 @@ object ReductionMachine {
       freeVars(e) - x
     case LCTLet(x, e, p) =>
       (freeVars(e).union(freeVars(p))) - x
-    case LCTNumber(_)                  => Set.empty
+    case LCTNumber(_)      => Set.empty
     case LCTBinOp(l, _, r) => freeVars(l).union(freeVars(r))
   }
 
   //def syncGarbageCollect(gamma: Heap, n: N, accum: Heap): Heap = n match {
-    //case Nil => accum
-    //case x :: xs =>
-      //val frees = x.trimmer
-      //val (toKeep, rest) = gamma.partition { case (k, _) => frees.contains(k) }
-      //syncGarbageCollect(rest, toKeep.values.toList ++ xs, toKeep ++ accum)
+  //case Nil => accum
+  //case x :: xs =>
+  //val frees = x.trimmer
+  //val (toKeep, rest) = gamma.partition { case (k, _) => frees.contains(k) }
+  //syncGarbageCollect(rest, toKeep.values.toList ++ xs, toKeep ++ accum)
   //}
 
-  def parallelGarbageCollect(dh: DualHeap, n: N, accum: Map[Variable, (LCTExp, Environment, Timestamp)]): Map[Variable, (LCTExp, Environment, Timestamp)] = n match {
-    case Nil => 
+  def parallelGarbageCollect(
+    dh: DualHeap,
+    n: N,
+    accum: Map[Variable, (LCTExp, Environment, Timestamp)]
+  ): Map[Variable, (LCTExp, Environment, Timestamp)] = n match {
+    case Nil =>
       accum
     case (x, env) :: xs =>
       //println(s"got ns ${n.size}")
-      val frees  = x.trimmer.map(env.get(_).get)
-      val toKeepIdle = dh.idle.filter{ case (k, _) => frees.contains(k) }
-      val toKeepLive = dh.live.filter{ case (k, _) => frees.contains(k) }
-      def newest(one: Map[Variable, (LCTExp, Environment, Timestamp)], two: Map[Variable, (LCTExp, Environment, Timestamp)]) = {
+      val frees = x.trimmer.map(env.get(_).get)
+      val toKeepIdle = dh.idle.filter { case (k, _) => frees.contains(k) }
+      val toKeepLive = dh.live.filter { case (k, _) => frees.contains(k) }
+      def newest(one: Map[Variable, (LCTExp, Environment, Timestamp)],
+                 two: Map[Variable, (LCTExp, Environment, Timestamp)]) = {
         type T = Either[(Variable, (LCTExp, Environment, Timestamp)), (Variable, (LCTExp, Environment, Timestamp))]
-        val setEither: Set[T] = (one.keySet ++ two.keySet).map{ k =>
+        val setEither: Set[T] = (one.keySet ++ two.keySet).map { k =>
           (one.get(k), two.get(k)) match {
             case (Some((e1, env1, t1)), Some((e2, env2, t2))) =>
               if (t1 > t2) Left((k, (e1, env1, t1)))
               else Right((k, (e2, env2, t2)))
-            case (o1, o2) => 
+            case (o1, o2) =>
               val o1format: Option[T] = o1
                 .map(v1 => Left((k, v1)))
               val o2format: Option[T] = o2
@@ -197,18 +202,22 @@ object ReductionMachine {
               combined.getOrElse(throw new Exception(s"failed to find any key for $k"))
           }
         }
-        val rights = setEither.collect{ case Right(x) => x }.toMap
-        val lefts = setEither.collect{ case Left(x) => x }.toMap
+        val rights = setEither.collect { case Right(x) => x }.toMap
+        val lefts = setEither.collect { case Left(x)   => x }.toMap
         (lefts, rights)
       }
       val (newIdle, newLive) = newest(toKeepIdle, toKeepLive)
       val n2 = newIdle ++ newLive
       //println(s"n2 size ${n2.size} vs in ${(toKeepLive ++ toKeepIdle).size}")
       val r = n2.values.toList
-      parallelGarbageCollect(new DualHeap(
-        dh.live.filter{ case (x, _) => !n2.contains(x)},
-        dh.idle.filter{ case (x, _) => !n2.contains(x)},
-      ), r.map{ case (exp, env, _) => (exp, env) } ++ xs, newIdle ++ accum)
+      parallelGarbageCollect(
+        new DualHeap(
+          dh.live.filter { case (x, _) => !n2.contains(x) },
+          dh.idle.filter { case (x, _) => !n2.contains(x) }
+        ),
+        r.map { case (exp, env, _) => (exp, env) } ++ xs,
+        newIdle ++ accum
+      )
   }
 
   type GCFuture = Option[Future[Map[Variable, (LCTExp, Environment, Timestamp)]]]
@@ -219,32 +228,37 @@ object ReductionMachine {
   var memUsage = false
   //var timeAtLast: Long = 0
   var timeAtStart: Long = 0
-  def eval(he: DualHeap, exp: LCTExp, ns: N, env: Environment, ctx: Context, gf: GCFuture): Eval[(DualHeap, LCTExp, N, Environment, Context, GCFuture)] = {
+  def eval(he: DualHeap,
+           exp: LCTExp,
+           ns: N,
+           env: Environment,
+           ctx: Context,
+           gf: GCFuture): Eval[(DualHeap, LCTExp, N, Environment, Context, GCFuture)] = {
     //println(s"$exp")
     //val currentTime = System.currentTimeMillis()
-    //val deltams = 100 
+    //val deltams = 100
     //if (currentTime - deltams > timeAtLast) {
-      //println(s"current heap size is ${he.size}")
-      //timeAtLast = System.currentTimeMillis
+    //println(s"current heap size is ${he.size}")
+    //timeAtLast = System.currentTimeMillis
     //}
     //println(s"runnig with $gamma $stack $exp $ctx")
     val (gamma, gcFuture) = if (math.random() < 0.001) {
       if (gcStrategy == sync) {
         //val newHeap = syncGarbageCollect(he.live.mapValues(_._1), exp :: ns, Map.empty)
         val newHeap = parallelGarbageCollect(he.swap, (exp, env) :: ns, Map.empty)
-          val t = System.currentTimeMillis - timeAtStart
-          //println(s"(${t}, ${he.size}) (${t + 1}, ${newHeap.size})")
+        val t = System.currentTimeMillis - timeAtStart
+        //println(s"(${t}, ${he.size}) (${t + 1}, ${newHeap.size})")
         (new DualHeap(newHeap, Map.empty), None)
         //(new DualHeap(newHeap.mapValues(e => (e, 0)), Map.empty), None)
       } else if (gcStrategy == none) {
         (he, None)
       } else {
         val (newHe, futGc) = gf match {
-          case None => 
+          case None =>
             //println(s"beginning gc at ${he.size}")
             val swapped = he.swap
             (swapped, Future(parallelGarbageCollect(swapped, (exp, env) :: ns, Map.empty)))
-          case Some(value) => 
+          case Some(value) =>
             (he, value)
         }
         if (futGc.isCompleted) {
@@ -280,7 +294,7 @@ object ReductionMachine {
             Eval.defer(eval(gamma, l, (p, env) :: ns, env, ctx, gcFuture)).flatMap {
               case (sigma, LCTAbstration(x, e), ns, env, ctx, gcFuture) =>
                 Eval.defer(eval(sigma, e, ns.drop(1), env + (x -> pValue), ctx, gcFuture))
-          case _ => ???
+              case (_, x, _, _, _, _) => throw new Exception(s"expected abstraction, got $x in ${LCTApplication(l, p)}")
             }
           case other =>
             val (nctx, fr) = fresh(ctx)
@@ -313,9 +327,9 @@ object ReductionMachine {
                     case o           => throw new Exception(s"didnt implement operator for $o between $n and $t")
                   }
                 Eval.later((sigma, LCTNumber(expres), ns, env, ctx2, gcFuture))
-          case _ => ???
+              case _ => ???
             }
-          case _ => ???
+          case (_, o, _, _, _, _) => throw new Exception(s"expected number, got $o in evaluation of $x")
         }
       case n: LCTNumber => Eval.later((gamma, n, ns, env, ctx, gcFuture))
     }

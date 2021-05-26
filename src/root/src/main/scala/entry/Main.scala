@@ -19,7 +19,7 @@ import java.nio.file.Paths
 object Main extends IOApp {
   val asScheme = "-s"
 
-  def compile(code: String, asScheme: Boolean): IO[String] = {
+  def parse(code: String): IO[List[Declaration]] = {
     val parsed = par.GLLParser.parse(code)
 
     val checked = parsed match {
@@ -35,6 +35,12 @@ object Main extends IOApp {
       case Failure(data, rest) =>
         IO.raiseError(new Exception(s"failed parsing with $data, and rest \n${rest.takeWhile(_ != ';').mkString}"))
     }
+
+    succ
+  }
+
+  def compile(code: String, asScheme: Boolean): IO[String] = {
+    val succ = parse(code)
 
     val output = succ.map { decls =>
       //inferProgram(decls)
@@ -60,33 +66,59 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = Blocker[IO].use { b =>
-    val files = args.filter(x => x != asScheme)
-    //val stdinstream = stdinUtf8[IO](1024, b)
-    val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
-    val instream = fs2
-      .Stream(streams: _*)
-      .lift[IO]
-      .flatten
-      .through(fs2.text.utf8Decode)
+    //val testProgram = """
+      //| type List a = | Nil | Cons a (List a);
+      //| fun sum l =
+      //|   match l 
+      //|     | Nil -> 0;
+      //|     | Cons x xs -> x + (sum xs);
+      //|   ;
+      //| fun main = let l = Cons 1 Nil; sum l;
+    //""".stripMargin
+    //parse(testProgram)
+      //.map(ir.trans.IntoLC.entrypoint)
+      //.flatTap(x => IO(println(x)))
+      //.map(x => runtime.ReductionMachine.run(x))
+      //.flatTap(x => IO(println(x)))
+      //.map(println) *> IO(ExitCode.Success)
 
-    val folded = instream.compile
-      .fold("") { case (accum, next) => accum + next }
+    val files = args.map(f => file.readAll[IO](Paths.get(f), b, 1024))
+    val in = fs2.Stream(files: _*).lift[IO].flatten.through(fs2.text.utf8Decode)
+    val folded = in.compile.fold(""){ case (accum, next) => accum + next }
+    folded
+      .flatMap(parse)
+      .map(ir.trans.IntoLC.entrypoint)
+      .flatTap(x => IO(println(x)))
+      .map(runtime.ReductionMachine.run)
+      .flatTap(x => IO(println(x))).as(ExitCode.Success)
 
-    val sch = args.find(_ == asScheme).isDefined
+    //val files = args.filter(x => x != asScheme)
+    ////val stdinstream = stdinUtf8[IO](1024, b)
+    //val streams = files.map(f => file.readAll[IO](Paths.get(f), b, 1024))
+    //val instream = fs2
+      //.Stream(streams: _*)
+      //.lift[IO]
+      //.flatten
+      //.through(fs2.text.utf8Decode)
 
-    val compiledCode = folded.flatMap { code =>
-      compile(code, sch)
-    }
+    //val folded = instream.compile
+      //.fold("") { case (accum, next) => accum + next }
 
-    val outPipe = stdout[IO](b)
+    //val sch = args.find(_ == asScheme).isDefined
 
-    val written = fs2.Stream
-      .eval(compiledCode)
-      .flatMap(x => fs2.Stream(x.getBytes: _*))
-      .through(outPipe)
+    //val compiledCode = folded.flatMap { code =>
+      //compile(code, sch)
+    //}
 
-    written.compile.drain
-      .as(ExitCode.Success)
+    //val outPipe = stdout[IO](b)
+
+    //val written = fs2.Stream
+      //.eval(compiledCode)
+      //.flatMap(x => fs2.Stream(x.getBytes: _*))
+      //.through(outPipe)
+
+    //written.compile.drain
+      //.as(ExitCode.Success)
   }
   /*
     val p2 = """
