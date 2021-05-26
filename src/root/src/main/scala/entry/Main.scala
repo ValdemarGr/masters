@@ -89,7 +89,7 @@ object Main extends IOApp {
       .flatMap(parse)
       .map(ir.trans.IntoLC.entrypoint)
       .flatTap(x => IO(tt.LCTChecker.entrypoint(x)).attempt.flatMap{
-        case Right(t) => IO(println(s"completed with type $t"))
+        case Right((t, _, _)) => IO(println(s"completed with type $t"))
         case Left(t) => IO(println(s"failed to type with error ${t.getMessage}"))
       })
       .flatTap(x => IO(println(x)))

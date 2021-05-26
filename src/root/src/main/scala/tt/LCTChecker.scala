@@ -6,9 +6,15 @@ import scala.language.postfixOps
 
 object LCTChecker {
   sealed trait HMType
-  final case class HMTypeVar(name: String) extends HMType
-  final case class HMTypeArr(l: HMType, r: HMType) extends HMType
-  final case class HMConst(name: HMBuiltins, params: List[HMType]) extends HMType
+  final case class HMTypeVar(name: String) extends HMType {
+    override def toString = name
+  }
+  final case class HMTypeArr(l: HMType, r: HMType) extends HMType {
+    override def toString = s"($l -> $r)"
+  }
+  final case class HMConst(name: HMBuiltins, params: List[HMType]) extends HMType {
+    override def toString = s"($name ${params.mkString(" ")})"
+  }
 
   final case class HMScheme(bound: Set[String], t: HMType)
 
