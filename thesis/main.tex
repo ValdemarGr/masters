@@ -29,8 +29,19 @@
 \usepackage[style=alphabetic]{biblatex}
 \addbibresource{bib.bib}
 
-\usetikzlibrary{matrix,fit,trees,arrows,arrows.meta,positioning}
+\usetikzlibrary{matrix,fit,trees,arrows,arrows.meta,positioning,shapes}
 \tikzset{
+  mtx/.style={
+          inner sep=-\pgflinewidth,
+          matrix of math nodes,
+          column sep=-\pgflinewidth,
+          nodes={
+              draw=black,
+              font=\color{black},
+              minimum size=.75cm,
+              anchor=center
+          }
+      },
   treenode/.style = {align=center, inner sep=0pt, text centered,
     font=\sffamily},
   arn_b/.style = {treenode, circle, white, font=\sffamily\bfseries, draw=black,
@@ -46,6 +57,7 @@
 }
 
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
 
 \theoremstyle{plain}
 \newtheorem{lemma}{Lemma}[section]
