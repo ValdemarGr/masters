@@ -1,3 +1,76 @@
+\chapter{Introduction and preliminaries}
+At the time that this thesis was created, imperative programming languages are by far the most dominant in development of software.
+Imperative languages are the natural materialization of how we act, since they in their essence are encoded in a way similar to how we behave.
+
+\section{A case for immutability}
+Making a sandwich, for instance, involves following a recipe, or in computational terms an algorithm.
+\begin{figure}[ht]
+  \begin{enumerate}
+    \item Heat two slices of bread.
+    \item Butter the heated bread.
+    \item Boil eggs.\label{boil}
+    \item Slice tomatoes\label{tomatoes}.
+    \item Dice cucumber.\label{dice}
+    \item Slice eggs.
+    \item Place tomatoes on the bottom slice of the buttered bread bread.
+    \item Place the diced cucumber on top of the tomatoes.
+    \item Place sliced eggs on top of the diced cucumber.
+    \item Place the top slice of the buttered bread on the eggs. 
+  \end{enumerate}
+  \caption{A recipe for sandwiches}
+  \label{sandwich}
+\end{figure}
+An imperative algorithm for \autoref{sandwich} is very much alike the recipe in that, it defines the steps required to make a sandwich.
+In a traditional imperative programming language, such as C or Java, the sandwich algorithm would involve changing or \textit{mutating} the sandwich at every step.
+Mutation is the natural way of applying changes to an object, which is where functional programming languages very often differ.
+\begin{remark}
+When functional programming languages are mentioned, it should now be assumed that they are immutable.
+\end{remark}
+
+In immutable functional programming languages one cannot mutate an object, but rather create a new one with the desired changes.
+The naive intuition of this change might indicate that immutability and mutability are opposites, which is necessarily not the case.
+Let \texttt{heatBread} be a function that creates a heated slice of bread and let \texttt{butter} be a function that creates a copy of a heated slice of bread, and returns it buttered.
+\begin{figure}
+\centering 
+  \begin{tikzpicture}
+                \node[draw=black] (s1) {\texttt{Heat bread}};
+                \node[draw=black, right = 2.5cm of s1] (s2) {\texttt{Butter the heated bread}};
+                \path[->] (s1) edge node[left] {} (s2);
+
+                \node[draw=black, below = of s1] (p1) {\texttt{heated = heatBread}};
+                \node[draw=black, below = of s2] (p2) {\texttt{buttered = butter(heated)}};
+                \path[->] (p1) edge node[left] {} (p2);
+
+                \path[->] (s1) edge node[left] {} (p1);
+                \path[->] (s2) edge node[left] {} (p2);
+  \end{tikzpicture}
+  \caption{An abstract and concrete representation of bread}
+\end{figure}
+The abstraction of immutability might not seem unnatural, if we imagine that every step is performed at a particular point in time.
+Immutability introduces the abstraction of travelling in time, by never changing objects.
+In this context, mutability implies the ability to travel back in time and change an action.
+If one performs a seres of immutable steps in the sandwich algorithm and fails at say, \autoref{tomatoes}, then one can simply travel back in time and begin from the previous step.
+
+This is the primary philosophy behind immutability, and has other practical benefits that from from the guarantee of immutable data.
+For instance, in an attempt to introduce more people to help create a sandwich, one might run into problems when multiple people would want to change the sandwich.
+In an immutable setting, the sandwich cannot be changed, thus everyone gets to pluck the old sandwich out of time and perform their job.
+
+Throughout this work, all algorithms and data structures will be used presented and used immutably.
+%If we had, say two more people, helping creating a sandwich, the algorithm in the context of imperative programming is quite different.
+%Clearly, steps such as \autoref{boil}, \autoref{tomatoes} and \autoref{dice} are not mutually dependent, thus can be performed at the same time e.g. they can be performed in parallel.
+%In an imperative mutable context, once one step is done, the sandwich must be acquired by one cook only, since changing the sandwich at the same time might lead to various.
+
+%The if one heats a slice of bread at some point nn time, it hap
+%One could argue that immutability introduces the notion of time to a program.
+
+\section{Purity of programs}
+A programming language where all variables can be replaced by their expressions is called \textit{pure}.
+Purity implies that there can be state, mutability and side effect, since all of these concepts can violate the deterministic nature of purity.
+Purity is a powerful property, since it allows us to reason about our whole program at once. 
+In fact, if a program is pure, any number of substitutions and rewritings can be performed on the program without altering the meaning.
+The concept of purity becomes very helpful once we begin to consider evaluation.
+
+\section{Preliminaries}
 
 \input{intro/notation}
 
