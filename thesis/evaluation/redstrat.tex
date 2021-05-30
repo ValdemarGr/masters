@@ -1906,6 +1906,9 @@ Trimmers have been omitted for readability in the enhanced CPS machine in \autor
 \begin{figure}
 	\begin{mdframed}[style=bigbigbox]
 		\begin{align}
+			\texttt{continue($\Gamma$, [], E, N, e) }                     & \texttt{= e}\tag*{}                                                    \\
+			\texttt{continue($\Gamma$, cont :S, E, N e) }                & \texttt{= cont($\Gamma$, S, E, N, e)}\tag*{}                                 \\
+      \spacecase
 			\texttt{eval($\Gamma$, S, E, N, $\lambda$x.e) }                                                               & \texttt{= continue($\Gamma$, S, E, N, $\lambda$x.e)}\tag*{} \\
 			\spacecase
 			\texttt{eval($\Gamma$, S, \{p $\mapsto$ z\} $\cup$ E, N, l p) }                                               & \texttt{= eval($\Gamma$, cont :S, E, (p, E) :N, l)}\tag*{}  \\
