@@ -92,6 +92,18 @@ object IntoLC {
   }
 
   def transform(program: LCTExp, decls: List[Declaration], co: ConstructorOrdering): LCTExp = {
+    decls.reverse.foldLeft(program){ case (accum, next) =>
+      next match {
+        case FunDecl(name, params, body) => LCTLet(name, params.reverse.foldLeft(funBodyToLC(body, co)){ case (accum, next) =>
+          LCTAbstration(next.id, accum)
+        }, accum)
+        case LetDecl(name, value) => LCTApplication(LCTAbstration(name, accum), expToLC(value, co))
+        case _ => accum
+      }
+    }
+  }
+
+  def transform2(program: LCTExp, decls: List[Declaration], co: ConstructorOrdering): LCTExp = {
     val funNames = decls.collect{ case fd: FunDecl => fd }
     //val funIntroed = 
     val lets = decls.collect{ case let: LetDecl => let }

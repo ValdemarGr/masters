@@ -3,7 +3,7 @@ At the time that this thesis was created, imperative programming languages are b
 Imperative languages are the natural materialization of how we act, since they in their essence are encoded in a way similar to how we behave.
 
 \section{A case for immutability}
-Making a sandwich, for instance, involves following a recipe, or in computational terms an algorithm.
+Making a sandwich, for instance, involves following a recipe, or in computational terms, an algorithm.
 \begin{figure}[ht]
   \begin{enumerate}
     \item Heat two slices of bread.
@@ -27,7 +27,7 @@ Mutation is the natural way of applying changes to an object, which is where fun
 When functional programming languages are mentioned, it should now be assumed that they are immutable.
 \end{remark}
 
-In immutable functional programming languages one cannot mutate an object, but rather create a new one with the desired changes.
+In immutable functional programming languages, one cannot mutate an object, but rather create a new one with the desired changes.
 The naive intuition of this change might indicate that immutability and mutability are opposites, which is necessarily not the case.
 Let \texttt{heatBread} be a function that creates a heated slice of bread and let \texttt{butter} be a function that creates a copy of a heated slice of bread, and returns it buttered.
 \begin{figure}
@@ -52,8 +52,9 @@ In this context, mutability implies the ability to travel back in time and chang
 If one performs a seres of immutable steps in the sandwich algorithm and fails at say, \autoref{tomatoes}, then one can simply travel back in time and begin from the previous step.
 
 This is the primary philosophy behind immutability, and has other practical benefits that from from the guarantee of immutable data.
-For instance, in an attempt to introduce more people to help create a sandwich, one might run into problems when multiple people would want to change the sandwich.
-In an immutable setting, the sandwich cannot be changed, thus everyone gets to pluck the old sandwich out of time and perform their job.
+For instance, many details of concurrency are eliminated in the presence of immutability, since one cannot ``go back and change data''.
+%For instance, in an attempt to introduce more people to help create a sandwich, one might run into problems when multiple people would want to change the sandwich.
+%In an immutable setting, the sandwich cannot be changed, thus everyone gets to pluck the old sandwich out of time and perform their job.
 
 Throughout this work, all algorithms and data structures will be used presented and used immutably.
 %If we had, say two more people, helping creating a sandwich, the algorithm in the context of imperative programming is quite different.
@@ -65,9 +66,9 @@ Throughout this work, all algorithms and data structures will be used presented 
 
 \section{Purity of programs}
 A programming language where all variables can be replaced by their expressions is called \textit{pure}.
-Purity implies that there can be state, mutability and side effect, since all of these concepts can violate the deterministic nature of purity.
+Purity implies that there cannot be state, mutability and side effect, since all of these concepts can violate the deterministic nature of purity.
 Purity is a powerful property, since it allows us to reason about our whole program at once. 
-In fact, if a program is pure, any number of substitutions and rewritings can be performed on the program without altering the meaning.
+In fact, if a program is pure, any number of substitutions and rewriting can be performed on the program without altering the meaning, which is not the case when side effects are considered.
 The concept of purity becomes very helpful once we begin to consider evaluation.
 
 \section{Preliminaries}

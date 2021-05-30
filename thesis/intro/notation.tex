@@ -1,6 +1,6 @@
 \subsection{Notation}
 Some functions are written in pattern matching style.
-Functions which have parameters that can take different values or shapes can implement a case for each value or shape.
+Functions which have parameters that can take different values or shapes, can implement a case for each value or shape.
 For instance, a function which finds the cardinality of a set can be implemented as in \autoref{eq:notation:card}.
 \begin{align}
   \texttt{card($\emptyset$) }&\texttt{= 0} \label{eq:notation:card} \\
@@ -22,7 +22,7 @@ Functions can also contain nested functions such as in \autoref{eq:nested}.
   \extracase{k = id(n)} \tag*{}
 \end{align}
 Finally, conditional cases may also occur in functions such that the choice of action is dependent on a predicate.
-The function in \autoref{eq:cases} increments \texttt{n} in the case that it is even, else it returns it.
+The function in \autoref{eq:cases} increments \texttt{n} in the case that it is even, else it returns \texttt{n}.
 \begin{align}
   \texttt{makeOdd(n) }&\texttt{=} 
   \begin{cases}

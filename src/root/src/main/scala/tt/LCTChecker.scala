@@ -127,10 +127,13 @@ object LCTChecker {
         val (t1, s1, c1) = infer(body, introed, newCtx)
         (substType(s1, HMTypeArr(f, t1)), s1, c1)
       case LCTLet(name, body, in) => 
-        val (t1, s1, c1) = infer(body, env, ctx)
-        val subbed: Environment = substEnv(s1, env)
+        //introduce monomorphic recursive name
+        val (c0, f) = fresh(ctx)
+        val env2 = env + (name -> HMScheme(Set.empty, f))
+        val (t1, s1, c1) = infer(body, env2, c0)
+        val subbed: Environment = substEnv(s1, env2)
         val genned: HMScheme = gen(subbed, t1)
-        val (t2, s2, c2) = infer(in, env + (name -> genned), c1)
+        val (t2, s2, c2) = infer(in, env2 + (name -> genned), c1)
         (t2, combine(s1, s2), c2)
       case LCTIf(exp, truth, falsity) => 
         val (t1, s1, c1) = infer(exp, env, ctx)
