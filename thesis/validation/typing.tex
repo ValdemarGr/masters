@@ -6,7 +6,7 @@ The Damas-Milner Algorithm W is a child of an observation, that one can traverse
 The Damas-Milner Algorithm W reconstructs types by first introducing types as unknowns, and then constraining these unknown types as more information is gathered by an operation named \textit{unification}.
 \subsection{Notation}
 In the world of type theory we use natural deduction to prove type validity.
-Natural deduction is expressed by \textit{inference rules}, which consist of one or more premises and a conclusion.
+Natural deduction is expressed by \textit{inference rules}, which consist of one or more premises and a conclusion, or an axiom.
 For instance the modus ponens rule which states that if ``if $a$ implies $b$ and $a$, then $b$'', can easily be written in inference rules, where $a \rightarrow b$ and $a$ are the premises and $b$ is the conclusion (\autoref{fig:not:inf}).
 \begin{figure}
   \begin{mdframed}
@@ -31,7 +31,7 @@ Conditions can also occur rules which state what conditions must be met for the 
   \caption{}
   \label{fig:not:notdead}
 \end{figure}
-Furthermore, hypotheses are written $\Gamma \vdash p$ which states that under the assumption of $\Gamma$ then $p$.
+Furthermore, hypotheses are written $\Gamma \vdash p$ which state that under the assumption of $\Gamma$ then $p$.
 
 %\begin{lstlisting}[language=ML,caption={Head implementation},label={lst:headimpl},mathescape=true]
 %$\texttt{fun head l: List a} \rightarrow \texttt{a =}$
@@ -48,7 +48,7 @@ Furthermore, hypotheses are written $\Gamma \vdash p$ which states that under th
 \subsection{The language of types}\label{sec:simply}
 The untyped lambda calculus is exactly that, untyped.
 For it to become typed, we must introduce how types occur.
-A very simple type system for the how typed lambda calculus can be proved must introduce a rule for each of the lambda calculus term types Var, Let, App and Abs.
+A very simple type system that models how the typed lambda calculus can be proved, must introduce a rule for each of the lambda calculus term types Var, Let, App and Abs.
 Types must occur in programs to prove correctness, as such, program variables and types are the assumption for a proof of such a program's composite expressions such that the assumption for types will become a set the program variables $\{x_1 \dots x_n\}$ paired with their respective type $\Gamma = \{(x_1 : \tau_1)\}, \dots (x_n : \tau_n)\}$.
 Stating ``it is assumed that a variable $x$ of type $\tau$ occurs in $\Gamma$'' is written $\Gamma, x: \tau$.
 
@@ -94,7 +94,7 @@ With the aforementioned knowledge, we can develop a simple set of inference rule
   \label{fig:simpletyped}
 \end{figure}
 \begin{exmp}
-  With the rules for the simply typed lambda calculus, it becomes possible to prove the types for programs.
+  Using the rules for the simply typed lambda calculus, it becomes possible to prove the types for programs.
   Let $\lambda f.\lambda x.f x$ be a program with the type $(\tau_1 \rightarrow \tau_2) \rightarrow (\tau_1 \rightarrow \tau_2)$, the proof to which is seen in \autoref{fig:exmp:simpletyped}.
   \begin{figure}[ht]
     \begin{mdframed}[style=bigbox]
@@ -174,6 +174,16 @@ A polytype is a polymorphic type (\autoref{eq:poly}).
 Polymorphic types either take the shape of a type variable or universally quantify some type, naming the quantifier $a$.
 All type variables of $\sigma$, are not necessarily quantified, since the constraint imposed by the \textbf{Gen} rule of \autoref{fig:hmrules} constrains the domain that $a$ ranges over to contain only type variables that are not free in $\Gamma$.
 The notion of free type variables and polymorphism will be explored further once the definition of free has been introduced.
+
+Note that a polymorphic type cannot introduce further quantifications inside of it's monotype. 
+This is an important observation, since this constrains the \textit{rank} of the expressible types in Hindley-Milner.
+The rank of a type is determined by how many independent quantification occur.
+For instance, the type $\forall c. (\forall a.a \rightarrow c) \rightarrow c$ is not expressible and is in rank-2, since moving the quantifier $\forall a$ further out would weaken the type.
+%In contrast, the type $\forall c . c \rightarrow (\forall a.a \rightarrow c)$ is rank-1, since moving the quantifier $\forall a$ out such that the type becomes $\forall a. \forall c. c \rightarrow (a \rightarrow c)$ does not weaken the type.
+\begin{lemma}
+  Type systems that allow quantifications to occur anywhere, are undecidable.
+\end{lemma}
+
 %Many types may adhere to a polymorphic type but polymorphic types do not adhere to any type other than polymorphic types.
 
 The type hierarchy of the Hindley-Milner type-system is shown in \autoref{fig:polytree}.
@@ -223,7 +233,7 @@ Notice the lack of $\sigma$ in \autoref{fig:polytree} since $\sigma$ is but a me
 %This representation is convenient for the \textbf{Gen} rule.
 %\end{remark}
 
-A principal component of typing in Hindley-Milner is the \textit{environment}, the environment is nothing more than a more context aware name for the hypotheses.
+A principal component of typing in Hindley-Milner is the \textit{environment}, the environment is the type-theory equivalent to the hypotheses.
 The environment $\Gamma$ is now a set of pairs of program variable and polytype (\autoref{eq:env}), in contrast to a set of pairs of program variables and monotypes (\autoref{fig:exmp:simpletyped}).
 Now $\vdash$ is enhanced such that it can also judge polymorphic types; $\Gamma \vdash x: \sigma$ signifies a \textit{typing judgment}, meaning that under the assumption of $\Gamma$, the variable $x$ can take the \textbf{poly}type $\sigma$.
 \begin{remark}
@@ -254,13 +264,13 @@ Type variables occur free when they are not introduced by a quantification and t
 Understanding how monotypes occur in the environment is of importance when generalizing types in practice.
 Monotypes are just polytypes without any quantifier, such that they always occur free in $\Gamma$.
  %defines the free variables for some $\sigma$ under the assumption of some $\Gamma$ such that the definition states ``all free type variables in $\sigma$, that are not monotypes in $\Gamma$''.
-Generalization of a monotype into a polytype should quantify variables that \textbf{only} occur free in that monotype, e.g. they must not occur free in any type in $\Gamma$, such that the generalisable variables of a monotype are $\textit{free}(\tau) \backslash \textit{free}(\Gamma)$.
+Generalization of a monotype into a polytype should quantify a variable \textbf{if and only if} it occurs free in that monotype, e.g. they must not occur free in any type in $\Gamma$, such that the generalisable variables of a monotype are $\textit{free}(\tau) \backslash \textit{free}(\Gamma)$.
 
-If when generalizing monotypes, one quantifies all variables $\textit{free}(\tau)$ arbitrary monotypes that occur various places in a program may occur both polymorphic and monomorphic.
+If when generalizing monotypes, one quantifies all variables $\textit{free}(\tau)$, arbitrary monotypes that occur various places in a program may occur both polymorphic and monomorphic.
 If such an event occurs, then values that have \textbf{any} type can occur ($\forall a.a$), which should not validate.
-For instance, a value \textit{id} af type $\forall a.a$ would both be valid to use in the expression $\textit{id } 5$ and $\textit{id} + 5$, which clearly do different things.
+For instance, a value \textit{id} of type $\forall a.a$ would both be valid to use in the expression $\textit{id } 5$ and $\textit{id} + 5$, which clearly do different things.
 \begin{remark}
-  The type $\forall a.a$ is clearly an absurd type (called absurd in Haskell), since it allows one to bypass the type-system.
+  The type $\forall a.a$ is clearly an absurd type (the function to which is called absurd in Haskell), since it allows one to bypass the type-system.
 \end{remark}
 %This rule is important, since the system may not arbitrarily generalize over monotypes.
 %\begin{exmp}
@@ -638,8 +648,8 @@ When the algorithm discovers $x + 1$, it must constrain $\tau$ to have a type wh
 
 The Damas-Milner Algorithm W rules (\autoref{fig:dmrules}) introduce some new concepts such as \textit{fresh variables}, \textit{most general unifier}, and the \textit{substitution set}.
 Fresh variables are introduced by picking a variable that has not been picked before from the infinite set $\tau_1, \tau_2 \dots $.
-In the earlier example where $x$ had type $\tau$, $\tau$ was a fresh variable.
-The substitution set is a mapping from type variables to types (\autoref{eq:substitution}), which in the earlier example had the instance $\tau \mapsto \texttt{Int}$.
+%In the earlier example where $x$ had type $\tau$, $\tau$ was a fresh variable.
+The substitution set is a mapping from type variables to types (\autoref{eq:substitution}).%, which in the earlier example had the instance $\tau \mapsto \texttt{Int}$.
 \begin{align}
     S = \{ a_1 \mapsto \tau_1, a_2 \mapsto \tau_2 \dots , a_n \mapsto \tau_n \} 
     \label{eq:substitution}
@@ -675,10 +685,10 @@ The combination of substitution sets is a key component for the correctness of t
     \label{eq:combination}
 \end{align}
 \begin{remark}
-By the substitution set combination operator transitive and circular substitutions cannot occur since type variables in $S_1$ will inherit all the mappings from $S_2$ by union.
+By the substitution set combination operator, transitive and circular substitutions cannot occur since type variables in $S_1$ will inherit all the mappings from $S_2$ by union.
 Transitivity is avoided by substituting all instances of type variables values (the mapped to type variables) in $S_2$ with ones that occur in $S_1$.
 The properties ensured by the combination semantics also induce the property of idempotence.
-This property is enforced by the Damas-Milner Algorithm W inference rules.
+This property is enforced by the Damas-Milner Algorithm W inference rules, by always combining substitutions if more than one occurs.
 \end{remark}
 Unification is performed differently based on the context.
 Unification is performed on monotypes, each of which can take one of three forms (\autoref{eq:mono}).
@@ -805,17 +815,23 @@ Unification in the context of the Hindley-Milner type system are outlined in \au
 
 		\begin{prooftree}
 			\AxiomC{$\Gamma \vdash e_1 : \tau_1, S_1$}
-			\AxiomC{$S_1 \Gamma , x : S_1 \Gamma(\tau_1) \vdash e_2 : \tau_2, S_2$}
+			\AxiomC{$S_1 \Gamma , x : (S_1 \Gamma)(\tau_1) \vdash e_2 : \tau_2, S_2$}
 			\LeftLabel{Let}
 			\BinaryInfC{$\Gamma \vdash \texttt{let } x = e_1 \texttt{ in } e_2 : \tau_2, S_2 \cdot S_1$}
 		\end{prooftree}
 	\end{mdframed}
-	\caption{Algorithm W}
+  \caption{Algorithm W. Note that $\Gamma(\tau)$ means the generalization of $\tau$ under $\Gamma$.}
 	\label{fig:dmrules}
 \end{figure}
 %\begin{remark}
 %In the language $L$ a function \texttt{fun} translates to a let expressions while \texttt{let} translates to abstraction and application.
 %\end{remark}
+\subsection{Generalization}
+As stated earlier, generalization is a matter of finding all type variables that do not occur free in $\Gamma$.
+Type variables that do not occur free, do not necessarily imply bound, since they may have been introduced in the type that is to be generalized.
+As such, a type variable may be quantified \textbf{if and only if} it is distinct from any other type variable.
+Generalization of a type $\tau$, must be the polytype that becomes of the quantification of the type $\tau$ over $\textit{free}(\tau)\backslash\textit{free}(\Gamma) = \{\tau_1, \tau_2 \dots, \tau_n\}$ such that $\sigma \equiv \forall \tau_1 . \forall \tau_2 . \dots \forall \tau_n . \tau$.
+
 \subsection{Instantiation}
 Another interesting addition introduced by algorithm W in \autoref{fig:dmrules} is \textit{inst}.
 \textit{inst} naturally follows from the \textbf{Inst} rule in \autoref{fig:hmrules} but has a slightly different behaviour.
@@ -825,7 +841,7 @@ The \textit{inst} function does not specify types anymore but simply makes unifi
     \label{eq:inst}
 \end{align}
 \textit{inst} (\autoref{eq:inst}) maps all bound type variables to fresh type variables in the polytype $\sigma$.
-\textit{inst} is an important component to allow polymorphic types to remain polymorphic since no bound type variables may be substituted.
+\textit{inst} is an important component for allowing polymorphic types to remain polymorphic, since no bound type variable may be substituted.
 \begin{exmp}
     Performing some type analysis on \autoref{eq:polyid} yields a very rich example of why \textit{inst} is necessary.
     \begin{align}
@@ -895,10 +911,15 @@ The addition operation forces \texttt{unify}$(\texttt{Int}, \gamma) = \{ \gamma 
 Finally the application of the addition function $+: \texttt{Int} \rightarrow \texttt{Int} \rightarrow \texttt{Int}$ and the two expressions \texttt{f x} and $1$ such that the resulting expression type is \texttt{Int}.
 
 \end{exmp}
+\begin{remark}
+  An infinite function introduces a new way of inhabiting the type $\forall a.a$, by an expression such as $\texttt{let } x = x \texttt{ in } \dots$.
+  The type $\forall a.a$ may seem invalid at first glance, but for a function that never ends it is the natural type.
+\end{remark}
 
 \subsection{Additional language features}
 In addition to the rules in \autoref{fig:dmrules} many other ergonomic features can easily be modelled once the framework has been understood.
 One of the most crucial features of languages are that of decision.
+\begin{figure}
 \begin{lstlisting}[language=ML,caption={ADT implementation of decision},label={lst:adtdecision},mathescape=true]
 type Boolean = 
     | BFalse
@@ -909,6 +930,7 @@ fun main =
   fun double x = x + x;
   b (0) (double 10);
 \end{lstlisting}
+\end{figure}
 Decision can be implemented in a variety of ways such as in \autoref{lst:adtdecision} by the use of algebraic data type aligning very much with Church Booleans~\cite{church1985calculi}.
 \begin{figure}[ht]
 	\begin{mdframed}[style=bigbox]
@@ -948,7 +970,7 @@ Rather decision can be implemented by more conventional methods than combinator 
 Additional language syntax features can in most cases be implemented as decision can.
 \subsection{Algebraic data types and type constructors}
 To implement rules for algebraic data type one must first decide on what the type of an algebraic data type is.
-If algebraic data types were implemented as in \autoref{sec:adt} the type of an algebraic data type like Boolean in \autoref{lst:adtdecision} would be \texttt{a -> a -> a} since \texttt{BFalse} and \texttt{BTrue} must have a handler each.
+If algebraic data types were implemented as in \autoref{sec:adt} the type of an algebraic data type like Boolean in \autoref{lst:adtdecision} would be \texttt{a $\rightarrow$ a $\rightarrow$ a} since \texttt{BFalse} and \texttt{BTrue} must have a handler each.
 Implementing algebraic data type by this method does not introduce anything to the inference algorithm since every algebraic data type becomes a function.
 It is common to introduce algebraic data type along type constructors, since such an implementation yields descriptive errors in comparison to generated function types.
 
@@ -1002,7 +1024,7 @@ As it will turn out, Hindley-Milner also suffers an explosive worst case induced
     There exists a family of programs which are typeable in Hindley-Milner and produce $\Omega(2^n)$ unique type variables.
 \end{lemma}
 \begin{proof}
-    The basis of the blowup stems from the introduced fresh type variables in the polymorphic \texttt{Let} inference rule.
+    The basis of the blowup stems from the introduced fresh type variables in the polymorphic Let inference rule.
     If the number of type variables can be shown to be exponential, the running time must be at least the same by operations, such as subsection set combination and unification.
     \begin{align}
       &\texttt{let } \textit{dup } = (\lambda a .\lambda f . f a a) \texttt{ in } \label{eq:ppe}\\
@@ -1015,9 +1037,9 @@ As it will turn out, Hindley-Milner also suffers an explosive worst case induced
 %\end{lstlisting}
 %\end{minipage}
     \autoref{eq:ppe} builds a large function signature for \textit{deep}.
-    The innermost \textit{dup} invocation will have its signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$, if \texttt{a} has type $x$ and \texttt{f} has type $x \rightarrow x \rightarrow \tau$ for some unknown $\tau$ by the App rule in \autoref{fig:dmrules}.
+    The innermost \textit{dup} invocation will have its signature unified to $x \rightarrow (x \rightarrow x \rightarrow \tau) \rightarrow \tau$, if $a$ has type $x$ and $f$ has type $x \rightarrow x \rightarrow \tau$ for some unknown $\tau$ by the App rule in \autoref{fig:dmrules}.
     The second innermost \textit{dup} invocation has the signature $((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow (((x \rightarrow x \rightarrow \tau) \rightarrow \tau) \rightarrow \gamma) \rightarrow \gamma$.
-    Naively one might judge \autoref{eq:ppe} to run in $\Omega(2^n)$ but an important observation for why \autoref{eq:ppe} does not induce exponential blowup is the uniqueness of the type variables.
+    Naively one might judge \autoref{eq:ppe} to run in $2^n$ but an important observation for why \autoref{eq:ppe} does not induce exponential blowup is the uniqueness of the type variables.
     If an efficient representation of \textit{dup} was implemented such that the left and right side were shared such that $\mu \mapsto ((x \rightarrow x \rightarrow \tau) \rightarrow \tau)$, the number introduced type variables would be $O(n)$.
     \begin{align}
       &\texttt{let } \textit{tuple } = (\lambda a . \lambda b . \lambda f . f a b) \texttt{ in } \label{eq:ppexp}\\
@@ -1105,7 +1127,7 @@ Throughout this section we have explored a type system that introduces polymorph
 \subsection{System F}
 System F generalizes the notion of polymorphism by letting terms become polymorphic within other polymorphic types.
 System F allows exotic types such as the signature $\forall a.\forall c.(\forall b.b \rightarrow \texttt{Int}) \rightarrow a \rightarrow c \rightarrow \texttt{Int}$, which could be a function that takes two potentially different typed values $a$ and $c$ and turns them into an integer and adds them (\autoref{lst:rankn}).
-\begin{lstlisting}[language=ML,caption={Rank 2 type in System F},label={lst:rankn},mathescape=true]
+\begin{lstlisting}[language=ML,caption={A function that requires a rank 2 type},label={lst:rankn},mathescape=true]
 fun f makeNum a c =
     (makeNum a) + (makeNum c);
 \end{lstlisting}
@@ -1113,6 +1135,9 @@ We say that a type has a rank when interesting ourselves with nested quantificat
 The type of by the function in \autoref{lst:rankn} requires rank-2 types to be expressible.
 Generally, when quantifiers occur on the left side of $\rightarrow$ they must be locally quantified thus they increase the rank.
 Unfortunately checking System F is undecidable, thus sound inference is not possible~\cite{wells1999typability}.
+\begin{remark}
+  To combat this, some languages let the programmer annotate the types of functions. 
+\end{remark}
 %System F is very powerful, since there are no constraints on how types are quantified.
 
 \subsection{System F\underline{$\omega$}}
@@ -1129,7 +1154,7 @@ Dependent types introduce the notion of letting types be a product of an express
 Allowing expressions to become a part of the type system, significantly increases the preciseness of types.
 Dependent types are the foundation of many theorem provers, since one can encode various problems into programs.
 For instance, one can precisely define the type for a matrix matrix multiplication.
-Let two matrices $m_1$ with the dimensions $i$ and $j$ encoded into $m_1$'s type, and $m_2$ with the dimensions $j$ and $j$ encoded into $m_2$'s type, be multiplied, then the resulting matrix $m_3$ has the dimensions $i$ and $k$.
+Let two matrices $m_1$ with the dimensions $i$ and $j$ encoded into $m_1$'s type, and $m_2$ with the dimensions $j$ and $j$ encoded into $m_2$'s type, be multiplied, then the resulting matrix $m_3$ has the dimensions $i$ and $k$, all of which can be encoded into the type system.
 
 %The Hindley-Milner type system can only express relatively simple programs which robs algorithmic elegance in respect to other type systems.
 %One domain of programs that Hindley-Milner cannot express are those that rely on \textit{rank-n types}.
@@ -1228,7 +1253,7 @@ Let two matrices $m_1$ with the dimensions $i$ and $j$ encoded into $m_1$'s type
 %Complicated type system such as the \textit{calculus of constructions} ($\lambda\Pi\underline{\omega}$) are used in proof assistants since they essentially are deduction systems.
 \section{Concluding remarks}
 This section should act as an introduction to more general type systems and where Hindley-Milner is placed on the type system map.
-Hindley-Milner by itself, is a retrofitted version of System F.
+%Hindley-Milner by itself, is a retrofitted version of System F.
 Hindley-Milner is a small part of a larger more general system which has significant impact on the extensibility of Hindley-Milner.
 Some very renown functional programming languages began by implementing Hindley-Milner as their type system since it is very fast in practice and relatively simple to implement.
 

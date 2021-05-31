@@ -28,14 +28,14 @@ fun main =
   force (double value);
 \end{lstlisting}
 \end{minipage}
-The call by name semantics however does only evaluate expressions once they are needed.
+The call by name semantics, however, do only evaluate expressions once they are needed.
 By the call by name semantics \texttt{a} is never evaluated since it is never used.
-In \autoref{lst:callbyname} call by name has been implemented by the use of various functions such as the two constant functions \texttt{suspend} and \texttt{force}.
+In \autoref{lst:callbyname} call by name has been implemented by the use of various functions, such as the two constant functions \texttt{suspend} and \texttt{force}.
 \texttt{susExpensiveOp} ensures that the forcing (evaluation) of \texttt{x} never occurs until the caller of \texttt{double} forces the result.
 By the aforementioned semantics of call by name in the context of the program in \autoref{lst:callbyname} \texttt{a} is never forced thus the computation is never performed.
-The implementation of call by name can become quite troublesome and therefore in most cases is a part of the native execution environment which will be discussed in \autoref{tbd}.
+The implementation of call by name can become quite troublesome, and is therefore commonly a part of the native execution environment.
 
-The call by need strategy introduces \textit{lazy evaluation} semantics which is the same as call by name with one extra detail named \textit{sharing}.
+The call by need strategy introduces \textit{lazy evaluation} semantics, which are the same as call by name, but with one extra detail named \textit{sharing}.
 In \autoref{lst:callbyname} \texttt{force x} is computed twice which may be an expensive operation.
 Under call by need all results are saved for later use similar to techniques such as dynamic programming.
 \begin{figure}
@@ -116,12 +116,12 @@ Under call by need all results are saved for later use similar to techniques suc
     \label{fig:evalexpr}
 \end{figure}
 To understand this better observe the expression tree for \autoref{lst:callbyname} in \autoref{fig:evalexpr}.
-Clearly the two red subtrees in \autoref{sub:eval:double} are identical thus they may be memoized such that the forcing of \texttt{x} only occurs once.
+Clearly the two red subtrees in \autoref{sub:eval:double} are identical, thus they may be shared, such that the forcing of \texttt{x} only occurs once.
 More generally if the execution environment supports lazy evaluation, once an expression has been forced it is remembered.
 
 \section{Runtime environments}
 Now that the untyped lambda calculus has been introduced, implemented and validated efficiently the question of execution naturally follows.
-There exists many different well understood strategies to implement an execution environment for the untyped lambda calculus.
+There are many different and well understood strategies to implement an execution environment for the untyped lambda calculus.
 Naively it may seem straightforward to evaluate the untyped lambda calculus mechanically by $\beta$-reductions, but doing so brings upon some problems when implementing an interpreter.
 %When applying the term $f x$ in $\lambda f . \lambda x . f x$ such that $f[? := x]$ where $?$ is the parameter name of $f$ it should become clear why a naive strategy is not enough since the parameters of $f$ are anonymous.
 

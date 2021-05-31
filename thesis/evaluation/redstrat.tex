@@ -111,7 +111,7 @@ We must introduce rules for how substitutions should act upon encountering lambd
 \end{align}
 Proving \autoref{eq:ambgprog} under the rules in \autoref{eq:subsem} yields a case for more thorough substitution rules.
 By inspection one can determine that a simple program like \autoref{eq:ambgprog} yields the symbol \texttt{0}, but alas this is not the case.
-The first step to prove \autoref{eq:ambgprog} is to apply through the App rule, which prompts the application of the Abs rule on the left side for \texttt{f}, such that the expression to prove now becomes the lambda abstraction with \texttt{x} replaced by \texttt{1} (\autoref{eq:ambgprog2}).
+The first step to prove \autoref{eq:ambgprog} is to apply the App rule, which prompts the application of the Abs rule on the left side for \texttt{f}, such that the expression to prove now becomes the lambda abstraction with \texttt{x} replaced by \texttt{1} (\autoref{eq:ambgprog2}).
 \begin{align}
 	\texttt{($\lambda$x.1) 0} \label{eq:ambgprog2}
 \end{align}

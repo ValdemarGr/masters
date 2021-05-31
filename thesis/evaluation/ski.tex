@@ -1,7 +1,7 @@
 \section{Combinator reducers}
 \label{sec:comb}
 One of the most prominent techniques for evaluating functional programs is that of \textit{combinator graphs reductions}.
-Formally a combinator is a function that has no free variables which is convenient since the problem of figuring out closures and parameter substitutions in applications never arises.
+Formally a combinator is a function that has no free variables, which is convenient since the problem of figuring out closures and parameter substitutions in applications never arises.
 \begin{align}
     x \label{eq:comb:x}\\
     F \label{eq:comb:F}\\
@@ -10,7 +10,7 @@ Formally a combinator is a function that has no free variables which is convenie
 There are three types of terms in combinator logic; the variable much like the lambda calculus (\autoref{eq:comb:x}), application (\autoref{eq:comb:app}) and the combinator (\autoref{eq:comb:F}).
 The SKI calculus is a very simple set of combinators which are powerful enough to be turing complete and translate to and from the lambda calculus.
 In SKI $F ::= S \,\,|\,\, K \,\,|\,\, I$ where the equivalent lambda calculus combinators for $S = \lambda x . \lambda y . \lambda z . x z (y z)$, $K = \lambda x . \lambda y . x$ and $I = \lambda x . x$.
-Evaluating an SKI program is a straightforward reduction where $F'_F$ denotes combinator $F'$ has been partially applied with combinator $F$.
+Evaluating an SKI program is a straightforward reduction where $F'_F$ denotes a combinator $F'$ which has been partially applied with combinator $F$.
 \begin{exmp}
     \begin{align}
         &SKSI\\
@@ -20,7 +20,7 @@ Evaluating an SKI program is a straightforward reduction where $F'_F$ denotes co
     \end{align}
 \end{exmp}
 
-The algorithm for converting a lambda calculus program into a SKI combinator program is a straightforward mechanical one.
+The algorithm for converting a lambda calculus program into a SKI combinator program is a straightforward and mechanical one.
 The evaluation context is always an abstraction $\lambda x . E$.
 \begin{pcases}
     \pcase{$E = x$ then rewrite $\lambda x . E$ to $I$.}
@@ -30,7 +30,7 @@ The evaluation context is always an abstraction $\lambda x . E$.
     }
     \pcase{$E = \lambda x . E'$ then first rewrite $E'$ with the appropriate cases recursively such that $E'$ becomes either $x$, $y$ or $Y E$ such that Case 1, 2 or 3 can be applied.}
 \end{pcases}
-The termination of the rewriting to SKI is guaranteed since abstractions are always eliminated and the algorithm never introduce any additional abstractions.
+The termination of the rewriting to SKI is guaranteed since abstractions are always eliminated and the algorithm never introduces any additional abstractions.
 When translating the untyped lambda calculus to SKI the ''magic`` variable names $\sigma, \kappa$ and $\iota$ are used as placeholder functions for the SKI combinators since the translation requires a lambda calculus form.
 When the translation has been completed then replace $\sigma \mapsto S, \kappa \mapsto K, \iota \mapsto I$.
 \subsection{Combinator translation growth}
@@ -39,7 +39,7 @@ Size in terms of lambda calculus are the number of lambda terms (\autoref{lc:lan
 For instance $\lambda x . x$ has a size of two since it is composed of an abstraction and a variable term.
 The size of an SKI combinator program is in terms of the number of combinators.
 \begin{lemma}
-    There exists a family of lambda calculus programs of size $n$ which are translated into SKI-expressions of size $\Omega(n^2)$.
+    There exists a family of lambda calculus programs of size $n$ which are translated into SKI-expressions of size $\Omega(n^2)$.\\
 \end{lemma}
 \begin{proof}
 \begin{pcases}
@@ -48,17 +48,17 @@ The size of an SKI combinator program is in terms of the number of combinators.
     \pcase{Rewriting $\lambda x . YE$ to $S(\lambda x . Y)(\lambda x . E)$ is the interesting case.
         To induce the worst case size \autoref{eval:case:1} must be avoided.
         If $x \notin \textit{Free}(Y)$ and $x \notin \textit{Free}(E)$ then for every non-recursive term in $Y$ and $E$ \autoref{eval:case:2} is the only applicable rewrite rule which means that an at least equal size is guaranteed.
-        Furthermore observe that by introducing unused parameters one can add one $K$ term to \textit{every} non-recursive case.
+        Furthermore observe that by introducing unused parameters one can add one $K$ term to \textbf{every} non-recursive case.
         Observe the instance $\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1)$ where the two unused parameters are used to add $K$ terms to all non-recursive cases in \autoref{eq:eval:red2} such that the amount of extra K terms minus the I becomes $\text{variable\_references} * (\text{unused\_abstractions} - 1) = 3*(3-1)$:
         \begin{gather}
             S(S(KKI)(KKI))(KKI)\label{eq:eval:red2}
         \end{gather}
-        Now let the number of variable references be $n$ and the unused abstractions also be $n$ clearly $\Omega(n * (n - 1)) = \Omega(n^2)$
+        Now let the number of variable references be $n$ and the unused abstractions also be $n$ clearly $\Omega(n (n - 1)) = \Omega(n^2)$
     }
     \pcase{Rewriting $\lambda x . E'$ is not a translation rule so the cost is based on what $E'$ becomes.}
 \end{pcases}
     \vspace*{0.5cm}
-Notice that the applications $f_1 f_1 \dots f_1$ can in fact be changed to $f_1 f_2 \dots f_n$ since for every $f_k$ where $0 < k \leq n$ there are $n - 1$ parameters that induce a K combinator.
+Notice that the applications $f_1 f_1 \dots f_1$ can be changed to $f_1 f_2 \dots f_n$ since for every $f_k$ where $0 < k \leq n$ there are $n - 1$ parameters that induce a K combinator.
 Let $P_n$ be family of programs with $n$ abstractions and $n$ applications.
 $\lambda f_1 . \lambda f_2 . \lambda f_3 . (f_1 f_1 f_1) \in P_3$ and in fact for any $p$ where $\forall n \in \mathbb{Z}^+$ and $p \in P_n$, $p$ translates into SKI-expressions of size $\Omega(n^2)$.
 \end{proof}
