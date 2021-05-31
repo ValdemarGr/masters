@@ -1538,7 +1538,7 @@ Furthermore, a transition written \texttt{eval($\Gamma$, e) $\Rightarrow^*$ ($\T
 		}
 		\pcase{
 			App states that for \texttt{$\Gamma$, l p $\rightarrow$ $\Sigma$, o} to be derivable, then \texttt{$\Gamma$, l $\rightarrow$ $\Theta$, ($\lambda$x.e)} and \texttt{$\Theta$, \{x $\mapsto$ p\}e $\rightarrow$ $\Sigma$, o} must both be derivable.
-			If the premises are derivable, then the conclusion is derivable.%then there must be a sequence of instructions such that \texttt{eval($\Gamma$, l p) $\Rightarrow^*$ ($\Sigma$, o)}.
+			If the premises are derivable, then the conclusion is derivable; %then there must be a sequence of instructions such that \texttt{eval($\Gamma$, l p) $\Rightarrow^*$ ($\Sigma$, o)}.
 			If the left premise is derivable then \autoref{eq:proof:naive:app1} holds.
 			\begin{align}
 				%&\texttt{ eval($\Gamma$, l p)} &\text{by conclusion}\label{eq:proof:naive:app1}\\
@@ -1628,6 +1628,7 @@ The basis for performing stack testing is the missing information regarding what
 To eliminate stack testing in the stack machine we can translate the machine from \autoref{fig:eval:laznaive} into a \textit{continuation-passing style} machine, CPS machine for short.
 A stack will be used for the CPS machine, but the stack will have different role.
 In the CPS machine the stack holds continuations of the type $\texttt{cont}: \Gamma \times S \times \lambda \rightarrow \lambda$, that is, there is no returning.
+$\Gamma$ is the heap, $S$ is he stack and $\lambda$ is the expression required by the continuation.
 The algorithm for the CPS conversion is as follows:
 
 If an instruction induces a recursive invocation, bound to a name \texttt{x}, the instruction should be converted to a continuation \texttt{cont} where the continuation binds the result to \texttt{x}.
@@ -1747,7 +1748,7 @@ In the true spirit of suspended computations, a suspended computation should hav
 The \texttt{subst} function in \autoref{fig:eval:laznaive} is defined to be eager, which naturally does not follow the philosophy of lazy computation.
 
 Lazy renaming can be regarded as allocating closures, that is, pairing expressions with metadata that allows sound evaluation.
-The previous introduction of environments in \autoref{sec:abstractmachine}, in a from which allows them to exist as not only singletons, is part of the recipe for lazy renaming.
+The previous introduction of environments in \autoref{sec:abstractmachine}, allow environments to occur as not only singletons, but also as nonempty mappings, which is part of the recipe for lazy renaming.
 The other component of lazy renaming is modifying the representation of values stored in the heap, such that the heap now contains mappings from variables to tuples of expressions and environments (\autoref{eq:envintro}).
 \begin{align}
 	\texttt{$\Gamma$ = \{x$_1$ $\mapsto$ (e$_1$, E$_1$), x$_2$ $\mapsto$ (e$_2$, E$_2$) $\dots$ x$_n$ $\mapsto$ (e$_n$, E$_n$)\}}\label{eq:envintro}
@@ -1831,7 +1832,7 @@ Variables can occur in both $\Gamma_L$ and $\Gamma_I$, which can simply be prove
 	\Rightarrow^*               & \texttt{ eval(swap($\Gamma$) $\subseteq$ ($\Theta_L$ , $\Theta_I$ $\cup$ \{$\gamma$ $\mapsto$ e\}), S', $\gamma$)}\tag*{} \\
 	\Rightarrow\hspace*{0.18cm} & \texttt{ eval(($\Theta_L$, $\Theta_I$), cont :S', e)}\tag*{}                                                              \\
 	\Rightarrow^*               & \texttt{ continue(($\Sigma_L$, $\Sigma_I$), cont :S'', l)}\tag*{}                                                         \\
-	\Rightarrow\hspace*{0.18cm} & \texttt{ continue(($\Sigma_L$ $\cup$ \{$\gamma$ $\mapsto$ l\}, $\Sigma_I$ \{$\gamma$ $\mapsto$ e\}), S'', l)}\tag*{}
+	\Rightarrow\hspace*{0.18cm} & \texttt{ continue(($\Sigma_L$ $\cup$ \{$\gamma$ $\mapsto$ l\}, $\Sigma_I$ $\cup$ \{$\gamma$ $\mapsto$ e\}), S'', l)}\tag*{}
 \end{align}
 Note that the environments have been omitted for readability, they should exist, but are not interesting in this segment.
 In the evaluation in \autoref{eq:varoccur} a case of ambiguity occurs; is \texttt{\{$\gamma$ $\mapsto$ e\}} or \texttt{\{$\gamma$ $\mapsto$ l\}} the newest mapping?
@@ -1839,7 +1840,7 @@ The solution is not simply a case of consulting the live heap, since another ins
 To track the newest variable, we employ the works of~\cite{lamport}.
 Timestamps are logical numbers assigned to events, such that we can impose an ordering on when events occur.
 In more contextual terms, we assign a unique timestamp to every expression.
-If an expression \texttt{e}$_1$ with timestamp \texttt{T}$_1$ is created before an event \texttt{e}$_2$ with timestamp \texttt{T}$_2$, then \texttt{T}$_1$ $<$ \texttt{T}$_2$.
+If an expression \texttt{e}$_1$ with timestamp \texttt{T}$_1$ is created before an expression \texttt{e}$_2$ with timestamp \texttt{T}$_2$, then \texttt{T}$_1$ $<$ \texttt{T}$_2$.
 The implementation is simple, we extend the tuple of the heap with increasing lamport timestamps $T_k$ such that a heap becomes a mapping from variables to triples as depicted in \autoref{eq:envintrolam}.
 \begin{align}
 	\texttt{$\Gamma$ = \{x$_1$ $\mapsto$ (e$_1$, E$_1$, T$_1$), x$_2$ $\mapsto$ (e$_2$, E$_2$, T$_2$) $\dots$ x$_n$ $\mapsto$ (e$_n$, E$_n$, T$_n$)\}}\label{eq:envintrolam}
@@ -3829,7 +3830,7 @@ The result of various observations can be seen in \autoref{fig:perfplot}, where 
 \subsubsection{Interpreting the garbage collection data}
 The data in \autoref{fig:perfplot} show that the parallel garbage collector in practice, performs quite a bit better than the synchronous one in terms of speed.
 The parallel garbage collector, in fact, performs just as well as no garbage collector.
-The parallel garbage collector suffers from an apparent consequence, which is that it potentially only collects half of the garbage on each collection cycle.
+The parallel garbage collector suffers from an apparent consequence, which is that it only collects half of the garbage on each collection cycle, on average.
 The data for heap usage displays this well; When the garbage collector runs on the idle heap, then the live heap keeps accumulating new references in parallel, which in some cases causes the live heap to accumulate more references that was otherwise collected.
 The heap usage and wall clock running time of a synchronous versus a parallel displays the age old trade of memory versus performance.
 
@@ -3837,7 +3838,7 @@ The heap usage and wall clock running time of a synchronous versus a parallel di
 An important problem still remains which is that of infinite programs.
 Imperative programming languages often solve this by introducing loops, whereas functional programming languages use recursion.
 Recursion may be equally powerful in terms of expressiveness, but generally becomes a bit more tricky when considering interpreter details.
-Fortunately, we are get a property, often named \textit{tali call optimizaiton}, for free, when implementing lambda calculus evaluation machines.
+Fortunately, we get a property, named \textit{tali call optimizaiton}, for free, when implementing lambda calculus evaluation machines.
 A prerequisite for an infinitely running program to run in finite space is that the program must not grow it's resource needs as it runs.
 
 The distinction between recursive functions and loops in imperative programming languages is often what makes infinite programs expressible.
@@ -3917,7 +3918,7 @@ The first flavor of \texttt{fold}; \texttt{foldl}, implements \texttt{fold} such
 	%= & \texttt{ foldl add 1 (Cons 2 (Cons 3 $\dots$ (Cons n Nil))) $\{ \dots \}$}  \tag*{}                                         \\
 	  & \dots \tag*{}
 \end{align}
-Evaluating \texttt{foldl} on a list of size \texttt{n} with the addition function showcases how the program grows by a linearly to the number of terms.
+Evaluating \texttt{foldl} on a list of size \texttt{n} with the addition function showcases how the program grows by linearly to the number of terms.
 
 \texttt{foldr} on the other hand, does not necessarily increase in heap size, since the invocation of \texttt{f} immediately forces the evaluation of \texttt{x} and pushes \texttt{x} to the continuation stack by the CPS machine.
 Clearly the stack of continuations must be where the payment of space is made.

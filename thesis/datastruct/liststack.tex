@@ -8,26 +8,31 @@ type Maybe a =
   | Nothing
   | Just a
 ;
-type TupleAttr a b = Tuple a b;
-type List a =
+type Stack a =
   | Nil
   | Cons a (List a)
 ;
-type StackAttributes a = Stack (Int) (List a);
+type Tuples a b = Tuple a b;
 
-fun push s x = 
+fun push xs x = 
+  Cons x xs;
+
+fun popt s =
   match s
-    | Stack n xs -> Stack (n + 1) (Cons x xs);
+    | Nil -> Tuple Nothing Nil;
+    | Cons x xs -> Tuple (Just x) xs;
   ;
 
-fun pop s =
-  match s
-    | Stack n xs ->
-      match xs
-        | Nil -> Tuple Nothing s;
-        | Cons x rest -> 
-          Tuple (Just x) (Stack (n - 1) rest);
-      ;
+fun pop xs =
+  match xs
+    | Nil -> Nothing;
+    | Cons x rest -> Just x;
+  ;
+
+fun tail xs = 
+  match xs
+    | Nil -> Nil;
+    | Cons x xs -> xs;
   ;
 \end{lstlisting}
 \end{figure}

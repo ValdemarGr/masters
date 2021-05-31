@@ -16,7 +16,7 @@ A node with no children, is called a leaf.
 A sub-tree is the tree that is formed by letting a node that is otherwise a child, be a root.
 A parent of a node $c$ is the node $p$ that has $c$ as a child.
 A grandparent of a node is the node's parent's parent.
-A path $p$ from the root $l$ to $o$ is a sequence of nodes $l \rightarrow \dots \rightarrow o$, such that the length of $p$, denoted $\#p$, is the number of nodes that occur in the path.
+%A path $p$ from the root $l$ to $o$ is a sequence of nodes $l \rightarrow \dots \rightarrow o$, such that the length of $p$, denoted $\#p$, is the number of nodes that occur in the path.
 There are various orderings one can impose on a tree, but we will maintain the invariants that all sub-trees left of a node will have keys that are smaller than the key of that node and all sub-trees right of a node will have keys that are larger than the key of that node.
 A balanced tree, is tree of size $n$ where no one node is further than $\ceil{\log_2 n}$ from the root.
 Trees can be a very useful representation of stored data, since finding a value in a balanced tree requires one to visit at most $\ceil{\log_2 n}$ nodes since that is the furthest (the number of nodes between) a node can be from the root.
@@ -53,8 +53,8 @@ Searching for a key $k$ in a tree which maintains the previously established ord
 \end{figure}
 
 Trees by themselves are very open for interpretation, since they specify nothing of how keys are inserted and deleted.
-An very popular variant, which we will interest ourselves in is the red-black tree~\cite{bayer1972symmetric}.
-A variant of the red-black tree which we will interest ourselves in is the Okasaki variant~\cite{okasaki1999red}.
+An very popular variant, which we will consider, is the red-black tree~\cite{bayer1972symmetric}.
+A persistent variant of the red-black tree which we will interest ourselves in is the Okasaki variant~\cite{okasaki1999red}.
 In a red-black tree, every leaf node is a node with no key or value, called an empty node.
 Furthermore, in a red-black tree every node is enhanced with a color, which is either black or red, hence the name.
 A red-black tree has two invariants that must be upheld.
@@ -96,7 +96,7 @@ The number of nodes to visit when searching for a position to place the new node
 The time for one \texttt{balance} is at most $1$ invocation, the \texttt{balance} function is invoked for each travelled node thus it is invoked $O(\log_2 n)$ times, which implies that the combined insertion time is $O(\log_2 n)$.
 
 \subsubsection{Deletion}
-Deletion in red-black trees is a more complicated than insertion.
+Deletion in red-black trees is more complicated than insertion.
 Deletion of a black node can imply a much larger range of rotations than insert otherwise would.
 In~\cite{germane2014deletion}, an algorithm for deletion is presented.
 The algorithm, inspired by the Okasaki red-black tree, solves deletion in a similar method as insertion.
@@ -350,7 +350,7 @@ Insertion is performed by a simple set of steps:
   \item Search until either an unused slot reveals itself or a terminal value is found.
   \item If the slot is empty, insert the value and return.
   \item If the slot contains a value, create a new HAMT node and insert the old value into the node, and the recurse into the node.
-  \item If the hash has been exhausted while solving collision, rehash the key $k$ by using a new hash function.
+  \item If the hash has been exhausted while solving collision, rehash the key $k$ by using a new hash function or apply some other collision strategy.
 \end{enumerate}
 \begin{remark}
   Collisions can occur, but they can be done away with traditionally.
