@@ -6,7 +6,7 @@ Fortunately, some data structures are better fitted for persistence than others.
 
 In this section we will explore two types persistent types of associative data structures, the red-black tree and the hash array mapped trie.
 
-\subsection{Red-black trees}
+\subsection{Red-black trees}\label{sub:rb}
 Trees are very common data-structures because of their inherit guarantees.
 A \textit{nodes} is a containers of some key and value, as depicted in \autoref{fig:anode}.
 The key of a node is it's identity, such that one can query the tree for the associated value.
@@ -315,7 +315,7 @@ Searching for a number such as 42 will search the first node for the prefix of 4
 In the left child the prefix of the remaining number, 2, is chosen such that the cell that contains 11 is found. 
 
 Now we argument the prefix tree with hashes instead of digits, this change will become useful in the next iteration of the data structure.
-A hash function is randomly chosen for the data structure $h \in \mathcal{H}$ that maps the universe of keys into a 32 bit word $\{0, 1 \dots , 2^{32}\}$, such that the probability of collision is $\frac{1}{2^{32}}$~\cite{cormen2009introduction}.
+A hash function is randomly chosen for the data structure $h \in \mathcal{H}$ that maps the universe of keys into a 32 bit word $\{0, 1 \dots , 2^{32} - 1\}$, such that the probability of collision is $\frac{1}{2^{32}}$~\cite{cormen2009introduction}.
 When a key occurs in the 32 sized array, the five most significant bits of the hash are converted to an integer and are to index directly into the array, since $2^5 = 32$.
 \begin{exmp}
   The five most significant bits of \autoref{eq:significant} are \texttt{10010}, which is the index 18.
@@ -333,7 +333,7 @@ To enhance \texttt{CTPOP}, we count the number of set bits until an offset (this
 When we have the ability to query for how many set bits come before an index in the bitset, we can represent the sparse array compactly.
 The array will now only contain the set values and the number of set bits before an index in the bitset will be the offset in the array.
 
-\subsubsection{Searching and inserting}
+\subsubsection{Searching, inserting and deleting}
 Now the structure of the HAMT has been completed.
 Search is performed by combining the aforementioned enhancements:
 \begin{enumerate}
@@ -354,19 +354,45 @@ Insertion is performed by a simple set of steps:
 \end{enumerate}
 \begin{remark}
   Collisions can occur, but they can be done away with traditionally.
-  For instance, when collisions occur at the leaf level ($\floor{\frac{32}{5}}$) then one can pick a particular hash function for that leaf which local uniqueness, and then add a collision node.
+  In~\cite{bagwell2001ideal} a technique is presented that handles collisions that occur at the leaf level ($\floor{\frac{32}{5}}$) then one can pick a particular hash function for that leaf which local uniqueness (in the article the depth is used as a seed), and then add a collision node.
+  In the implementation in languages such as Clojure and Scala, collisions are handled using arraymaps~\cite{clojurehamt}.
+  Array maps are arrays of tuples of keys and values, which do not perform that well in the worst case but have very few keys.
+  In practice, with a good resizing threshold, the probability of two values colliding is very small, thus array maps perform quite well.
+  One can still give an asymptotic argument; If the probability of collision remains under $\frac{1}{n}$ then the average running time is $O(\log_{32} n + \frac{1}{n}n) = O(\log_{32}n)$.
+  The resizing threshold can be further increased by using a data structure such as the one presented in \autoref{sub:rb} such that the probability can increase to at most $\frac{1}{\log_2 n}$.
 \end{remark}
 
-\subsubsection{Lazy root resizing}
-Inevitably, when the tree grows, the probability of a hash not colliding decreases, which prompts for a resizing algorithm.
+Deletion is the dual of insertion; instead of creating a new node on collisions a node is contracted to a value if the node's size is reduced to one, if the node becomes empty the entry is removed from the parent's children.
+
+\subsubsection{Root resizing}
+Inevitably, when the tree grows, the probability of a hash colliding increases, which prompts for a resizing algorithm.
 So far the root has been introduced as if it has the same properties as nodes.
 The root will no longer have a bitset and initially be an array of \texttt{nil}.
 Since the root is only the top node, then the extra space used by the array is but a constant factor of the total size.
-When the HAMT reaches a point where it's size exceeds some threshold it must begin \texttt{lazy resizing}.
-Lazy resizing is the act of increasing the size of the root and incrementally moving entries from the old root over.
-Let $2^t$ be the number of bit's that the root can consume, where $t = 5$ initially, if we increase this number by five, such that $2^(t + 5)$, then the new root can contain all entries of all of the root's children since $(2^5)^2 = 2^{10}$.
+When the HAMT reaches a point where it's size exceeds some threshold it must begin \textit{lazy resizing}.
+Lazy resizing is the act of increasing the size of the root and incrementally moving entries from the old root to the new root.
+Let $2^t$ be the number of bit's that the root can consume, where $t = 5$ initially, if we increase this number by five, such that $2^{(t + 5)}$, then the new root can contain all entries of all of the root's children since $(2^5)^2 = 2^{10}$.
 Effectively, the children of the root are moved into the root once the HAMT's size becomes too large, such that the height is reduced by one.
-The operation of moving the children into the new root can be amortized over searches and inserts.
+The operation of moving the children into the new root can be amortized over searches and inserts, in a manner similar to \textit{array doubling}.
+
+Clearly, increasing the size of the root must also increase the size of the hash to compensate for the root which now consumes ten bits of the hash.
+
+An efficient method of determining if a value has been moved can be implemented by maintaining an index that indicates how many values have been moved.
+If the hash you are searching for is less than the index, then the old root is used, otherwise the new root us used.
+
+\subsubsection{Persistence}
+Persistence can be implemented in the HAMT by employing \textit{path-copying}.
+When a node is accessed, the parent of a changed node must be updated thus a copy is created.
+Every node involved in the path to the changed node must be copied by previous semantics, since every node's child changes.
+\begin{remark}
+  In practice the resizing of the root node will eventually lead to a root node of very proportionate sizes, thus copying becomes quite expensive.
+  In some implementations the type of node that the root represents is extended it it's immediate children.
+  This strategy ensures that the root can grow, but copying is does not blow up rapidly.
+\end{remark}
+
+\subsection{Practical considerations}
+Both the HAMT and red-black tree have similar running times, bounded by search ($O(\log n)$).
+In practice, the HAMT often outperforms the red-black tree, partly because of the log factor of 32, but at a cost of space and complexity.
 
 
 %Every bit decreases the likelihood of collision by a factor two, such that the probability after 32 bits is $\frac{1}{2}^{32}$.
