@@ -1,0 +1,23 @@
+type List a = 
+  | Nil
+  | Cons a (List a)
+;
+
+fun sum l =
+  match l
+    | Cons x xs ->
+      x + (sum xs);
+    | Nil -> 0;
+  ;
+
+fun append fst snd = 
+  match fst
+    | Nil -> snd;
+    | Cons x xs -> Cons x (append xs snd);
+  ;
+
+fun main =
+  let longlist = Cons 1 (Cons 2 (Cons 3 Nil));
+  let hello = Cons 4 (Cons 5 (Cons 6 Nil));
+  sum (append longlist hello);
+

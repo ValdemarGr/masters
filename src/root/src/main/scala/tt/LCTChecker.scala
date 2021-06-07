@@ -114,6 +114,7 @@ object LCTChecker {
         val (newCtx, f) = fresh(ctx)
         val (t1, s1, c1) = infer(l, env, newCtx)
         val (t2, s2, c2) = infer(r, substEnv(s1, env), c1)
+        println(s"parameter to $l is ${substType(s2, t2)}")
         val s3 = unify(substType(s2, t1), HMTypeArr(t2, f))
         (substType(s3, f), combine(s3, combine(s2, s1)), c2)
       case LCTAbstration(param, body) => 
@@ -125,12 +126,14 @@ object LCTChecker {
           env + (param -> HMScheme(Set.empty, f))
         }
         val (t1, s1, c1) = infer(body, introed, newCtx)
+        println(s"inferred param $param and body to be ${substType(s1, f)}")
         (substType(s1, HMTypeArr(f, t1)), s1, c1)
       case LCTLet(name, body, in) => 
         //introduce monomorphic recursive name
         val (c0, f) = fresh(ctx)
         val env2 = env + (name -> HMScheme(Set.empty, f))
         val (t1, s1, c1) = infer(body, env2, c0)
+        println(s"inferred in $name was $t1 unified with fresh $f which maps to ${s1.get(f)}")
         val subbed: Environment = substEnv(s1, env2)
         val genned: HMScheme = gen(subbed, t1)
         val (t2, s2, c2) = infer(in, env2 + (name -> genned), c1)
