@@ -10,29 +10,36 @@ import scala.collection.immutable.Nil
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
+import tt.LCTChecker
 
 object ReductionMachine {
   object LCWithTrimmers {
-    sealed trait LCTExp { def trimmer: Set[String] }
+    type Hint = LCTChecker.HMType
+
+    sealed trait LCTExp {
+      def trimmer: Set[String] 
+    }
 
     final case class LCTVar(name: String) extends LCTExp {
       val trimmer = Set(name)
       override def toString = s"$name"
     }
 
-    final case class LCTApplication(l: LCTExp, r: LCTExp) extends LCTExp {
+    case class LCTApplication(l: LCTExp, r: LCTExp) extends LCTExp {
       val trimmer = l.trimmer.union(r.trimmer)
       override def toString = s"($l $r)"
     }
 
-    final case class LCTAbstration(param: String, body: LCTExp) extends LCTExp {
+    case class LCTAbstration(param: String, body: LCTExp) extends LCTExp {
       val trimmer = body.trimmer - param
       override def toString = s"(\\$param.$body)"
     }
 
-    final case class LCTLet(name: String, body: LCTExp, in: LCTExp) extends LCTExp {
+    type ADTHint = (LCTChecker.HMType, List[(LCTExp, LCTChecker.Environment)])
+    case class LCTLet(name: String, body: LCTExp, in: LCTExp) extends LCTExp {
       val trimmer = (body.trimmer.union(in.trimmer)) - name
       override def toString = s"let $name = ($body) in \n$in"
+      def hint: Option[Either[Hint, ADTHint]] = None
     }
 
     final case class LCTIf(exp: LCTExp, truth: LCTExp, falsity: LCTExp) extends LCTExp {

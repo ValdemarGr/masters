@@ -4,7 +4,7 @@ type Maybe a =
 ;
 type Stack a =
   | Nil
-  | Cons a (List a)
+  | Cons a (Stack a)
 ;
 type Tuples a b = Tuple a b;
 

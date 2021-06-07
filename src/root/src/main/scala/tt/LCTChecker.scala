@@ -3,6 +3,7 @@ package tt
 import runtime.ReductionMachine.LCWithTrimmers._
 import par.TokenTypes._
 import scala.language.postfixOps
+import runtime.ReductionMachine
 
 object LCTChecker {
   sealed trait HMType
@@ -20,6 +21,7 @@ object LCTChecker {
 
   sealed trait HMBuiltins
   case object Integer extends HMBuiltins
+  case class ADT(name: String) extends HMBuiltins
 
   type Environment = Map[String, HMScheme]
   type Substitution = Map[HMTypeVar, HMType]
@@ -105,6 +107,7 @@ object LCTChecker {
   def entrypoint(exp: LCTExp) = infer(exp, Map.empty, Context(1))
 
   def infer(exp: LCTExp, env: Environment, ctx: Context): (HMType, Substitution, Context) = {
+    //println(s"inferring $exp")
     exp match {
       case LCTVar(name) => 
         val genType: HMScheme = env.get(name).getOrElse(throw new Exception(s"did not find variable $name in env $env"))
@@ -114,30 +117,62 @@ object LCTChecker {
         val (newCtx, f) = fresh(ctx)
         val (t1, s1, c1) = infer(l, env, newCtx)
         val (t2, s2, c2) = infer(r, substEnv(s1, env), c1)
-        println(s"parameter to $l is ${substType(s2, t2)}")
+        //println(s"parameter to $l is ${substType(s2, t2)}")
         val s3 = unify(substType(s2, t1), HMTypeArr(t2, f))
         (substType(s3, f), combine(s3, combine(s2, s1)), c2)
       case LCTAbstration(param, body) => 
         val (newCtx, f) = fresh(ctx)
         //don't do this at home kids
-        val introed: Environment = if (param.endsWith("''")) {
-          env + (param -> HMScheme(Set(f.name), f))
-        } else {
-          env + (param -> HMScheme(Set.empty, f))
-        }
+        val introed: Environment = env + (param -> HMScheme(Set.empty, f))
         val (t1, s1, c1) = infer(body, introed, newCtx)
-        println(s"inferred param $param and body to be ${substType(s1, f)}")
+        //println(s"inferred param $param and body to be ${substType(s1, f)}")
         (substType(s1, HMTypeArr(f, t1)), s1, c1)
-      case LCTLet(name, body, in) => 
-        //introduce monomorphic recursive name
-        val (c0, f) = fresh(ctx)
-        val env2 = env + (name -> HMScheme(Set.empty, f))
-        val (t1, s1, c1) = infer(body, env2, c0)
-        println(s"inferred in $name was $t1 unified with fresh $f which maps to ${s1.get(f)}")
-        val subbed: Environment = substEnv(s1, env2)
-        val genned: HMScheme = gen(subbed, t1)
-        val (t2, s2, c2) = infer(in, env2 + (name -> genned), c1)
-        (t2, combine(s1, s2), c2)
+      case ll@LCTLet(name, body, in) => 
+        val nt: Either[Option[HMType], ReductionMachine.LCWithTrimmers.ADTHint] = ll.hint match {
+          case Some(Left(hint)) => Left(Some(hint))
+          case None => Left(None)
+          case Some(Right(r)) => Right(r)
+        }
+        nt match {
+          case Left(Some(hint)) =>
+            val env2: Environment = env + (name -> gen(env, hint))
+            infer(in, env2, ctx)
+          case Left(None) =>
+            //introduce monomorphic recursive name
+            //val (c0, f) = maybeHint.map(h => ctx -> h).getOrElse(fresh(ctx))
+            val (c0, f) = fresh(ctx)
+            val env2 = env + (name -> HMScheme(Set.empty, f))
+            val (t1, s0, c1) = infer(body, env2, c0)
+            //unify returned type with original
+            val s1 = unify(substType(s0, t1), t1)
+            println(s"$name also has hinted type ${ll.hint}")
+            val subbed: Environment = substEnv(s1, env2)
+            val genned: HMScheme = gen(subbed, t1)
+            val (t2, s2, c2) = infer(in, env2 + (name -> genned), c1)
+            (t2, combine(s1, s2), c2)
+          case Right((expected, xs)) => 
+            //introduce adt type
+            println(s"introducing for $expected and $xs")
+            val env2: Environment = env + (name -> HMScheme(Set.empty, expected))
+            val (c0, f) = fresh(ctx)
+            val (s, c, t) = xs.foldLeft[(Substitution, Context, HMType)]((Map.empty, c0, f)){ case ((subst, ctx, t), (body, envto)) =>
+              val env3 = substEnv(subst, env2 ++ envto)
+              val (t1, s1, c1) = infer(body, env3, ctx)
+              println(s"inferred $body to ${substType(s1, t1)}")
+              val s2: Substitution = combine(s1, subst)
+              val un = unify(substType(s2, t1), substType(s2, t))
+              val s3: Substitution = combine(un, s2)
+              (s3, c1, substType(s3, t1))
+            }
+            println(s"inferred bodies, now inferring $body")
+            val (t2, s2, c2) = infer(body, env, c)
+            val s3 = combine(s2, s)
+            val s4 = unify(substType(s3, expected), substType(s3, t2))
+            val s5 = combine(s4, s3)
+            //val (t2, s2, c2) = infer(in, substEnv(s, env2), c)
+            //val comb = combine(s2, s)
+            (substType(s5, t), s5, c2)
+        }
       case LCTIf(exp, truth, falsity) => 
         val (t1, s1, c1) = infer(exp, env, ctx)
         val (t2, s2, c2) = infer(truth, env, c1)
