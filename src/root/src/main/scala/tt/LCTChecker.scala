@@ -17,7 +17,9 @@ object LCTChecker {
     override def toString = s"($name ${params.mkString(" ")})"
   }
 
-  final case class HMScheme(bound: Set[String], t: HMType)
+  final case class HMScheme(bound: Set[String], t: HMType) {
+    override def toString = s"${bound.map(b => s"∀$b.").mkString}$t"
+  }
 
   sealed trait HMBuiltins
   case object Integer extends HMBuiltins
@@ -136,6 +138,7 @@ object LCTChecker {
         nt match {
           case Left(Some(hint)) =>
             val env2: Environment = env + (name -> gen(env, hint))
+            println(s"introduced $name with type ${gen(env, hint)}")
             infer(in, env2, ctx)
           case Left(None) =>
             //introduce monomorphic recursive name
